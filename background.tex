@@ -1,3 +1,56 @@
-\chapter{Background}
+\chapter{Formalisation of Software}
 
-This is the background.
+Synthesis is a process that demands mathematical formalisation in order to
+provide a strong guarantee of the correctness of the resultant software. As
+such we require a mathematical language to describe the system we wish to
+produce, the environment in which it operates, and the properties we want the
+system to adhere to. This chapter will outline that language and the ways we
+can reason about what we describe in it.
+
+\section{Reactive Systems}
+
+Devices drivers are an example of a reactive system. A reactive system is a
+system that is in a continuous process of responding to input from its
+environment. A driver accepts requests from the operating system and state
+information from the device, and it responds by sending commands to the device
+and reporting to the operating system.
+
+B\"uchi automata \cite{Buchi62} are a formalisation of reactive systems.
+B\"uchi automata are $\omega$-automata, which means they describe finite
+systems that accept an infinite stream of input. This is a useful formalism for
+synthesis because we want to create finite systems that responds to input
+continuously or infinitely.
+
+Like all $\omega$-automata, the language of a B\"uchi automaton is
+$\omega$-regular. A regular language over the alphabet $\Sigma$ is
+
+\begin{itemize}
+    \item The empty language $\empty$, \emph{or}
+    \item A singleton language $\{a\}$ for $a \in \Sigma$, \emph{or}
+    \item For two regular languages $A$ and $B$:
+    \begin{itemize}
+        \item $A \cup B$ the union of those languages, \emph{or}
+        \item $A \centerdot B$ the concatenation of those languages, \emph{or}
+        \item $A*$ the Kleene operation on that language.
+    \end{itemize}
+\end{itemize}
+
+An $\omega$-regular language is a regular language with infinitely long words.
+
+\section{Temporal Logic}
+
+\subsection{LTL and CTL}
+
+\section{Reactive Synthesis}
+
+\subsection{Synthesis as a Game}
+
+\subsection{GR(1) Games}
+
+\section{Binary Decision Diagrams}
+
+\section{Abstraction}
+
+\section{SAT}
+
+\section{Interpolation}
