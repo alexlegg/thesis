@@ -4,13 +4,28 @@ This is the introduction.
 
 \section{Device Drivers}
 
-Explain what a driver is (just in case.)
+Device drivers are the software that allows the operating system to interface
+with hardware. The role of the driver is to manipulate the inputs of the device
+so that it remains in a error-free state and correctly handles the requests of
+the operating system. By way of example consider an ethernet driver. The driver
+accepts requests to send and receive data packets from the OS and acts on those
+requests by reading from and writing to buffers on the device. It must ensure
+that those buffers are maintained in a usable state by correctly updating a
+register containing the location of the head of the buffer queue.
 
-Drivers are bad. Talk about the linux kernel bugs paper. Mention the drawbacks of their approach.
+According to a study performed in 2011~\cite{Palix11}, drivers account for
+approximately 57\% of the lines of code in the Linux kernel and subsequently is
+the largest source of bugs. The study also analysed the staging directory of
+the kernel, which contains all in-progress drivers, and found it to contain the
+highest fault rate (faults per line of code) out of any directory in the
+kernel. The results of the study give evidence to the widely held belief that
+correct drivers are hard to produce.
 
 Consequences of buggy drivers
 
-Will talk about other approaches to the problem in the next chapter
+This thesis focuses on automatic construction of correct drivers as a solution
+to the driver problem. Alternate approaches, of which there are many, will be
+discussed in Chapter~\ref{ch:relatedwork}.
 
 \section{Synthesis}
 

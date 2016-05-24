@@ -1,7 +1,30 @@
-\documentclass[11pt]{report}
+\documentclass[a4paper, twoside, openright, 11pt, oldfontcommands]{memoir}
+\usepackage[T1]{fontenc}
+\usepackage{microtype}
+\OnehalfSpacing
 \usepackage{cite}
 \usepackage{amsmath}
 \usepackage{amssymb}
+
+%%% Formatting setup
+% 11pt Palatino (URW Palladio) for text
+\renewcommand{\rmdefault}{ppl}
+% Optima (URW Classico) for headings
+%\renewcommand{\sfdefault}{uop}
+
+% Use Courier which has a bold series
+\renewcommand{\ttdefault}{pcr}
+
+% Make our pretty chapter headings
+% Copied from DaveC via Adam
+\usepackage[bf,sf]{titlesec}
+\newcommand{\chapformat}[1]{\parbox[c]{0.8\textwidth}{\Huge #1}}
+\titleformat{\chapter}[hang]
+    {\sffamily\bfseries}
+    {\parbox[c]{0.2\textwidth}{\rmfamily\fontsize{72}{72}
+     \selectfont\thechapter\hspace{10pt}\rule[-12pt]{2pt}{72pt}}}
+    {0pt}
+    {\chapformat}
 
 \title{Addressing the Performance Bottlenecks of Device Driver Synthesis}
 
@@ -48,6 +71,7 @@ Acknowledge some people
 \input{introduction.tex}
 
 \chapter{Related Work}
+\label{ch:relatedwork}
 
 \input{background.tex}
 

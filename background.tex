@@ -15,11 +15,11 @@ environment. A driver accepts requests from the operating system and state
 information from the device, and it responds by sending commands to the device
 and reporting to the operating system.
 
-B\"uchi automata \cite{Buchi62} are a formalisation of reactive systems.
+B\"uchi automata~\cite{Buchi62} are a formalisation of reactive systems.
 B\"uchi automata are $\omega$-automata, which means they describe finite
 systems that accept an infinite stream of input. This is a useful formalism for
 synthesis because we want to create finite systems that responds to input
-continuously or infinitely.
+indefinitely.
 
 Like all $\omega$-automata, the language of a B\"uchi automaton is
 $\omega$-regular. A regular language over the alphabet $\Sigma$ is
@@ -39,7 +39,33 @@ An $\omega$-regular language is a regular language with infinitely long words.
 
 \section{Temporal Logic}
 
-\subsection{LTL and CTL}
+Temporal logic takes propositional logic and provides additional semantics for
+the concept of time. In order to reason about program executions, which are a
+series of discrete steps, the logic must have the expressiveness to talk about
+the future.
+
+Linear temporal logic (LTL) allows for statements that refer to a single
+execution trace of a system.  Pnueli introduced LTL in 1977~\cite{Pnueli77} to
+succinctly describe the outcomes of program execution by referring to global
+invariants and eventualities. The syntax is:
+
+\begin{itemize}
+    \item $\phi$ is a propositional formula referring to the current state,
+    \item $X\phi$ - $\phi$ is true in the next state of the execution,
+    \item $F\phi$ - Eventually (finally) $\phi$ will be true, and
+    \item $G\phi$ - $\phi$ is always (globally) true.
+\end{itemize}
+
+The semantics of this logic is formally defined with respect to 
+
+In 1981 Clarke introduced computation tree logic (CTL)~\cite{Clarke81}, which
+has the expressiveness to reason about multiple execution paths of a program.
+The syntax of CTL is as follows:
+
+\begin{itemize}
+    \item $A\phi$ - $\phi$ is true on all paths
+    \item $E\phi$ - there exists a path on which $p$ is true
+\end{itemize}
 
 \section{Reactive Synthesis}
 
