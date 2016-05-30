@@ -15,6 +15,86 @@ environment. A driver accepts requests from the operating system and state
 information from the device, and it responds by sending commands to the device
 and reporting to the operating system.
 
+\section{Kripke Structures}
+
+A reactive system can be thought of as a sequence of \emph{states}. The system
+\emph{transitions} between these states as it responds to its inputs. A Kripke
+structure~\cite{Kripke63} formalises this notion and provides us will the
+language to reason about a reactive system.
+
+A Kripe structure $M$ is defined by the tuple $M = (S, S_0, R, L)$ with respect
+to a set of atomic propositions $AP$.
+
+\begin{itemize}
+    \item A finite set of states, $S$,
+    \item a subset of initial stats $S_0 \subseteq S$,
+    \item a transition relation $R \subseteq S \times S$, and
+    \item a labelling function $L : S \to 2^{AP}$.
+\end{itemize}
+
+The transition relation defines how the system moves between states. It must be
+left-total, i.e. for every $s \in S$ there is an $s' \in S$ s.t. $R(s, s')$.
+The labelling function maps every state in $S$ to a set of atomic propositions
+that hold in that state of the system.
+
+We often consider \emph{paths} or \emph{runs} of a Kripke structure. A path is
+a sequence of states $\pi = s_0, s_1, s_2, ...$ such that $R(s_i, s_{i+1})$
+holds for all $i \geq 0$.
+
+\section{Temporal Logic}
+
+Kripke structures lay the groundwork for reasoning about reactive systems.
+Using the labelling function we may define desirable properties for the system.
+What is now lacking is a means of bringing states together to reason about the
+system as a whole. This requires a logical language that can express temporal
+properties.
+
+Temporal logic takes propositional logic and provides additional semantics for
+the concept of time. In a Kripke structure this refers to the expressiveness to
+reason about runs of the system. This allows us to define properties that must
+be true for the entire execution of a reactive system.
+
+Linear temporal logic (LTL) allows for statements that refer to a single run of
+a Kripke structure. Pnueli introduced LTL in 1977~\cite{Pnueli77} to succinctly
+describe the outcomes of program execution by referring to global invariants
+and eventualities. The syntax is:
+
+\begin{itemize}
+    \item $\phi$ is a propositional formula referring to the current state,
+    \item $X\phi$ - $\phi$ is true in the next state of the execution,
+    \item $F\phi$ - Eventually (finally) $\phi$ will be true, and
+    \item $G\phi$ - $\phi$ is always (globally) true.
+\end{itemize}
+
+These operators are semantically defined with respect to a Kripke structure $M
+= (S, S_0, R, L)$. We use $M, s \models \phi$ to denote $\phi$ holds true at
+state $s \in S$ of structure $M$. We definte $\models$ recursively:
+
+\begin{itemize}
+    \item $M, s \models \phi$ iff $\phi \in L(s)$.
+    \item $M, s \models \lnot\phi$ iff not $(M, s \models \phi)$.
+    \item $M, s \models \phi_1 \land \phi_2$ iff $M, s \models \phi_1$ and $M, s \models \phi_2$.
+    \item $M, s \models \phi_1 \lor \phi_2$ iff $M, s \models \phi_1$ or $M, s \models \phi_2$.
+    \item $M, s \models X\phi$ iff for some state $s'$, $R(s, s')$ and $M, s' \models phi$.
+    \item $M, s_0 \models F\phi$ iff for some path $(s_0, s_1, ...)$, $\exists i (i \geq 0 \land (M, s_i \models \phi))$.
+    \item $M, s_0 \models G\phi$ iff for some path $(s_0, s_1, ...)$, $\forall i (i \geq 0 \land (M, s_i \models \phi))$.
+\end{itemize}
+
+Throughout this thesis will use $F$ and $G$ to represent the \emph{finally} and
+\emph{globally} operators. Elsewhere in the literature $\lozenge$ and $\square$
+are sometimes used to represent the same.
+
+In 1981 Clarke introduced computation tree logic (CTL)~\cite{Clarke81}, which
+has the expressiveness to reason about multiple execution paths of a program.
+The syntax of CTL is as follows:
+
+\begin{itemize}
+    \item $A\phi$ - $\phi$ is true on all paths
+    \item $E\phi$ - there exists a path on which $p$ is true
+\end{itemize}
+
+\section{B\"uchi Automata}
+
 B\"uchi automata~\cite{Buchi62} are a formalisation of reactive systems.
 B\"uchi automata are $\omega$-automata, which means they describe finite
 systems that accept an infinite stream of input. This is a useful formalism for
@@ -36,36 +116,6 @@ $\omega$-regular. A regular language over the alphabet $\Sigma$ is
 \end{itemize}
 
 An $\omega$-regular language is a regular language with infinitely long words.
-
-\section{Temporal Logic}
-
-Temporal logic takes propositional logic and provides additional semantics for
-the concept of time. In order to reason about program executions, which are a
-series of discrete steps, the logic must have the expressiveness to talk about
-the future.
-
-Linear temporal logic (LTL) allows for statements that refer to a single
-execution trace of a system.  Pnueli introduced LTL in 1977~\cite{Pnueli77} to
-succinctly describe the outcomes of program execution by referring to global
-invariants and eventualities. The syntax is:
-
-\begin{itemize}
-    \item $\phi$ is a propositional formula referring to the current state,
-    \item $X\phi$ - $\phi$ is true in the next state of the execution,
-    \item $F\phi$ - Eventually (finally) $\phi$ will be true, and
-    \item $G\phi$ - $\phi$ is always (globally) true.
-\end{itemize}
-
-The semantics of this logic is formally defined with respect to 
-
-In 1981 Clarke introduced computation tree logic (CTL)~\cite{Clarke81}, which
-has the expressiveness to reason about multiple execution paths of a program.
-The syntax of CTL is as follows:
-
-\begin{itemize}
-    \item $A\phi$ - $\phi$ is true on all paths
-    \item $E\phi$ - there exists a path on which $p$ is true
-\end{itemize}
 
 \section{Reactive Synthesis}
 
