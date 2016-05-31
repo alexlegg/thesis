@@ -64,6 +64,7 @@ and eventualities. The syntax is:
     \item $X\phi$ - $\phi$ is true in the next state of the execution,
     \item $F\phi$ - Eventually (finally) $\phi$ will be true, and
     \item $G\phi$ - $\phi$ is always (globally) true.
+    \item $\phi_1 U \phi_2$ - $\phi_1$ holds until $\phi_2$ holds.
 \end{itemize}
 
 These operators are semantically defined with respect to a Kripke structure $M
@@ -73,25 +74,53 @@ state $s \in S$ of structure $M$. We definte $\models$ recursively:
 \begin{itemize}
     \item $M, s \models \phi$ iff $\phi \in L(s)$.
     \item $M, s \models \lnot\phi$ iff not $(M, s \models \phi)$.
-    \item $M, s \models \phi_1 \land \phi_2$ iff $M, s \models \phi_1$ and $M, s \models \phi_2$.
-    \item $M, s \models \phi_1 \lor \phi_2$ iff $M, s \models \phi_1$ or $M, s \models \phi_2$.
-    \item $M, s \models X\phi$ iff for some state $s'$, $R(s, s')$ and $M, s' \models phi$.
+    \item $M, s \models \phi_1 \land \phi_2$ iff $(M, s \models \phi_1) \land (M, s \models \phi_2)$.
+    \item $M, s \models \phi_1 \lor \phi_2$ iff $(M, s \models \phi_1) \lor (M, s \models \phi_2)$.
+    \item $M, s \models X\phi$ iff for some state $s'$, $R(s, s') \land M, s' \models \phi$.
     \item $M, s_0 \models F\phi$ iff for some path $(s_0, s_1, ...)$, $\exists i (i \geq 0 \land (M, s_i \models \phi))$.
     \item $M, s_0 \models G\phi$ iff for some path $(s_0, s_1, ...)$, $\forall i (i \geq 0 \land (M, s_i \models \phi))$.
+    \item $M, s_0 \models \phi_1 U \phi_2$ iff for some path $(s_0, s_1, ...)$, $\exists i (i \geq 0 \land (M, s_i \models \phi_2) \land \forall j (j \geq 0 \land g < i \to (M, s_j \models \phi_1)))$.
 \end{itemize}
 
 Throughout this thesis will use $F$ and $G$ to represent the \emph{finally} and
 \emph{globally} operators. Elsewhere in the literature $\lozenge$ and $\square$
 are sometimes used to represent the same.
 
+In addition to LTL, which is used to formalise properties about a single
+execution trace, we may need the ability to talk about aggregations of traces.
 In 1981 Clarke introduced computation tree logic (CTL)~\cite{Clarke81}, which
-has the expressiveness to reason about multiple execution paths of a program.
-The syntax of CTL is as follows:
+has additional syntax and semantics for exactly that. The syntax of CTL is as
+follows:
 
 \begin{itemize}
     \item $A\phi$ - $\phi$ is true on all paths
     \item $E\phi$ - there exists a path on which $p$ is true
 \end{itemize}
+
+We again define the semantics of CTL with respect to a Kripke structure $M =
+(S, S_0, R, L)$.
+
+\begin{itemize}
+    \item $M, s \models \phi$ iff $\phi \in L(s)$.
+    \item $M, s \models \lnot\phi$ iff $\lnot (M, s \models \phi)$.
+    \item $M, s \models \phi_1 \land \phi_2$ iff $(M, s \models \phi_1) \land (M, s \models \phi_2)$.
+    \item $M, s \models \phi_1 \lor \phi_2$ iff $(M, s \models \phi_1) \lor (M, s \models \phi_2)$.
+    \item $M, s \models EX\phi$ iff for some state $s'$, $R(s, s') \land M, s' \models \phi$.
+    \item $M, s \models AX\phi$ iff for all states $s'$, $R(s, s') \to M, s' \models \phi$.
+    \item $M, s_0 \models A[\phi_1 U \phi_2]$ iff for all paths $(s_0, s_1, ...)$, $\exists i (i \geq 0 \land (M, s_i \models \phi_2) \land \forall j (j \geq 0 \land g < i \to (M, s_j \models \phi_1)))$.
+    \item $M, s_0 \models E[\phi_1 U \phi_2]$ iff for some path $(s_0, s_1, ...)$, $\exists i (i \geq 0 \land (M, s_i \models \phi_2) \land \forall j (j \geq 0 \land g < i \to (M, s_j \models \phi_1)))$.
+    \item $(M, s \models AF\phi) \Leftrightarrow (M, s \models A[\top U \phi])$
+    \item $(M, s \models EF\phi) \Leftrightarrow (M, s \models E[\top U \phi])$
+    \item $(M, s \models AG\phi) \Leftrightarrow (M, s \models \lnot EF (\lnot \phi))$
+    \item $(M, s \models EG\phi) \Leftrightarrow (M, s \models \lnot AF (\lnot \phi))$
+%%%    \item $M, s_0 \models AG\phi$ iff For all paths $(s_0, s_1, ...)$, $\forall i (i \geq 0 \land (M, s_i \models \phi))$.
+\end{itemize}
+
+In CTL, each $A$ or $E$ must be paired with an LTL operator. For example
+$AG\phi$, which says that $\phi$ must always hold on all paths. Alternatively,
+CTL* allows for free mixing of operators from LTL and CTL. This allows for
+terms such as $E(GF\phi)$, which is true iff there exists a path where $\phi$
+will always be true at some future state.
 
 \section{B\"uchi Automata}
 
