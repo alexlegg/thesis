@@ -122,13 +122,33 @@ CTL* allows for free mixing of operators from LTL and CTL. This allows for
 terms such as $E(GF\phi)$, which is true iff there exists a path where $\phi$
 will always be true at some future state.
 
-\section{B\"uchi Automata}
+\section{Model Checking}
 
-B\"uchi automata~\cite{Buchi62} are a formalisation of reactive systems.
-B\"uchi automata are $\omega$-automata, which means they describe finite
-systems that accept an infinite stream of input. This is a useful formalism for
-synthesis because we want to create finite systems that responds to input
-indefinitely.
+Once the desirable properties of a system have be laid out in temporal logic,
+the next step is to verify that a program adheres to its specification. One
+approach is to manually (or with the assistance of a proof checker) construct a
+proof for the program. However, this costs the verifier in both time and mental
+effort and so a mechanised approach is desired. The first such automatic
+\emph{model checker} was proposed by Clarke et al.~\cite{Clarke86} to verify
+temporal properties of finite state programs. The algorithm they proposed was a
+search based labelling of a finite state-transition graph, representing the
+program, with subformulas of the temporal logic specification. 
+
+Another approach is based on the notion that temporal logic properties can be
+expressed in terms of automata theory. Specifically, a finite state automaton
+over infinite words can be used to represent a temporal logic formula. B\"uchi
+automata~\cite{Buchi62} are $\omega$-automata, i.e. finite automata that accept
+an infinite stream of input, which may be constructed such that the automaton
+will accept exactly the inputs allowable by a temporal logic formula.
+
+In \cite{Vardi96}, the authors propose a model checking approach using this
+connection between temporal logic and automata theory. They propose the
+construction of a finite state, infinite word generator representing the
+program $P$, and an acceptor of the same, $\phi$, constructed from the temporal
+property to be checked. Thus the program may be model checked by determining
+whether $P \cap \lnot \phi$ is empty.
+
+\section{B\"uchi Automata}
 
 Like all $\omega$-automata, the language of a B\"uchi automaton is
 $\omega$-regular. A regular language over the alphabet $\Sigma$ is
