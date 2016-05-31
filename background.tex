@@ -1,4 +1,4 @@
-\chapter{Formalisation of Software}
+\chapter{Background}
 
 Synthesis is a process that demands mathematical formalisation in order to
 provide a strong guarantee of the correctness of the resultant software. As
@@ -151,7 +151,8 @@ whether $P \cap \lnot \phi$ is empty.
 \section{B\"uchi Automata}
 
 Like all $\omega$-automata, the language of a B\"uchi automaton is
-$\omega$-regular. A regular language over the alphabet $\Sigma$ is
+$\omega$-regular, i.e. a regular language extended to infinite streams. A
+regular language over the alphabet $\Sigma$ is
 
 \begin{itemize}
     \item The empty language $\empty$, \emph{or}
@@ -164,7 +165,17 @@ $\omega$-regular. A regular language over the alphabet $\Sigma$ is
     \end{itemize}
 \end{itemize}
 
-An $\omega$-regular language is a regular language with infinitely long words.
+The automata itself is defined as a tuple $A = (Q, \Sigma, \delta, q_0, F)$ where
+
+\begin{itemize} 
+    \item $Q$ is a finite set of states,
+    \item $\Sigma$ is a finite alphabet,
+    \item $\delta : Q \times \Sigma \to Q$ is a transition function mapping states and letters to next states,
+    \item $q_0 \in Q$ is an initial state, and
+    \item $F \subseteq Q$ is a set of accepting states. 
+\end{itemize}
+
+$A$ accepts an input stream iff it visits $F$ infinitely often.
 
 \section{Reactive Synthesis}
 
@@ -177,5 +188,17 @@ An $\omega$-regular language is a regular language with infinitely long words.
 \section{Abstraction}
 
 \section{SAT}
+
+The ability to prove existentially quantified boolean formulas satisfiable or
+unsatisfiable (SAT) is enormously useful for program verification. Significant
+research has led to many highly efficient solvers for the SAT problem. Modern
+SAT solvers are based on the Davis-Putnam-Logemann-Loveland (DPLL) algorithm
+\cite{Davis60, Davis62}. This algorithm is a backtracking search that operates
+on the formula given in conjunctive normal form (CNF).
+
+A CNF formula is a set of \emph{clauses} of the form $(l_0 \lor l_1 \lor ...
+\lor l_n)$ where each \emph{literal} $l_i$ is a boolean variable or its
+negation. We call a clause with only one literal a \emph{unit clause}. We call
+a variable \emph{pure} if it appears in only one polarity in the formula.
 
 \section{Interpolation}
