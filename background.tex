@@ -7,15 +7,17 @@ produce, the environment in which it operates, and the properties we want the
 system to adhere to. This chapter will outline that language and the ways we
 can reason about what we describe in it.
 
-\section{Reactive Systems}
+\section{Temporal Logic}
 
 Devices drivers are an example of a reactive system. A reactive system is a
 system that is in a continuous process of responding to input from its
 environment. A driver accepts requests from the operating system and state
 information from the device, and it responds by sending commands to the device
-and reporting to the operating system.
+and reporting to the operating system. 
 
-\section{Kripke Structures}
+In an ordinary program, correctness can be ascertained by observing the final output. A reactive system does not terminate and is only considered correct if it adheres to its specification indefinitely. A formalism of a reactive system must then consider the concept of time in order to specify its correctness property.
+
+\subsection{Kripke Structures}
 
 A reactive system can be thought of as a sequence of \emph{states}. The system
 \emph{transitions} between these states as it responds to its inputs. A Kripke
@@ -41,7 +43,7 @@ We often consider \emph{paths} or \emph{runs} of a Kripke structure. A path is
 a sequence of states $\pi = s_0, s_1, s_2, ...$ such that $R(s_i, s_{i+1})$
 holds for all $i \geq 0$.
 
-\section{Temporal Logic}
+\subsection{Linear Temporal Logic}
 
 Kripke structures lay the groundwork for reasoning about reactive systems.
 Using the labelling function we may define desirable properties for the system.
@@ -85,6 +87,8 @@ state $s \in S$ of structure $M$. We definte $\models$ recursively:
 Throughout this thesis will use $F$ and $G$ to represent the \emph{finally} and
 \emph{globally} operators. Elsewhere in the literature $\lozenge$ and $\square$
 are sometimes used to represent the same.
+
+\subsection{Computation Tree Logic}
 
 In addition to LTL, which is used to formalise properties about a single
 execution trace, we may need the ability to talk about aggregations of traces.
@@ -148,7 +152,7 @@ program $P$, and an acceptor of the same, $\phi$, constructed from the temporal
 property to be checked. Thus the program may be model checked by determining
 whether $P \cap \lnot \phi$ is empty.
 
-\section{B\"uchi Automata}
+\subsection{B\"uchi Automata}
 
 Like all $\omega$-automata, the language of a B\"uchi automaton is
 $\omega$-regular, i.e. a regular language extended to infinite streams. A
@@ -204,9 +208,25 @@ uncontrollable actions. An environment strategy is winning
 iff all runs $(s_0, \pi^e(s_0), c_0), (s_1, \pi^e(s_1), c_1)
 \dots$ are winning for the environment. The existence of an winning environment strategy implies the nonexistence of a winning controller strategy and vice versa.
 
-\section{Symbolic Representation}
+\subsection{Symbolic Representation}
 
-\section{Abstraction}
+The standard method to solve a safety game is to enumerate the sets of states that are winning for one of the players. In large systems this set may quickly become intractably large to explicitly enumerate, i.e. suffer from \emph{state explosion}. An alternative, introduced by McMillan~\cite{McMillan93}, is to symbolically represent a set of states.
+
+\subsection{Binary Decision Diagrams}
+
+Consider the game structure in the previous section. Without loss of generality, we may replace the set of states $S$ with a set of boolean variables. A single state is now a valuation to those variables and a set of states may be symbolically represented by a boolean function. In order to combat state explosion a compact representation of boolean functions is required. The standard choice is an ordered binary decision diagram (BDD)~\cite{Bryant86}.
+
+BDDs represent boolean functions as directed acyclic graphs. Each node is contains a variable, each edge represents a decision (true or false) on its parent's variable. One node is designated root and each path through the graph will terminate in one of two sink nodes that represent whether the decisions on that path satisfy the boolean function or not. Isomorphic nodes (where both decisions lead to the same result) may be removed and isomorphic subgraphs may be merged in order to compress the function representation. The ordering of variables in the graph is important to this compressibility. In the worst case the representation is a tree with no removed or merged nodes, which is exponential in the number of variables. Given a boolean function and a variable ordering the corresponding BDD is canonical.
+
+\subsection{Solving Games}
+
+Given a safety specification how do we determine whether it is realisable or not? The standard symbolic game solving algorithm is centred on determining sets of states from which the controller can win. The building block of this algorithm is the uncontrollable predecessor (UPre), which returns a set of predecessor states from which the environment can force play into a given set. We define this operator for a game structure $G = (S, \mathcal{U}, \mathcal{C}, \delta, s_0, E)$ as 
+
+$$UPre(X) = \exists u \forall c \exists s \exists x [u \in \mathcal{U} \to (c \in \mathcal{C} \land s \in S \land x \in X \land \delta(s, u, c, x))]$$
+
+To solve the game we iteratively build a set of states backwards from the error set using the uncontrollable predecessor. It is clear that this set will grow monotonically and (since the state space is finite) eventually converge on fixed point. We call this fixed point set the environment's winning set. If this set contains the initial state then the game is unrealisable and the environment's winning strategy is to always play to stay within its winning set. Conversely, if the initial state is outside the environment's winning set then the controller must have a strategy to avoid the error state and the specification is realisable.
+
+We will return to this basic algorithm in later chapters for a more thorough discussion.
 
 \section{SAT}
 
