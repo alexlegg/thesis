@@ -218,17 +218,23 @@ Consider the game structure in the previous section. Without loss of generality,
 
 BDDs represent boolean functions as directed acyclic graphs. Each node is contains a variable, each edge represents a decision (true or false) on its parent's variable. One node is designated root and each path through the graph will terminate in one of two sink nodes that represent whether the decisions on that path satisfy the boolean function or not. Isomorphic nodes (where both decisions lead to the same result) may be removed and isomorphic subgraphs may be merged in order to compress the function representation. The ordering of variables in the graph is important to this compressibility. In the worst case the representation is a tree with no removed or merged nodes, which is exponential in the number of variables. Given a boolean function and a variable ordering the corresponding BDD is canonical.
 
+Conjunction and disjunction may be performed on BDDs via an algorithm with a running time of $O(n \times m)$ where $n$ and $m$ are the sizes of the two BDDs. The worst case of this algorithm is rarely reached however and in general the operation is efficient. Universal quantification may be performed by constructing the conjunction of the BDD with the quantified variable set one way and the BDD with the variable set the other way. Existential quantification works the same way with disjunction.
+
 \subsection{Solving Games}
 
 Given a safety specification how do we determine whether it is realisable or not? The standard symbolic game solving algorithm is centred on determining sets of states from which the controller can win. The building block of this algorithm is the uncontrollable predecessor (UPre), which returns a set of predecessor states from which the environment can force play into a given set. We define this operator for a game structure $G = (S, \mathcal{U}, \mathcal{C}, \delta, s_0, E)$ as 
 
 $$UPre(X) = \exists u \forall c \exists s \exists x [u \in \mathcal{U} \to (c \in \mathcal{C} \land s \in S \land x \in X \land \delta(s, u, c, x))]$$
 
-To solve the game we iteratively build a set of states backwards from the error set using the uncontrollable predecessor. It is clear that this set will grow monotonically and (since the state space is finite) eventually converge on fixed point. We call this fixed point set the environment's winning set. If this set contains the initial state then the game is unrealisable and the environment's winning strategy is to always play to stay within its winning set. Conversely, if the initial state is outside the environment's winning set then the controller must have a strategy to avoid the error state and the specification is realisable.
+To solve the game we iteratively build a set of states backwards from the error set using the uncontrollable predecessor. It is clear that this set will grow monotonically and (since the state space is finite) eventually converge on fixed point. We call this fixed point set the environment's winning set. If this set contains the initial state then the game is unrealisable and the environment's winning strategy is to always play to stay within its winning set. Conversely, if the initial state is outside the environment's winning set then the controller must have a strategy to avoid the error state and the specification is realisable.  The winning set can be efficiently represented and computed with a BDD.
 
 We will return to this basic algorithm in later chapters for a more thorough discussion.
 
-\section{SAT}
+\subsection{State Explosion}
+
+
+
+\section{Boolean Satisfiability}
 
 The ability to prove existentially quantified boolean formulas satisfiable or
 unsatisfiable (SAT) is enormously useful for program verification. Significant
@@ -242,9 +248,14 @@ A CNF formula is a set of \emph{clauses} of the form $(l_0 \lor l_1 \lor ...
 negation. We call a clause with only one literal a \emph{unit clause}. We call
 a variable \emph{pure} if it appears in only one polarity in the formula. The
 DPLL algorithm propagates unit clauses and removes clauses with pure literals
-as its first step. Next it chooses a variable and recursively calls the
-procedure on the clauseset with the variable set true, and with the variable
-set false. When the algorithm is called on an empty set of clauses is
-terminates with the current assignment to variables. 
+as its first step. Next a value is assigned to a variable and the algorithm recurses to search for a solution with that valuation. If none can be found then a backtracking occurs and the other polarity of the variable is tried. In modern solvers, clause learning is used to share information between different branches of the search tree. The algorithm terminates when the current variable assignment satisfies the formula, or the search space is exhausted.
 
-\section{Interpolation}
+\subsection{Bounded Model Checking}
+
+In the previous section BDDs were discussed as a symbolic representation that compresses boolean functions and efficiently quantifies the function. A CNF representation of a function is not canonical and so does not necessarily suffer from the same state explosion problems as BDDs. Biere et al.~\cite{Biere99} introduced a model checking methodology that takes advantage of CNF as a symbolic representation and utilises a SAT solver to efficiently operate on it. We discussed BDDs in the context of solving games, however the context of this section is model checking of CTL* properties. It suffices to say that BDDs are applicable to this area as well and have similar advantages and disadvantages.
+
+Instead of constructing a set of winning states this technique, called \emph{bounded model checking}, searches for runs of the game. Conceptually the BDD approach is similar to breadth first search and bounded model checking is similar to depth first search. In broad strokes, the new methodology consists of constructing a propositional formula representing the existence of a program trace of a certain length $k$ that violates the specification. The formula is solved by a SAT solver, which returns either SAT: a counterexample to the specification, or UNSAT: there is no counterexample of length $k$. The algorithm executes this process for increasing lengths $k$, which we call the \emph{bound}.
+
+One difficulty of this approach is choosing a maximum bound that is both \emph{sufficient} to verify the program correct and \emph{feasible} to compute the result of the propositional formula. For a finite state automaton, the \emph{diameter} is the minimal length such that every reachable state can by reached by a path of that length or less. The diameter is sufficient for model checking but not always feasible. In addition, computing the diameter itself is an inefficient quantified boolean formula. Despite this difficulty, bounded model checking is useful in many practical cases. In particular the ability to quickly find short counterexamples gives an advantage in cases when a BDD based approach hits state explosion issues.
+
+\subsection{Interpolation}
