@@ -208,9 +208,17 @@ uncontrollable actions. An environment strategy is winning
 iff all runs $(s_0, \pi^e(s_0), c_0), (s_1, \pi^e(s_1), c_1)
 \dots$ are winning for the environment. The existence of an winning environment strategy implies the nonexistence of a winning controller strategy and vice versa.
 
-\subsection{Symbolic Representation}
+\subsection{Solving Games}
 
-The standard method to solve a safety game is to enumerate the sets of states that are winning for one of the players. In large systems this set may quickly become intractably large to explicitly enumerate, i.e. suffer from \emph{state explosion}. An alternative, introduced by McMillan~\cite{McMillan93}, is to symbolically represent a set of states.
+
+
+\subsection{State Explosion}
+
+Determining the existence of a winning controller strategy is a hard problem. In the general case, synthesis of an LTL formula, the complexity is double exponential. Synthesis suffers from a \emph{state explosion} problem. In the decisively titled \emph{Symbolic model checking: $10^{20}$ states and beyond}~\cite{Burch90} the authors claim an increase in the size of systems that can be checked from $10^3$--$10^6$ to $10^{20}$. This breakthrough result was achieved via symbolic, as opposed to explicit, representation of the states in the game structure.
+
+%%%\subsection{Symbolic Representation}
+
+%%%The standard method to solve a safety game is to enumerate the sets of states that are winning for one of the players. In large systems this set may quickly become intractably large to explicitly enumerate, i.e. suffer from \emph{state explosion}. An alternative, introduced by McMillan~\cite{McMillan93}, is to symbolically represent a set of states.
 
 \subsection{Binary Decision Diagrams}
 
@@ -220,7 +228,7 @@ BDDs represent boolean functions as directed acyclic graphs. Each node is contai
 
 Conjunction and disjunction may be performed on BDDs via an algorithm with a running time of $O(n \times m)$ where $n$ and $m$ are the sizes of the two BDDs. The worst case of this algorithm is rarely reached however and in general the operation is efficient. Universal quantification may be performed by constructing the conjunction of the BDD with the quantified variable set one way and the BDD with the variable set the other way. Existential quantification works the same way with disjunction.
 
-\subsection{Solving Games}
+\subsection{Solving Symbolic Games}
 
 Given a safety specification how do we determine whether it is realisable or not? The standard symbolic game solving algorithm is centred on determining sets of states from which the controller can win. The building block of this algorithm is the uncontrollable predecessor (UPre), which returns a set of predecessor states from which the environment can force play into a given set. We define this operator for a game structure $G = (S, \mathcal{U}, \mathcal{C}, \delta, s_0, E)$ as 
 
@@ -230,9 +238,11 @@ To solve the game we iteratively build a set of states backwards from the error 
 
 We will return to this basic algorithm in later chapters for a more thorough discussion.
 
-\subsection{State Explosion}
+\subsection{Abstraction}
 
+When the state space is truly large, as it can be in many real world systems, symbolic representation is an insufficient optimisation to synthesise the system. Real world systems contain many complex details that may not be relevant to the verification property. Abstraction aims to reduce the level of detail in the system, without sacrificing correctness, so that it may be synthesised. For example, a system may require that a controller write a value to an 8 bit register ($2^8$ possible states). If the specification only refers to the register as being equal to a particular value then the abstraction may reduce this to 1 bit: set to the value, and not set to the value.
 
+An abstraction is a mapping of \emph{concrete} states onto a new, smaller, set of  \emph{abstract} states. Abstractions may be created manually or automatically constructed. A common technique is to approximate an abstraction for a system and refine it during the verification process. Counterexample guided abstraction refinement (CEGAR)~\cite{Clarke00} is a framework in which an approximate abstraction is refined via the analysis of counterexamples to the specification. An upper approximation is used for abstraction so that when the specification holds for the abstraction it also holds for concrete system. However, when a counterexample is found in the abstraction it may not be a concrete counterexample, in which case we call it a \emph{spurious} counterexample. These counterexamples are used for refinement and the procedure begins anew with the refined abstraction.
 
 \section{Boolean Satisfiability}
 
@@ -259,3 +269,13 @@ Instead of constructing a set of winning states this technique, called \emph{bou
 One difficulty of this approach is choosing a maximum bound that is both \emph{sufficient} to verify the program correct and \emph{feasible} to compute the result of the propositional formula. For a finite state automaton, the \emph{diameter} is the minimal length such that every reachable state can by reached by a path of that length or less. The diameter is sufficient for model checking but not always feasible. In addition, computing the diameter itself is an inefficient quantified boolean formula. Despite this difficulty, bounded model checking is useful in many practical cases. In particular the ability to quickly find short counterexamples gives an advantage in cases when a BDD based approach hits state explosion issues.
 
 \subsection{Interpolation}
+
+A Craig interpolant, $\mathcal{I}$, is defined with respect to two formulas, $A$ and $B$, that are inconsistent ($A \land B \equiv \bot$) and has the following properties
+
+\begin{itemize}
+    \item $A \to \mathcal{I}$
+    \item $B \land \mathcal{I} \equiv \bot$
+    \item $vars(\mathcal{I}) \subseteq vars(A) \cap vars(B)$ where $vars(X)$ is the set of variables referred to by $X$.
+\end{itemize}
+
+Propositional logic interpolants can be efficiently derived from the resolution proof of unsatisfiability of $A$ and $B$. Due to their interesting properties and efficient construction, interpolants have be found to be useful in many areas of model checking~\cite{McMillan05}. In general, interpolants are valuable for their ability to approximate. Intuitively, an interpolant is an approximation of $A$ that captures only the details needed for a proof of unsatisfiability of $A$ and $B$. If the proof represents something important about the system, such as a counterexample to the specification, then the interpolant captures important details.  Interpolation can be used as an alternative to building a winning set in model checking by instead incrementally building an inductive invariant for the system from counterexample refutations. Chapter~\ref{ch:relatedwork} contains a survey of model checking and synthesis methods that exploit this intuition. Interpolation is also central to the algorithm presented in this thesis.
