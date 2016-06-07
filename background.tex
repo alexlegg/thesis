@@ -124,7 +124,7 @@ In CTL, each $A$ or $E$ must be paired with an LTL operator. For example
 $AG\phi$, which says that $\phi$ must always hold on all paths. Alternatively,
 CTL* allows for free mixing of operators from LTL and CTL. This allows for
 terms such as $E(GF\phi)$, which is true iff there exists a path where $\phi$
-will always be true at some future state.
+will always be true at some future state. There is also ACTL*, which is CTL* with no existential branch quantifier.
 
 \section{Model Checking}
 
@@ -179,11 +179,13 @@ The automata itself is defined as a tuple $A = (Q, \Sigma, \delta, q_0, F)$ wher
     \item $F \subseteq Q$ is a set of accepting states. $A$ accepts an input stream iff it visits $F$ infinitely often.
 \end{itemize}
 
+Rabin automata are also $\omega$-automata, which are similar to B\"uchi automata except with the acceptance condition given by a set of pairs $(E_i, F_i)$ such that an run is accepted if there is a pair where the run visits $F_i$ infinitely often and does not visit $E_i$ infinitely often.
+
 \section{Synthesis}
 
 Model checking is the art of deciding whether a program meets a specification. Synthesis is the related problem of building the program \emph{to} a specification. In the model checking literature discussed thus far, the program and its environment are considered to be the same entity. This approach contains the assumption that the program and environment are cooperating, which is not appropriate for reactive synthesis. Consider a driver that must perform some action on input from the operating system. Driver synthesis with a cooperating OS could assume that the input never occurs. For synthesis of reactive programs an adversarial relationship more accurately formalises the problem. As such, the problem is reformulated as a two player game between the reactive program and its environment~\cite{Pnueli89}.
 
-In this thesis we will consider \emph{safety games} between a controller and the environment, which are game structures $G = (S, \mathcal{U}, \mathcal{C}, \delta, s_0, E)$ where
+A game is a structure $G = (S, \mathcal{U}, \mathcal{C}, \delta, s_0)$. We consider only two player games and we name those players the \emph{controller} and \emph{environment}. The structure is defined by:
 
 \begin{itemize}
     \item $S$ is a finite set of states,
@@ -191,52 +193,40 @@ In this thesis we will consider \emph{safety games} between a controller and the
     \item $\mathcal{C}$ is a finite alphabet of \emph{controllable} actions,
     \item $\delta : S \times \mathcal{U} \times \mathcal{C} \to S$ is a transition relation mapping states, uncontrollable actions, and controllable actions to next states,
     \item $s_0 \in S$ is an initial state, and
-    \item $E \subseteq S$ is a set of \emph{error} states.
 \end{itemize}
 
-Conceptually, the game structure is another finite state automaton where transitions are partially controlled by both players. In each state, the environment chooses an uncontrollable action from $\mathcal{U}$ and the system chooses a controllable action from $\mathcal{C}$. We consider only deterministic games where $\delta(s, u, c, s_1') \land \delta(s, u, c, s_2') \to (s_1' = s_2')$. 
+Conceptually, the game structure is another finite state automaton where transitions are partially controlled by both players. In each state, the environment chooses an uncontrollable action from $\mathcal{U}$ and the system chooses a controllable action from $\mathcal{C}$. We consider only deterministic games where $\delta(s, u, c, s_1') \land \delta(s, u, c, s_2') \to (s_1' = s_2')$.  We modify the notion of a run to suit games: $(s_0, u_0, c_0), (s_1, u_1, c_1), ... (s_n, u_n, c_n)$ where $\forall i [i \geq 0 \to \delta(s_i, u_i, c_i, s_{i+1})]$. 
 
-We modify the notion of a run to suit games: $(s_0, u_0, c_0), (s_1, u_1, c_1), ... (s_n, u_n, c_n)$ where $\forall i [i \geq 0 \to \delta(s_i, u_i, c_i, s_{i+1})]$. We say that a run is \emph{winning} for the controller iff it does not visit an error state. The game is zero-sum, therefore a run is winning for the environment in the dual case where an error state is visited. Formally, a run is controller-winning iff $\forall i [i \geq 0 \to \lnot E(s_i)]$ environment-winning iff $\exists i [i \geq 0 \land E(s_i)]$.
+In addition to the game structure itself we define a game \emph{objective} $\psi$ given by an LTL formula. We say that a run is \emph{winning} for the controller iff the run satisfies the objective. The game is zero-sum, therefore a run is winning for the environment in the dual case where the objective $\psi$ is not true. Although $\psi$ is given in LTL we formally define the objective of the game with the \emph{all paths} branching operator: $\forall \mathcal{U} \exists \mathcal{C} A \psi$.
 
-A \emph{controller strategy} $\pi^c : \mathcal{S} \times \mathcal{U} \to \mathcal{C}$ 
-is a mapping of states and uncontrollable inputs to controllable actions. A controller strategy is winning
-iff all runs $(s_0, u_0, \pi^c(s_0, u_0)), (s_1, u_1, \pi^c(s_1, u_1)) \dots$ are winning.
-\emph{Realisability} is the problem of determining the existence of a winning controller strategy.
+%%%Formally, a run is controller-winning iff $\forall i [i \geq 0 \to \lnot E(s_i)]$ environment-winning iff $\exists i [i \geq 0 \land E(s_i)]$.
 
-An \emph{environment strategy} $\pi^e : \mathcal{S} \to \mathcal{U}$ is a mapping of states to
-uncontrollable actions. An environment strategy is winning
-iff all runs $(s_0, \pi^e(s_0), c_0), (s_1, \pi^e(s_1), c_1)
-\dots$ are winning for the environment. The existence of an winning environment strategy implies the nonexistence of a winning controller strategy and vice versa.
+A \emph{controller strategy} $\pi^c : \mathcal{S} \times \mathcal{U} \to \mathcal{C}$ is a mapping of states and uncontrollable inputs to controllable actions. $\pi^c$ is a \emph{winning strategy} iff all runs $(s_0, u_0, \pi^c(s_0, u_0)), (s_1, u_1, \pi^c(s_1, u_1)) \dots$ are winning. \emph{Realisability} is the problem of determining the existence of a winning controller strategy and \emph{synthesis} is the problem of constructing it.
+
+An \emph{environment strategy} $\pi^e : \mathcal{S} \to \mathcal{U}$ is a mapping of states to uncontrollable actions. An environment strategy is winning
+iff all runs $(s_0, \pi^e(s_0), c_0)$, $(s_1, \pi^e(s_1), c_1) \dots$ are winning for the environment. The existence of an winning environment strategy implies the nonexistence of a winning controller strategy and vice versa.
 
 \subsection{Solving Games}
 
+Reactive synthesis for a game with an LTL objective~\cite{Pnueli89} may be solved via the construction of an equivalent non-deterministic B\"uchi automaton that is subsequently determinised to a deterministic Rabin automaton. Without delving into details, the Rabin automaton is interpreted as a tree-automaton and checked for emptiness. This yields a double exponential time algorithm in the size of the specification.
 
+The double exponential complexity, or \emph{state explosion} problem, led to synthesis being considered infeasible for many years. However, synthesis has been applied in many real world scenarios by restricted the game objective to fragments of LTL. In this thesis we consider \emph{safety games}, or games with objectives of the form $G \phi$ where $\phi$ is a propositional formula only. Informally, a controller in a safety game has the objective to stay within a safe region or avoid error states. Safety games can be solved by drawing on $\mu$-calculus and solving a fixed point calculation~\cite{Asarin95}, which is a much less complex procedure than the above automata theoretic approach.
 
-\subsection{State Explosion}
-
-Determining the existence of a winning controller strategy is a hard problem. In the general case, synthesis of an LTL formula, the complexity is double exponential. Synthesis suffers from a \emph{state explosion} problem. In the decisively titled \emph{Symbolic model checking: $10^{20}$ states and beyond}~\cite{Burch90} the authors claim an increase in the size of systems that can be checked from $10^3$--$10^6$ to $10^{20}$. This breakthrough result was achieved via symbolic, as opposed to explicit, representation of the states in the game structure.
-
-%%%\subsection{Symbolic Representation}
-
-%%%The standard method to solve a safety game is to enumerate the sets of states that are winning for one of the players. In large systems this set may quickly become intractably large to explicitly enumerate, i.e. suffer from \emph{state explosion}. An alternative, introduced by McMillan~\cite{McMillan93}, is to symbolically represent a set of states.
-
-\subsection{Binary Decision Diagrams}
-
-Consider the game structure in the previous section. Without loss of generality, we may replace the set of states $S$ with a set of boolean variables. A single state is now a valuation to those variables and a set of states may be symbolically represented by a boolean function. In order to combat state explosion a compact representation of boolean functions is required. The standard choice is an ordered binary decision diagram (BDD)~\cite{Bryant86}.
-
-BDDs represent boolean functions as directed acyclic graphs. Each node is contains a variable, each edge represents a decision (true or false) on its parent's variable. One node is designated root and each path through the graph will terminate in one of two sink nodes that represent whether the decisions on that path satisfy the boolean function or not. Isomorphic nodes (where both decisions lead to the same result) may be removed and isomorphic subgraphs may be merged in order to compress the function representation. The ordering of variables in the graph is important to this compressibility. In the worst case the representation is a tree with no removed or merged nodes, which is exponential in the number of variables. Given a boolean function and a variable ordering the corresponding BDD is canonical.
-
-Conjunction and disjunction may be performed on BDDs via an algorithm with a running time of $O(n \times m)$ where $n$ and $m$ are the sizes of the two BDDs. The worst case of this algorithm is rarely reached however and in general the operation is efficient. Universal quantification may be performed by constructing the conjunction of the BDD with the quantified variable set one way and the BDD with the variable set the other way. Existential quantification works the same way with disjunction.
-
-\subsection{Solving Symbolic Games}
-
-Given a safety specification how do we determine whether it is realisable or not? The standard symbolic game solving algorithm is centred on determining sets of states from which the controller can win. The building block of this algorithm is the uncontrollable predecessor (UPre), which returns a set of predecessor states from which the environment can force play into a given set. We define this operator for a game structure $G = (S, \mathcal{U}, \mathcal{C}, \delta, s_0, E)$ as 
+The safety game algorithm is centred on determining sets of states from which the controller can win. The building block of this algorithm is the uncontrollable predecessor ($UPre$), which returns a set of predecessor states from which the environment can force play into a given set. We define this operator for a game structure $G = (S, \mathcal{U}, \mathcal{C}, \delta, s_0)$ as 
 
 $$UPre(X) = \exists u \forall c \exists s \exists x [u \in \mathcal{U} \to (c \in \mathcal{C} \land s \in S \land x \in X \land \delta(s, u, c, x))]$$
 
-To solve the game we iteratively build a set of states backwards from the error set using the uncontrollable predecessor. It is clear that this set will grow monotonically and (since the state space is finite) eventually converge on fixed point. We call this fixed point set the environment's winning set. If this set contains the initial state then the game is unrealisable and the environment's winning strategy is to always play to stay within its winning set. Conversely, if the initial state is outside the environment's winning set then the controller must have a strategy to avoid the error state and the specification is realisable.  The winning set can be efficiently represented and computed with a BDD.
+To solve the game we iteratively build a set of states backwards from the error set ($\lnot \phi$) using the uncontrollable predecessor. It is clear that this set will grow monotonically and (since the state space is finite) eventually converge on fixed point. We call this fixed point set the environment's winning set. If this set contains the initial state then the game is unrealisable and the environment's winning strategy is to always play to stay within its winning set. Conversely, if the initial state is outside the environment's winning set then the controller must have a strategy to avoid the error states and the specification is realisable.
 
-We will return to this basic algorithm in later chapters for a more thorough discussion.
+\subsection{Symbolic Algorithms}
+
+Model checking suffers from a similar state explosion issue and new approaches were developed in this field to deal with the problem.  In the decisively titled \emph{Symbolic model checking: $10^{20}$ states and beyond}~\cite{Burch90} the authors claim an increase in the size of systems that can be checked from $10^3$--$10^6$ to $10^{20}$. This breakthrough result was achieved via symbolic, as opposed to explicit, representation of the states in the game structure. This result may also be applied to synthesis.
+
+Consider the game structure in the previous sections. Without loss of generality, we may replace the set of states $S$ with a set of boolean variables. A single state is now a valuation to those variables and a set of states may be symbolically represented by a boolean function. In order to combat state explosion a compact representation of boolean functions is required. The standard choice is an ordered binary decision diagram (BDD)~\cite{Bryant86}.
+
+BDDs represent boolean functions as directed acyclic graphs. Each node is contains a variable, each edge represents a decision (true or false) on its parent's variable. One node is designated root and each path through the graph will terminate in one of two sink nodes that represent whether the decisions on that path satisfy the boolean function or not. Isomorphic nodes (where both decisions lead to the same result) may be removed and isomorphic subgraphs may be merged in order to compress the function representation. The ordering of variables in the graph is important to this compressibility. In the worst case the representation is a tree with no removed or merged nodes, which is exponential in the number of variables. Given a boolean function and a variable ordering the corresponding BDD is canonical.
+
+Conjunction and disjunction may be performed on BDDs via an algorithm with a running time of $O(n \times m)$ where $n$ and $m$ are the sizes of the two BDDs. The worst case of this algorithm is rarely reached however and in general the operation is efficient. Universal quantification may be performed by constructing the conjunction of the BDD with the quantified variable set one way and the BDD with the variable set the other way. Existential quantification works the same way with disjunction. In this way, the uncontrollable predecessor and winning sets may be efficiently computed and stored via BDDs.
 
 \subsection{Abstraction}
 
