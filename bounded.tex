@@ -1,8 +1,12 @@
-\chapter{Bounded Synthesis}
+\chapter{Bounded Realisability}
 \label{ch:bounded}
 
 \newtheorem*{exmp}{Example}
 \newtheorem*{exmpI}{Example: Intuition behind the algorithm}
+
+In this chapter I will describe my work on bounded realisability of reactive systems with safety properties. As introduced in Chapter~\ref{ch:background} reactive realisability is the problem of determining the existence of a program, which we call a \emph{controller}, that continuously interacts with its environment in adherence with a specification. A safety property is a simple correctness condition that lays out a set of states of the system that controller must stay within. In this chapter we will refer to this property in the negation: the controller must avoid \emph{error states}.
+
+Realisability is the first step on the path to synthesis. In the subsequent chapter I will describe an algorithm that extracts the actions of the controller necessary for realisation. This strategy may be used for synthesis: automatic construction of the controller program. Reactive synthesis for controllers with safety properties has many practical uses in areas such as circuit design, device drivers, or protocol design.
 
 \begin{exmp}
 
@@ -491,5 +495,3 @@ transition relation and constrained to the winning condition of the player.
         \EndFunction
     \end{algorithmic}
 \end{algorithm}
-
-\section{Unbounded Synthesis}
