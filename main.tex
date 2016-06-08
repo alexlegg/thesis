@@ -1,10 +1,15 @@
 \documentclass[a4paper, twoside, openright, 11pt, oldfontcommands]{memoir}
 \usepackage[T1]{fontenc}
 \usepackage{microtype}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
 \OnehalfSpacing
 \usepackage{cite}
 \usepackage{amsmath}
+\usepackage{mathtools}
 \usepackage{amssymb}
+\usepackage{subcaption}
+\usepackage{fixltx2e}
 \usepackage{hyperref}
 \hypersetup{
     colorlinks,
@@ -16,6 +21,21 @@
 \usepackage[authoryear,square]{natbib}
 \usepackage{bibentry}
 \renewcommand{\cite}{\citep}
+\usepackage{tikz}
+
+\let\proof\relax
+\let\endproof\relax
+\usepackage{amsthm}
+
+\algnewcommand{\IIf}[1]{\State\algorithmicif\ #1\ \algorithmicthen}
+\algnewcommand{\EndIIf}{}
+\algnewcommand{\IfElse}[3]{\algorithmicif\ #1\ \algorithmicthen\ #2\ \algorithmicelse\ #3}
+\algnewcommand{\EndIfElse}{}
+\MakeRobust{\Call}
+\newcommand{\True}{\texttt{true}}
+\newcommand{\False}{\texttt{false}}
+\newcommand{\II}{\mathcal{I}}
+\newcommand{\textoverline}[1]{$\overline{\mbox{#1}}$}
 
 %%% Formatting setup
 % 11pt Palatino (URW Palladio) for text
