@@ -212,6 +212,25 @@ Reactive synthesis for a game with an LTL objective~\cite{Pnueli89} may be solve
 
 The double exponential complexity, or \emph{state explosion} problem, led to synthesis being considered infeasible for many years. However, synthesis has been applied in many real world scenarios by restricted the game objective to fragments of LTL. In this thesis we consider \emph{safety games}, or games with objectives of the form $G \phi$ where $\phi$ is a propositional formula only. Informally, a controller in a safety game has the objective to stay within a safe region or avoid error states. Safety games can be solved by drawing on $\mu$-calculus and solving a fixed point calculation~\cite{Asarin95}, which is a much less complex procedure than the above automata theoretic approach.
 
+\subsection{Fixed Point Computation}
+
+Modal $\mu$-calculus~\cite{Kozen82} for propositional logic formalises the concept of fixed points. Given a monotone function $f$, a fixed point is a set $X$ such that $f(X) = X$. The least fixpoint operator $\mu$ gives the smallest set $X$ and the greatest fixpoint operator $\nu$ gives the largest. $\mu$-calculus formulas have the following syntax, given with respect to a set of propositions $P$ and a set of variables $V$.
+
+\begin{itemize}
+    \item If $p \in P$ then $p$ is a formula
+    \item If $p$ is a formula then $\lnot p$ is a formula
+    \item If $p$ and $q$ are formulas then $p \land q$ is a formula
+    \item If $p$ is a formula and $Z$ is a variable then both $\nu Z . p$ and $\mu Z . p$ are formulas when all occurrences of Z have an even number of negations
+    \item If $p$ is a formula and $Z$ is a variable then $\forall Z . p$ is a formula.
+    \item Additionally, we introduce some syntactic equivalences:
+        \begin{itemize}
+            \item $p \lor q \equiv \lnot ( \lnot p \land \lnot q )$
+            \item $\exists Z . p \equiv \lnot \forall Z . \lnot p$
+        \end{itemize}
+\end{itemize}
+
+\subsection{Fixed Point Game Solving}
+
 The safety game algorithm is centred on determining sets of states from which the controller can win. The building block of this algorithm is the uncontrollable predecessor ($UPre$), which returns a set of predecessor states from which the environment can force play into a given set. We define this operator for a game structure $G = (S, \mathcal{U}, \mathcal{C}, \delta, s_0)$ as 
 
 $$UPre(X) = \exists u \forall c \exists s \exists x [u \in \mathcal{U} \to (c \in \mathcal{C} \land s \in S \land x \in X \land \delta(s, u, c, x))]$$
