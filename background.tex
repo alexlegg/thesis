@@ -229,13 +229,24 @@ Modal $\mu$-calculus~\cite{Kozen82} for propositional logic formalises the conce
         \end{itemize}
 \end{itemize}
 
+Given a labelled transition system $(S, F)$ where $S$ is a set of states, and $F : P \to 2^S$ is a mapping of propositions to states with which they hold, we give the semantics of $\mu-calculus$ by a function $\llbracket p \rrbracket$:
+
+\begin{itemize}
+    \item $\llbracket p \rrbracket = F(p)$
+    \item $\llbracket \lnot p \rrbracket$ = S \setminus \llbracket p \rrbracket$
+    \item $\llbracket p \land q \rrbracket$ = \llbracket p \rrbracket \cup \llbracket q \rrbracket$
+    \item $\llbracket \nu Z . p \rrbracket = \bigcup \{ T \subseteq S | T \subseteq \llbracket p \rrbracket [ Z := T ] \}$ where $\llbracket p \rrbracket [ Z := T ]$ is $\llbracket p \rrbracket$ with $Z$ mapped to $T$.
+\end{itemize}
+
 \subsection{Fixed Point Game Solving}
 
 The safety game algorithm is centred on determining sets of states from which the controller can win. The building block of this algorithm is the uncontrollable predecessor ($UPre$), which returns a set of predecessor states from which the environment can force play into a given set. We define this operator for a game structure $G = (S, \mathcal{U}, \mathcal{C}, \delta, s_0)$ as 
 
 $$UPre(X) = \exists u \forall c \exists s \exists x [u \in \mathcal{U} \to (c \in \mathcal{C} \land s \in S \land x \in X \land \delta(s, u, c, x))]$$
 
-To solve the game we iteratively build a set of states backwards from the error set ($\lnot \phi$) using the uncontrollable predecessor. It is clear that this set will grow monotonically and (since the state space is finite) eventually converge on fixed point. We call this fixed point set the environment's winning set. If this set contains the initial state then the game is unrealisable and the environment's winning strategy is to always play to stay within its winning set. Conversely, if the initial state is outside the environment's winning set then the controller must have a strategy to avoid the error states and the specification is realisable.
+For simplicity we describe the algorithm as though playing for the environment. As such we are actually solving the dual to the safety game: a reachability game.  To solve the game we iteratively build a set of states backwards from the error set ($\lnot \phi$) using the uncontrollable predecessor. It is clear that this set will grow monotonically and (since the state space is finite) eventually converge on fixed point. We call this fixed point set the environment's winning set. If this set contains the initial state then the game is unrealisable and the environment's winning strategy is to always play to stay within its winning set. Conversely, if the initial state is outside the environment's winning set then the controller must have a strategy to avoid the error states and the specification is realisable. To give the algorithm in terms of $\mu$-calculus:
+
+$$ SAFE(T) = \nu Y . \lnot UPre( Y \land \lnot T ) $$
 
 \subsection{Symbolic Algorithms}
 
