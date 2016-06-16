@@ -16,7 +16,7 @@ The primary motivation of this work is to avoid computing the entire set of winn
 
 This work draws inspiration from a QBF solving algorithm that treats the QBF problem as a game~\cite{Janota12}. In that algorithm one player assumes the role of the universal quantifiers and the opponent takes on the existential quantifiers. In the game, the players take turns to chooses values for their variables from the outermost quantifier block in. One method of solving QBF games is to expand the formula for each quantified variable by either conjuncting (for universal quantification) or disjuncting (for existential) the formula with the variable set to each possible value. For large QBF instances this expanded formula becomes far too large to solve so the authors introduce abstractions, or partially expanded formulas, to avoid expanding on variables unnecessarily. The abstractions are refined through a CEGAR process of searching for candidate solutions and analysing counterexamples. The full algorithm is described in detail in Chapter~\ref{ch:related}. The bounded synthesis algorithm presented here takes inspiration from the CEGAR framework of this work and can be thought of as a domain specific version of the QBF algorithm.
 
-\section{Example}
+\section{Algorithm}
 
 \begin{exmp}
 
@@ -505,3 +505,53 @@ transition relation and constrained to the winning condition of the player.
         \EndFunction
     \end{algorithmic}
 \end{algorithm}
+
+\section{Optimisations}
+
+In this section we present several optimisations to the algorithm.
+
+\subsection{Bad State Learning}
+
+The most important optimisation that allows the algorithm to avoid much of the search space is to record states that are known to be losing for one player. On subsequent calls to the SAT solver we encode these states in the candidate strategy formula (see Algorithm~\ref{alg:treeFormulaLearning}). Thus the algorithm avoids choosing moves that lead to states that are already known to be losing.
+
+Bad states are learned from failed attempts to find a candidate. If the SAT solver cannot find a candidate strategy for a given abstract game tree that means that there is a fixed prefix in the game tree for which the current player can never win. The state reached by playing the moves in the prefix must then be a losing state with some caveats. Say that the losing state is $k$ rounds from the end of the bounded game (i.e. the prefix has length $\kappa - k$). If a state is losing for the environment then we know that the environment cannot force to the error set in $k$ rounds. We do not know if the environment can force to the error set is $> k$ rounds. Therefore we record losing states for the environment in an indexed array $B^e$. For the controller, a losing state is losing for any run of length $>= k$. In practical use we are uninterested in controller strategies that make use of losing states at any point in the game tree so we exclude the states at all heights in a set $B^c$.
+
+For the controller it is clear that the state must always be losing, since the failure to find a candidate implies that the environment forces the game 
+
+This state may be expanded into a set of losing states by greedily testing each variable of the state for inclusion in a \emph{cube} representing a set of losing states. This technique is well known in the literature and can be efficiently implemented using a SAT solver capable of solving under assumptions~\cite{Een03}. It is shown in Algorithm~\ref{alg:boundedLearning}.
+
+\begin{algorithm}
+    \caption{Modified Tree Formulas with Bad State Avoidance}
+    \label{alg:treeFormulaLearning}
+    \begin{algorithmic}[1]
+        \Function{treeFormula}{$k, T$}
+        \If{$\Call{height}{k, T} = 0$}
+        \State \Return{ $\lnot \Call{E}{X_{T}}$ }
+        \Else
+        \State \Return{$\lnot \Call{E}{X_{T}} \land$ \\
+            $$\bigwedge_{\langle e, n \rangle \in \Call{succ}{T}}(\Call{$\delta$}{X_T, U_e, C_T, X_n} \land U_e = \Call{action}{e} \land \Call{treeFormula}{k, n})$$
+        }
+        \EndIf
+        \EndFunction
+        \algstore{tf1}
+    \end{algorithmic}
+
+    \begin{algorithmic}[1]
+        \algrestore{tf1}
+        \Function{\textoverline{treeFormula}}{$k, T$}
+        \If{$\Call{height}{k, T} = 0$}
+        \State \Return{\Call{E}{$X_{T}$}}
+        \Else
+        \State \Return{ $\Call{E}{X_{T}} \lor$ \\
+        $$\bigvee_{\langle e, n \rangle \in \Call{succ}{T}}(\Call{$\delta$}{X_T, U_T, C_e, X_n} \land C_e = \Call{action}{e} \land \Call{\textoverline{treeFormula}}{k, n})$$ }
+        \EndIf
+        \EndFunction
+    \end{algorithmic}
+\end{algorithm}
+
+\subsection{Strategy Shortening}
+
+One of the issues with relying on a SAT solver to choose moves under the cooperation assumption is that the selected moves are not optimal.
+
+
+\section{Correctness}
