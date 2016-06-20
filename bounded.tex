@@ -326,7 +326,7 @@ in the concrete game.
 \end{figure}
 
 
-\begin{algorithm}[t]
+\begin{algorithm}
     \begin{algorithmic}[1]
         \Function{solveAbstract}{$p, s, k, T$}
         \State $cand \gets $ \Call{findCandidate}{$p, s, k, T$} \Comment{Look for a candidate}
@@ -524,9 +524,9 @@ Additional states can be learned by expanding a single state into a set of losin
     \begin{algorithmic}[1]
         \Function{treeFormula}{$k, T$}
         \If{$\Call{height}{k, T} = 0$}
-        \State \Return{ $\lnot \Call{E}{X_{T}}$ }
+        \State \Return{ $\lnot \Call{$B^c$}{X_{T}}$ }
         \Else
-        \State \Return{$\lnot \Call{E}{X_{T}} \land$ \\
+        \State \Return{$\lnot \Call{$B^c$}{X_{T}} \land$ \\
             $$\bigwedge_{\langle e, n \rangle \in \Call{succ}{T}}(\Call{$\delta$}{X_T, U_e, C_T, X_n} \land U_e = \Call{action}{e} \land \Call{treeFormula}{k, n})$$
         }
         \EndIf
@@ -540,7 +540,7 @@ Additional states can be learned by expanding a single state into a set of losin
         \If{$\Call{height}{k, T} = 0$}
         \State \Return{\Call{E}{$X_{T}$}}
         \Else
-        \State \Return{ $\Call{E}{X_{T}} \lor$ \\
+        \State \Return{\Call{$B^e$[\Call{height}{k,t}]}{$X_{T}$} $\lor$ \\
         $$\bigvee_{\langle e, n \rangle \in \Call{succ}{T}}(\Call{$\delta$}{X_T, U_T, C_e, X_n} \land C_e = \Call{action}{e} \land \Call{\textoverline{treeFormula}}{k, n})$$ }
         \EndIf
         \EndFunction
@@ -553,6 +553,36 @@ Learning new bad states means reducing the search space for the algorithm. It fo
 
 Encouraging the SAT solver to find \emph{shorter} strategies is a successful heuristic for mitigating this issue. Whilst it does require more SAT calls per call to \textsc{findCandidate} it can be efficiently implemented using incremental SAT solving and during our benchmarking we found the cost to be worthwhile. A strategy is shorter if following the strategy leads to a known bad state for the opponent is fewer game rounds. For the environment this is clearly analogous to reaching the error set sooner. For the controller it is less clear but intuitively states that are environment losing at a certain height are more likely to be \emph{safe} states from which the controller may be able to force a loop.
 
+\begin{algorithm}
+    \caption{Strategy Shortening}
+    \label{alg:strategyShortening}
+    \begin{algorithmic}[1]
+        \Function{shorten}{$p, s, k, T$}
+            \State $\hat{T} \gets $ \Call{extend}{$T$}
+            \State $f \gets $ \IfElse{$p = \texttt{cont}$}{\Call{treeFormula}{$k, \hat{T}$}}{\Call{\textoverline{treeFormula}}{$k, \hat{T}$}} \EndIfElse
+            \State $prev \gets \top$
+            \For{$l \in leaves(gt)$}
+                \State $n \gets $ \Call{root}{$l$}
+                \While{\Call{height}{$k, n$} $\neq 0$}
+                    \If{$p = \texttt{cont}$}
+                        \State $a \gets $ \Call{$B^e$[\Call{height}{$k, l$}]}{$X_n$}
+                    \Else
+                        \State $a \gets $ \Call{$E$}{$X_n$}
+                    \EndIf
+                    \State $sol \gets $ \Call{SATWithAssumptions}{$prev \land a$, $s(X_{\hat{T}}) \land f$}
+                    \If{$sol \neq \texttt{NULL}$}
+                        \State $prev \gets prev \land a$
+                        \Break
+                    \EndIf
+                        
+                    \State $n \gets $ \Call{succ}{$n$}
+                \EndWhile
+            \EndFor
+            \State \Return $sol$
+        \EndFunction
+    \end{algorithmic}
+\end{algorithm}
+
 \subsection{Default Actions}
 
 During the search for a candidate strategy the SAT solver selects actions for the opponent as though the players are cooperating. Sometimes the result is an action that will always fail for the opponent. In many specifications the environment is given the option to fail as a way of modelling errors. For example, in a network driver specification error transitions may be used to model failed connections. When such a transition exists it will often be selected by the SAT solver (especially when the strategy shortening optimisation is enabled). Constantly selecting a bad action for the opponent significantly affects the performance of the algorithm because no bad states can be learned and the solver must refine the game abstraction to avoid the bad action. Additionally, if a candidate strategy was found by relying on a bad action then it will usually need to be backtracked. 
@@ -561,4 +591,5 @@ To avoid problematic action selection the solver can instead use some heuristic 
 
 \section{Correctness}
 
+Completeness of the algorithm follows from the completeness of the backtracking search. In the worst case the algorithm will construct the entire concrete game tree and effectively expand all quantifiers. Soundness follows from the existential search of the SAT solver in \textsc{findCandidate}. The algorithm terminates after searching for a candidate strategy on an abstract game tree with moves fixed only for the opponent. If no candidate can be found with the opponent restricted in this way then no strategy exists for the player.
 
