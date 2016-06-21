@@ -9,13 +9,9 @@ can reason about what we describe in it.
 
 \section{Temporal Logic}
 
-Devices drivers are an example of a reactive system. A reactive system is a
-system that is in a continuous process of responding to input from its
-environment. A driver accepts requests from the operating system and state
-information from the device, and it responds by sending commands to the device
-and reporting to the operating system. 
+In this thesis we are concerned with reactive systems. Traditional programs can be verified by checking that the output is correct for each possible input. In a reactive system, i.e. a system that is in a continuous state of interaction with its environment, there is no termination and therefore no final output to verify. Instead the system is considered correct if it adheres to its specification indefinitely. A formalism of a reactive system must then consider the concept of time in order to specify its correctness property. 
 
-In an ordinary program, correctness can be ascertained by observing the final output. A reactive system does not terminate and is only considered correct if it adheres to its specification indefinitely. A formalism of a reactive system must then consider the concept of time in order to specify its correctness property.
+In this thesis, device drivers will be frequently used as an example of a reactive system. A driver accepts requests from the operating system and information about internal state from the device, and it responds by sending commands to the device and reporting to the operating system. The correctness of a device driver might be specified by a statement in temporal logic that corresponds to something similar to \emph{the driver does not enter an error state} or \emph{the driver always responds to requests}. In the following sections the syntax and semantics requires to make such statements formal will be introduced.
 
 \subsection{Kripke Structures}
 
@@ -45,11 +41,7 @@ holds for all $i \geq 0$.
 
 \subsection{Linear Temporal Logic}
 
-Kripke structures lay the groundwork for reasoning about reactive systems.
-Using the labelling function we may define desirable properties for the system.
-What is now lacking is a means of bringing states together to reason about the
-system as a whole. This requires a logical language that can express temporal
-properties.
+Kripke structures lay the groundwork for reasoning about reactive systems. Using the labelling function we may define desirable properties for the system that must hold in particular states. What is now lacking is a means of bringing states together to express properties of the system as a whole. This requires a logical language that can express temporal properties.
 
 Temporal logic takes propositional logic and provides additional semantics for
 the concept of time. In a Kripke structure this refers to the expressiveness to

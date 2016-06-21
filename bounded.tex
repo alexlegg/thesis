@@ -102,7 +102,7 @@ edge connecting $n$ and $n'$.
 \begin{figure}
     \centering
     \captionsetup[subfigure]{width=\textwidth,justification=raggedleft}
-    \begin{subfigure}[t]{.2\textwidth}
+    \begin{subfigure}[t]{.4\textwidth}
         \centering
         \begin{minipage}[t][3.8cm][t]{\textwidth}
         \begin{tikzpicture}[level distance = 5mm,baseline]
@@ -129,7 +129,7 @@ edge connecting $n$ and $n'$.
         \caption{Controller winning trace}
         \label{fig:trace}
     \end{subfigure}
-    \begin{subfigure}[t]{.2\textwidth}
+    \begin{subfigure}[t]{.4\textwidth}
         \centering
         \begin{minipage}[t][3.8cm][t]{\textwidth}
         \begin{tikzpicture}[dash pattern = on 2pt off 2pt, level distance = 10mm,baseline]
@@ -144,7 +144,8 @@ edge connecting $n$ and $n'$.
         \caption{AGT}
         \label{fig:agt}
     \end{subfigure}
-    \begin{subfigure}[t]{.2\textwidth}
+
+    \begin{subfigure}[t]{.4\textwidth}
         \centering
         \begin{minipage}[t][3.8cm][t]{\textwidth}
         \begin{tikzpicture}[level distance = 5mm,baseline]
@@ -171,7 +172,7 @@ edge connecting $n$ and $n'$.
         \caption{Environment winning trace}
         \label{fig:trace2}
     \end{subfigure}
-    \begin{subfigure}[t]{.2\textwidth}
+    \begin{subfigure}[t]{.4\textwidth}
         \centering
         \begin{minipage}[t][3.8cm][t]{\textwidth}
         \begin{tikzpicture}[dash pattern = on 2pt off 2pt, level distance = 10mm,baseline]
@@ -591,5 +592,5 @@ To avoid problematic action selection the solver can instead use some heuristic 
 
 \section{Correctness}
 
-Completeness of the algorithm follows from the completeness of the backtracking search. In the worst case the algorithm will construct the entire concrete game tree and effectively expand all quantifiers. Soundness follows from the existential search of the SAT solver in \textsc{findCandidate}. The algorithm terminates after searching for a candidate strategy on an abstract game tree with moves fixed only for the opponent. If no candidate can be found with the opponent restricted in this way then no strategy exists for the player.
+Completeness of the algorithm follows from the completeness of the backtracking search. In the worst case the algorithm will construct the entire concrete game tree and effectively expand all quantifiers. Soundness follows from the existential search of the SAT solver in \textsc{findCandidate}. The algorithm terminates after searching for a candidate strategy on an abstract game tree with actions fixed only for the opponent. If no candidate can be found with the opponent restricted in this way then no strategy exists for the player.
 
