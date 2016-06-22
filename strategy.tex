@@ -30,30 +30,131 @@ should be picked in every state.
 
 The key insight behind our solution is that the potentially costly
 mapping of states to winning actions can be efficiently computed
-from the proof of unsatisfiability of the formula $E_T(I)$, with
+from the proof of unsatisfiability of $s \land \textsc{treeFormula}(T)$, with
 the help of interpolation.
 
-The strategy generation function (Algorithm~\ref{}) recursively traverses the
+The strategy generation function (Algorithm~\ref{alg:strat}) recursively traverses the
 certificate tree, starting from the root, computing local strategies
 in each node and combining them in a complete winning strategy for the
 game.  The main operation of the algorithm, called \textsc{Partition},
-takes a set $I$ and its certificate tree $T$ and produces $j$ pairs
+takes a set $s$ and its certificate tree $T$ and produces $j$ pairs
 $(T_i, I_i)$, one for each branch of $T$, such that
+
 \begin{itemize}
-    \item Trees $T_i$ are obtained by splitting $T$ at the root node, as shown in Figure~\ref{}
+    \item Trees $T_i$ are obtained by splitting $T$ at the root node, as shown in Figure~\ref{alg:strat}
     \item Sets $I_i$ form a partitioning of $I$: $I=\bigvee I_i$ and $\forall i, k. (i\neq k) \implies I_i\land I_k=\bot$
     \item $T_i$ is a certificate tree for $I_i$
 \end{itemize}
 
+\tikzset{every node/.style={solid}}
+\tikzstyle{fixed}=[solid]
+\begin{figure}
+    \centering
+    \captionsetup[subfigure]{width=\textwidth,justification=raggedleft}
+    \begin{subfigure}[t]{.4\textwidth}
+        \centering
+        \begin{minipage}[t][4cm][t]{\textwidth}
+        \begin{tikzpicture}[dash pattern = on 2pt off 2pt, level distance = 10mm,baseline]
+            \node [circle,draw] (root){}
+                child {node [circle,draw] {}
+                    child {node [circle,draw] {}
+                        child {node [circle,draw] {}
+                            edge from parent [fixed] node [left] {\texttt{i}}
+                        }
+                        edge from parent [fixed] node [left] {\texttt{a}}
+                    }
+                    child {node [circle,draw] {}
+                        child {node [circle,draw] {}
+                            edge from parent [fixed] node [right] {\texttt{c}}
+                        }
+                        edge from parent [fixed] node [right] {\texttt{b}}
+                    }
+                    edge from parent [fixed] node [left] {\texttt{i}}
+                }
+                node [left=4pt] {}
+                node [above=4pt] {$\langle s, 3 \rangle$};
+        \end{tikzpicture}
+        \end{minipage}
+        \caption{AGT}
+        \label{fig:agt}
+    \end{subfigure}
+    \begin{subfigure}[t]{.4\textwidth}
+        \centering
+        \begin{minipage}[t][4cm][t]{\textwidth}
+        \begin{tikzpicture}[dash pattern = on 2pt off 2pt, level distance = 10mm,baseline]
+            \node [circle,draw] (root){}
+                child {node [circle,draw] {}
+                    child {node [circle,draw] {}
+                        edge from parent [fixed] node [left] {\texttt{i}}
+                    }
+                    edge from parent [fixed] node [left] {\texttt{a}}
+                }
+                child {node [circle,draw] {}
+                    child {node [circle,draw] {}
+                        edge from parent [fixed] node [right] {\texttt{c}}
+                    }
+                    edge from parent [fixed] node [right] {\texttt{b}}
+                }
+                node [left=4pt] {}
+                node [above=4pt] {$\langle s, 2 \rangle$};
+        \end{tikzpicture}
+        \end{minipage}
+        \caption{AGT}
+        \label{fig:agt}
+    \end{subfigure}
+
+    \begin{subfigure}[t]{.4\textwidth}
+        \centering
+        \begin{minipage}[t][4cm][t]{\textwidth}
+        \begin{tikzpicture}[dash pattern = on 2pt off 2pt, level distance = 10mm,baseline]
+            \node [circle,draw] (root){}
+                child {node [circle,draw] {}
+                    child {node [circle,draw] {}
+                        edge from parent [fixed] node [left] {\texttt{i}}
+                    }
+                    edge from parent [fixed] node [left] {\texttt{a}}
+                }
+                node [above=4pt] {$\langle s, 2 \rangle$};
+
+            \node [circle,draw,right=2cm] (root){}
+                child {node [circle,draw] {}
+                    child {node [circle,draw] {}
+                        edge from parent [fixed] node [right] {\texttt{c}}
+                    }
+                    edge from parent [fixed] node [right] {\texttt{b}}
+                }
+                node [right=2.2cm,above=4pt] {$\langle s, 2 \rangle$};
+        \end{tikzpicture}
+        \end{minipage}
+        \caption{AGT}
+        \label{fig:agt}
+    \end{subfigure}
+    \begin{subfigure}[t]{.4\textwidth}
+        \centering
+        \begin{minipage}[t][4cm][t]{\textwidth}
+        \begin{tikzpicture}[dash pattern = on 2pt off 2pt, level distance = 10mm,baseline]
+            \node [circle,draw] (root){}
+                child {node [circle,draw] {}
+                    edge from parent [fixed] node [left] {\texttt{i}}
+                }
+                node [above=4pt] {$\langle s, 1 \rangle$};
+
+            \node [circle,draw,right=2cm] (root){}
+                child {node [circle,draw] {}
+                    edge from parent [fixed] node [right] {\texttt{c}}
+                }
+                node [right=2.2cm,above=4pt] {$\langle s, 1 \rangle$};
+        \end{tikzpicture}
+        \end{minipage}
+        \caption{AGT}
+        \label{fig:agt}
+    \end{subfigure}
+\end{figure}
+
 \begin{algorithm}[t]
    \caption{Computing a winning strategy}\label{alg:strat}
    \begin{algorithmic}[1]
-%        \Statex \textbf{Input:}  Abstract game tree $T$ and a CNF $I$ over state
-%        variables $s$.
-%        \Statex \textbf{Precondition:} $T$ is a certificate of existence of a winning strategy
-%        from the set $I$, i.e., $E_T(I)$ is unsatisfiable.
-%        \Statex \textbf{Returns:} Winning controller strategy from set $I$.
-        \Function{$\genstrategy$}{$T$, $I$}
+        \Function{$\genstrategy$}{$T$, $s$}
             \State $v \gets root(T)$
             \State $[(e_1, a_1),\ldots,(e_j,a_j)] \gets edges(v)$
             \State $[(T_1,I_1),\ldots,(T_j, I_j)] \gets \partition(T, I \land \neg O)$
