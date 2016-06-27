@@ -28,11 +28,36 @@ In this chapter we will assume that the safety game is winning for the controlle
 
 We use the certificate tree computed by the game solver as a starting point for strategy generation.  We know that the controller can win the game in $\kappa$ rounds by picking actions from the tree; however we do not yet know exactly which actions should be picked in every state.
 
-The strategy generation algorithm takes an initial set $I$ and its certificate tree $T$, computed by the game solver, and generates a winning controller strategy from $I$.  To this end, it first partitions $I$ into subsets $I_i$, one for each outgoing branch of $T$ (Figure~\ref{fig:partition}), such that the controller can win from $I_i$ by picking action $a_i$ along the $i$th branch of the tree.  This partitioning defines the local winning strategy in the root node of $T$.  Next, for each partition $I_i$, the algorithm computes the set of $a_i$-successor states of $I_i$, obtaining the set $I_i'$ of states winning in the child subtree $T_i'$ of $T_i$ (Figure~\ref{f:partition}).  The algorithm is then 
-invoked recursively for each subtree $T_i'$.
+The strategy generation algorithm takes an initial set $s$ and its certificate tree $T$, computed by the game solver, and generates a winning controller strategy starting from $s$.  To this end, it first partitions $s$ into subsets $s_i$, one for each outgoing branch of $T$ (Figure~\ref{fig:partition}), such that the controller can win from $s_i$ by picking action $a_i$ along the $i$th branch of the tree.  This partitioning defines the local winning strategy in the root node of $T$.  Next, for each partition $s_i$, the algorithm computes the set of $a_i$-successor states of $s_i$, obtaining the set $s_i'$ of states winning in the child subtree $T_i'$ of $T_i$ (Figure~\ref{f:partition}).  The algorithm is then invoked recursively for each subtree $T_i'$.
+
+\tikzset{
+    pil/.style={
+        -{Latex[length=3mm]},
+        thick
+    }
+}
+
+\begin{figure}
+    \begin{tikzpicture}
+        \node [thick,circle,draw] (s0){$x_0$};
+        \node [thick,circle,draw,above right=0.6cm and 1cm of s0] (s1){$x_1$};
+        \node [thick,circle,draw,below right=0.6cm and 1cm of s0] (s2){$x_2$};
+        \node [thick,circle,draw,right=2cm of s2] (s3){$x_3$};
+        \node [thick,circle,draw,right=2cm of s1] (s4){$x_4$};
+
+        \draw [pil] (s0) edge node [above left] {$(i, 0)$} (s1);
+        \draw [pil] (s0) edge node [below left] {$(i, 1)$} (s2);
+        \draw [pil] (s1) edge node [above] {$(a, 0)$} (s4);
+        \draw [pil] (s2) edge node [below] {$(b, 0)$} (s3);
+        \draw [pil] (s3) edge node [right] {$(c, 0)$} (s4);
+        \draw [pil] (s4) edge [loop above] node [above] {$(i, 0)$} (s4);
+    \end{tikzpicture}
+    \caption{Running Example}
+    \label{fig:stratExample}
+\end{figure}
 
 \begin{example}
-Figure~\ref{fig:algex} illustrates operation of the algorithm on the winning abstract game tree returned by the game solver for our running example (Figure~\ref{f:exm:delta}(b)).  The algorithm starts at the root of the tree and the initial set $I=\{s_0\}$.  The game tree only defines one winning action is the root node, hence this action is winning is all states of $I$ and no partitioning is required.  We compute the successor set reachable by playing action $i$ in $I$: $I' = succ(I, i) = \{s_1, s_2\}$.
+Figure~\ref{fig:algex} illustrates operation of the algorithm on the winning abstract game tree returned by the game solver for our running example (Figure~\ref{f:exm:delta}(b)).  The algorithm starts at the root of the tree and the initial set $I=\{x_0\}$.  The game tree only defines one winning action in the root node, hence this action is winning in all states of $I$ and no partitioning is required.  We compute the successor set reachable by playing action $i$ in $I$: $I' = succ(I, i) = \{s_1, s_2\}$.
 
 %%%(see the game automaton in Figure~\ref{f:exm:delta}(a)).
 
@@ -150,6 +175,99 @@ Figure~\ref{fig:algex} illustrates operation of the algorithm on the winning abs
     \label{fig:algex}
 \end{figure}
 
+\begin{figure}
+    \centering
+    \captionsetup[subfigure]{width=\textwidth,justification=raggedleft}
+    \hspace*{\fill}%
+    \begin{subfigure}[t]{.4\textwidth}
+        \centering
+        \begin{minipage}[t][3cm][t]{\textwidth}
+        \begin{tikzpicture}[dash pattern = on 2pt off 2pt, level distance = 10mm,baseline]
+            \node [circle,draw] (root){}
+                child {node [circle,draw] (left0){}
+                    child {node (left1){}
+                        edge from parent [draw=none]
+                    }
+                    child {node (left2){}
+                        edge from parent [draw=none]
+                    }
+                    edge from parent [fixed] node [left] {$a_0$}
+                }
+                child {node [circle] {}
+                    edge from parent [draw=none] node [] {$...$}
+                }
+                child {node [circle,draw] (right0){}
+                    child {node (right1){}
+                        edge from parent [draw=none]
+                    }
+                    child {node (right2){}
+                        edge from parent [draw=none]
+                    }
+                    edge from parent [fixed] node [right] {$a_n$}
+                }
+                node [left=4pt] {}
+                node [above=4pt] {$\langle s, \kappa \rangle$};
+
+            \draw [fixed] (left1.center) -- (left2.center);
+            \draw [fixed] (left0) -- (left1.center);
+            \draw [fixed] (left0) -- (left2.center);
+            \draw [fixed] (right1.center) -- (right2.center);
+            \draw [fixed] (right0) -- (right1.center);
+            \draw [fixed] (right0) -- (right2.center);
+        \end{tikzpicture}
+        \end{minipage}
+        \caption{Before}
+    \end{subfigure}\hfill%
+    \begin{subfigure}[t]{.3\textwidth}
+        \centering
+        \begin{minipage}[t][3cm][t]{\textwidth}
+        \begin{tikzpicture}[dash pattern = on 2pt off 2pt, level distance = 10mm,baseline]
+            \node [circle,draw] (root){}
+                child {node [circle,draw] (left0){}
+                    child {node (left1){}
+                        edge from parent [draw=none]
+                    }
+                    child {node (left2){}
+                        edge from parent [draw=none]
+                    }
+                    edge from parent [fixed] node [left] {$a_0$}
+                }
+                node [above=4pt] {$\langle s_0, \kappa \rangle$};
+
+            \node [draw=none,below right=25pt and 22pt] {$...$};
+
+            \begin{scope}[xshift=60pt]
+            \node [circle,draw] (root2){}
+                child {node [circle,draw] (right0){}
+                    child {node (right1){}
+                        edge from parent [draw=none]
+                    }
+                    child {node (right2){}
+                        edge from parent [draw=none]
+                    }
+                    edge from parent [fixed] node [right] {$a_n$}
+                }
+                node [left=4pt] {}
+                node [above=4pt] {$\langle s_n, \kappa \rangle$};
+            \end{scope}
+
+            \node [below=5pt of left0] {$T_0$};
+            \node [below=5pt of right0] {$T_n$};
+            \draw [fixed] (left1.center) -- (left2.center);
+            \draw [fixed] (left0) -- (left1.center);
+            \draw [fixed] (left0) -- (left2.center);
+            \draw [fixed] (right1.center) -- (right2.center);
+            \draw [fixed] (right0) -- (right1.center);
+            \draw [fixed] (right0) -- (right2.center);
+        \end{tikzpicture}
+        \end{minipage}
+        \caption{After}
+    \end{subfigure}%
+    \hspace*{\fill}
+    \caption{Partitioning}
+    \label{fig:partition}
+\end{figure}
+
 %%%\begin{figure}[t]
 %%%    \centering
 %%%    \includegraphics[width=.8\linewidth]{example_abs_new_clones_cropped.pdf}
@@ -158,19 +276,7 @@ Figure~\ref{fig:algex} illustrates operation of the algorithm on the winning abs
 %%%    running example.}\label{f:algex}
 %%%\end{figure}
 
-Next, we descent down the $i$ branch of the tree and consider 
-subtree $T'$ and its initial set $I'$ (Figure~\ref{fig:algex}(b)).  
-We partition $I'$ into subsets $I'_1=\{s_1\}$ and $I'_2=\{s_2\}$ 
-that are winning for the left and right subtrees of $T'$ 
-respectively, i.e., the controller must play action $a$ in state 
-$s_1$ and $b$ in $s_2$.  Consider the resulting subtrees $T'_1$ 
-and $T'_2$ with initial sets $I'_1$ and $I'_2$ 
-(Figure~\ref{fig:algex}(c)).  We have $I''_1 = succ(I'_1, a) = 
-\{s_4\}$, $I''_2 = succ(I'_2, b) = \{s_3\}$.  Finally, we obtain 
-two subtrees $T''_1$ and $T''_2$ with initial sets $I''_1$ and 
-$I''_2$ (Figure~\ref{fig:algex}(d)).  Both subtrees have one branch; 
-hence corresponding actions $i$ and $c$ are winning in $I''_1$ and 
-$I''_2$ respectively.
+Next, we descend down the $i$ branch of the tree and consider subtree $T'$ and its initial set $I'$ (Figure~\ref{fig:algex}(b)).  We partition $I'$ into subsets $I'_1=\{s_1\}$ and $I'_2=\{s_2\}$ that are winning for the left and right subtrees of $T'$ respectively, i.e., the controller must play action $a$ in state $s_1$ and $b$ in $s_2$.  Consider the resulting subtrees $T'_1$ and $T'_2$ with initial sets $I'_1$ and $I'_2$ (Figure~\ref{fig:algex}(c)).  We have $I''_1 = succ(I'_1, a) = \{s_4\}$, $I''_2 = succ(I'_2, b) = \{s_3\}$.  Finally, we obtain two subtrees $T''_1$ and $T''_2$ with initial sets $I''_1$ and $I''_2$ (Figure~\ref{fig:algex}(d)).  Both subtrees have one branch; hence corresponding actions $i$ and $c$ are winning in $I''_1$ and $I''_2$ respectively.
 
 Putting together fragments of the winning strategy computed above, 
 we obtain the following strategy for this example: $\pi(s_0)=i$, 
