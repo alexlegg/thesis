@@ -28,36 +28,53 @@ In this chapter we will assume that the safety game is winning for the controlle
 
 We use the certificate tree computed by the game solver as a starting point for strategy generation.  We know that the controller can win the game in $\kappa$ rounds by picking actions from the tree; however we do not yet know exactly which actions should be picked in every state.
 
-The strategy generation algorithm takes an initial set $s$ and its certificate tree $T$, computed by the game solver, and generates a winning controller strategy starting from $s$.  To this end, it first partitions $s$ into subsets $s_i$, one for each outgoing branch of $T$ (Figure~\ref{fig:partition}), such that the controller can win from $s_i$ by picking action $a_i$ along the $i$th branch of the tree.  This partitioning defines the local winning strategy in the root node of $T$.  Next, for each partition $s_i$, the algorithm computes the set of $a_i$-successor states of $s_i$, obtaining the set $s_i'$ of states winning in the child subtree $T_i'$ of $T_i$ (Figure~\ref{f:partition}).  The algorithm is then invoked recursively for each subtree $T_i'$.
+\begin{example}
+
+    Figure~\ref{fig:stratExample} introduces the running example for this chapter. It shows a state machine for a game $(S, \mathcal{U}, \mathcal{C}, \delta, s_0)$ where $S$ consists of two one bit variables \texttt{p} and \texttt{e}, $\mathcal{U}$ and $\mathcal{C}$ each consist of a single one bit variable \texttt{u} and \texttt{c} respectively. The diagram shows $\delta$ as a deterministic finite state automaton with edges labelled by a tuple (\texttt{u}, \texttt{c}). We use \texttt{*} as a wildcard value to simplify the presentation. The game is simple, \texttt{p} is set to the previous value of \texttt{u} and \texttt{e} is set to \texttt{1} when $\texttt{c} \neq \texttt{p}$. The initial state, $s_0$, is $\texttt{p} = 0 \land \texttt{e} = 0$ and the error set is $\texttt{e} = 1$. In other words, the controller must simply match the previous action of the environment to avoid the error set.
+
+\end{example}
 
 \tikzset{
     pil/.style={
         -{Latex[length=3mm]},
         thick
+    },
+    snode/.style={
+        align=center,
+        circle,
+        draw,
+        thick
     }
 }
 
 \begin{figure}
+    \centering
     \begin{tikzpicture}
-        \node [thick,circle,draw] (s0){$x_0$};
-        \node [thick,circle,draw,above right=0.6cm and 1cm of s0] (s1){$x_1$};
-        \node [thick,circle,draw,below right=0.6cm and 1cm of s0] (s2){$x_2$};
-        \node [thick,circle,draw,right=2cm of s2] (s3){$x_3$};
-        \node [thick,circle,draw,right=2cm of s1] (s4){$x_4$};
+        \node [snode]
+            (s0){\texttt{p=0} \\ \texttt{e=0}};
+        \node [draw=none,left=of s0] (i){};
+        \node [snode,right=1.5cm of s0]
+            (s1){\texttt{p=1} \\ \texttt{e=0}};
+        \node [snode,accepting,below=1cm of s0]
+            (err){\texttt{p=*} \\ \texttt{e=1}};
 
-        \draw [pil] (s0) edge node [above left] {$(i, 0)$} (s1);
-        \draw [pil] (s0) edge node [below left] {$(i, 1)$} (s2);
-        \draw [pil] (s1) edge node [above] {$(a, 0)$} (s4);
-        \draw [pil] (s2) edge node [below] {$(b, 0)$} (s3);
-        \draw [pil] (s3) edge node [right] {$(c, 0)$} (s4);
-        \draw [pil] (s4) edge [loop above] node [above] {$(i, 0)$} (s4);
+        \draw [pil] (i) edge (s0);
+        \draw [pil] (s0) edge [bend left] node [above] {$(1, 0)$} (s1);
+        \draw [pil] (s0) edge node [left] {$(*, 1)$} (err);
+        \draw [pil] (s0) edge [loop above] node [above] {$(0, 0)$} (s0);
+        \draw [pil] (s1) edge node [below right] {$(*, 0)$} (err);
+        \draw [pil] (s1) edge [loop above] node [above] {$(1, 1)$} (s1);
+        \draw [pil] (s1) edge [bend left] node [above] {$(0, 1)$} (s0);
+        \draw [pil] (err) edge [loop left] node [below right=10pt and -3pt] {$(*, *)$} (err);
     \end{tikzpicture}
-    \caption{Running Example}
+    \caption{Transition relation of the running example}
     \label{fig:stratExample}
 \end{figure}
 
+The strategy generation algorithm takes an initial set $s$ and its certificate tree $T$, computed by the game solver, and generates a winning controller strategy starting from $s$.  To this end, it first partitions $s$ into subsets $s_i$, one for each outgoing branch of $T$ (Figure~\ref{fig:partition}), such that the controller can win from $s_i$ by picking action $a_i$ along the $i$th branch of the tree.  This partitioning defines the local winning strategy in the root node of $T$.  Next, for each partition $s_i$, the algorithm computes the set of $a_i$-successor states of $s_i$, obtaining the set $s_i'$ of states winning in the child subtree $T_i'$ of $T_i$ (Figure~\ref{f:partition}).  The algorithm is then invoked recursively for each subtree $T_i'$.
+
 \begin{example}
-Figure~\ref{fig:algex} illustrates operation of the algorithm on the winning abstract game tree returned by the game solver for our running example (Figure~\ref{f:exm:delta}(b)).  The algorithm starts at the root of the tree and the initial set $I=\{x_0\}$.  The game tree only defines one winning action in the root node, hence this action is winning in all states of $I$ and no partitioning is required.  We compute the successor set reachable by playing action $i$ in $I$: $I' = succ(I, i) = \{s_1, s_2\}$.
+Figure~\ref{fig:algex} illustrates operation of the algorithm on the winning abstract game tree returned by the game solver for our running example (Figure~\ref{fig:stratExample}).  The algorithm starts at the root of the tree and the initial set $I=\{x_0\}$.  The game tree only defines one winning action in the root node, hence this action is winning in all states of $I$ and no partitioning is required.  We compute the successor set reachable by playing action $i$ in $I$: $I' = succ(I, i) = \{s_1, s_2\}$.
 
 %%%(see the game automaton in Figure~\ref{f:exm:delta}(a)).
 
@@ -73,18 +90,24 @@ Figure~\ref{fig:algex} illustrates operation of the algorithm on the winning abs
             \node [circle,draw] (root){}
                 child {node [circle,draw] {}
                     child {node [circle,draw] {}
-                        child {node [circle,draw] {}
-                            edge from parent [fixed] node [left] {\texttt{i}}
+                        child {node [circle,draw,right=5pt] {}
+                            edge from parent [fixed] node [left] {\texttt{0}}
                         }
-                        edge from parent [fixed] node [left] {\texttt{a}}
+                        child {node [circle,draw,left=5pt] {}
+                            edge from parent [fixed] node [right] {\texttt{1}}
+                        }
+                        edge from parent [fixed] node [left] {\texttt{0}}
                     }
                     child {node [circle,draw] {}
-                        child {node [circle,draw] {}
-                            edge from parent [fixed] node [right] {\texttt{c}}
+                        child {node [circle,draw,right=5pt] {}
+                            edge from parent [fixed] node [left] {\texttt{0}}
                         }
-                        edge from parent [fixed] node [right] {\texttt{b}}
+                        child {node [circle,draw,left=5pt] {}
+                            edge from parent [fixed] node [right] {\texttt{1}}
+                        }
+                        edge from parent [fixed] node [right] {\texttt{1}}
                     }
-                    edge from parent [fixed] node [left] {\texttt{i}}
+                    edge from parent [fixed] node [left] {\texttt{0}}
                 }
                 node [left=4pt] {}
                 node [above=4pt] {$\langle s, 3 \rangle$};
