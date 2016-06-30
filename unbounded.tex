@@ -1,0 +1,478 @@
+\chapter{Unbounded Realisability}
+\label{ch:unbounded}
+
+\newtheorem*{exmpInt}{Example: Why we use interpolants}
+
+Bounded synthesis can be used to prove the existence of a winning strategy for
+the environment on the unbounded game by providing a witness. For the
+controller, the strongest claim that can be made is that the strategy is
+winning as long as the game does not extend beyond the maximum bound.
+
+It is possible to set a maximum bound such that all runs in the unbounded game will be
+considered. The na\"ive approach is to use size of the state space as the bound
+(${|\mathcal{X}|}$) so that all states may be explored by the algorithm. A more nuanced
+approach is to use the diameter of the game \cite{biere1999}, which is the
+smallest number $d$ such that for any state $x$ there is a path of length $\leq
+d$ to all other reachable states. However, the diameter is difficult to
+estimate and can still lead to infeasibly long games.
+
+We instead present an approach that iteratively solves games of increasing
+bound while learning bad states from abstract games using interpolation. We
+show that reaching a fixed point in learned states is sufficient for
+completeness.
+
+%%%\subsection{Extending Bounded Synthesis to Unbounded Games}
+
+
+%%%During the CEGAR loop of the bounded algorithm, each of the competing solvers
+%%%searches for satisfying assignments of labels to abstract game trees. When the
+%%%abstract game is unsatisfiable this indicates that the states represented by
+%%%nodes in the abstract game tree are losing for the current player. We extract
+%%%these states from the game tree using interpolation.
+
+%%%When executing the unbounded solver, lines 19 and 20 become active in the
+%%%bounded solver. These lines call the learning procedures when the solver fails
+%%%to find a candidate for an abstract game tree. The states symbolically
+%%%represented by nodes in the tree are losing for whichever player could not find
+%%%a winning candidate and can be extracted from the tree using interpolation.
+
+%%%The states in an abstract game with no controller candidate are
+%%%\emph{must-losing}. The environment can always force the game into the error
+%%%states from these states.
+
+%%%From abstractions with no environment candidate we record the complement of
+%%%states in the tree as \emph{may-losing}. The environment cannot reach the error
+%%%state in a number of steps equal to the distance to the bottom of the tree.
+
+%%%We maintain a set of states for each rank up to the current bound. We maintain
+%%%an invariant over these sets via careful construction so that they are
+%%%monotonically increasing by rank. We also ensure that the environment is unable
+%%%to force play from one set to the next. Due to these invariants, when two
+%%%adjacent sets become equivalent we know that the algorithm has reached a fixed
+%%%point and the controller is winning in the unbounded game (line 6).
+
+\subsection{Learning States with Interpolants}
+
+We extend the bounded synthesis algorithm to learn states losing for one of the
+players from failed attempts to find candidate strategies.  The learning
+procedure kicks in whenever \textsc{findCandidate} cannot find a candidate
+strategy for an abstract game tree. We can learn additional losing states from
+the tree via interpolation.  This is achieved in lines~18--20 in
+Algorithm~\ref{alg:bounded}, enabled in the unbounded version of the algorithm,
+which invoke \textsc{learn} or \textsc{\textoverline{learn}} to learn
+controller or environment losing states respectively
+(Algorithm~\ref{alg:learn}).
+
+%%%For the controller, this means the environment partial strategy represented by $T$
+%%%will always reach $E$ from $s$ no matter the assignments to $C$ variables (the
+%%%bound is irrelevant).  For the environment, the controller can avoid $E$ for $k$
+%%%rounds no matter the assignments to $U$ variables. Hence, we have established
+%%%that $s$ is a losing state either always (for the controller) or for bound $k$
+%%%(for the environment). 
+
+
+\begin{figure}[t]
+    \centering
+    \begin{subfigure}[t]{.32\textwidth}
+        \centering
+
+        \begin{tikzpicture}[dash pattern = on 2pt off 2pt, level distance = 10mm]
+            \node [circle,draw] (root){}
+                child {node [circle,draw] {}
+                    child {node [circle,draw,right=5pt] {}
+                        edge from parent [fixed] node [left=2pt,text width=1cm] {\texttt{gr0=1 gr1=0}}
+                    }
+                    child {node [circle,draw,left=5pt] {}
+                        edge from parent [fixed] node [right=2pt,text width=1cm] {\texttt{gr0=1 gr1=1}}
+                    }
+                    node [left=5pt] {$n$}
+                    edge from parent [fixed] node [left=2pt,text width=1cm] {\texttt{gr0=0 gr1=1}}
+                }
+                child {node [circle,draw] (n) {}
+                    child {node [circle,draw] {}
+                        edge from parent [fixed] node [right=2pt,text width=1cm] {\texttt{gr0=1 gr1=1}}
+                    }
+                    edge from parent [fixed] node [right=2pt,text width=1cm] {\texttt{gr0=1 gr1=1}}
+                }
+                node [above=4pt] {$\langle s, k \rangle$};
+        \end{tikzpicture}
+        \caption{A losing AGT $T$}
+        \label{fig:interpolatetree}
+    \end{subfigure}%
+    \begin{subfigure}[t]{.32\textwidth}
+        \centering
+        \begin{tikzpicture}[dash pattern = on 2pt off 2pt, level distance = 10mm]
+            \node [circle,draw] (root){}
+                child {node [circle,draw] {}
+                    node [left=5pt] {$n$}
+                    edge from parent [fixed] node [left=2pt,text width=1cm] {\texttt{gr0=1 gr1=0}}
+                }
+                child {node [circle,draw] (n) {}
+                    child {node [circle,draw] {}
+                        edge from parent [fixed] node [right=2pt,text width=1cm] {\texttt{gr0=1 gr1=1}}
+                    }
+                    edge from parent [fixed] node [right=2pt=2pt=2pt=2pt,text width=1cm] {\texttt{gr0=1 gr1=1}}
+                }
+                node [above=4pt] {$\langle s, k \rangle$};
+        \end{tikzpicture}
+        \caption{Tree slice $T_1$}
+        \label{fig:treef1}
+    \end{subfigure}%
+    \begin{subfigure}[t]{.32\textwidth}
+        \centering
+        \begin{tikzpicture}[dash pattern = on 2pt off 2pt, level distance = 10mm]
+            \node [circle,draw] {}
+                child {node [circle,draw,right=5pt] {}
+                    edge from parent [fixed] node [left=2pt,text width=1cm] {\texttt{gr0=1 gr1=0}}
+                }
+                child {node [circle,draw,left=5pt] {}
+                    edge from parent [fixed] node [right=2pt,text width=1cm] {\texttt{gr0=1 gr1=1}}
+                }
+                node [left=5pt] {$n$};
+        \end{tikzpicture}
+        \caption{Tree slice $T_2$}
+        \label{fig:treef2}
+    \end{subfigure}
+    \caption{Splitting of an abstract game tree by the learning procedure.}
+    \label{fig:interpolanttrees}
+\end{figure}
+
+\begin{algorithm}[t]
+    \begin{algorithmic}[1]
+        \Require $s(X_T) \land $ \Call{treeFormula}{$k, T$} $\equiv \bot$
+        \Require \emph{Must-invariant} holds
+        \Ensure \emph{Must-invariant} holds
+        \Ensure $s(X_T) \land B^M \not\equiv \bot$
+        \Comment $s$ will be added to $B^M$
+        \Function{learn}{$s, T$}
+            \IIf{\Call{succ}{$T$} $= \emptyset$}
+                \Return
+            \EndIIf
+            \State $n \gets $ non-leaf node with min height 
+            \State $\langle T_1, T_2 \rangle \gets $ \Call{gtSplit}{$T, n$}
+            \State $\mathcal{I} \gets $ \Call{interpolate}{$s(X_T) \land $ \Call{treeFormula}{$k, T_1$}, \Call{treeFormula}{$k, T_2$}}
+            \State $B^M \gets B^M \lor \mathcal{I}$
+            \State \Call{learn}{$s, T_1$}
+        \EndFunction
+        \algstore{learn}
+    \end{algorithmic}
+    
+    \begin{algorithmic}[1]
+        \algrestore{learn}
+        \Require $s(X_T) \land $ \Call{\textoverline{treeFormula}}{$k, T$} $\equiv \bot$
+        \Require \emph{May-invariant} holds
+        \Ensure \emph{May-invariant} holds
+        \Ensure $s(X_T) \land B^m[$\Call{height}{$k, T$}$] \equiv \bot$
+        \Comment{$s$ will be removed from $B^m$}
+        \Function{\textoverline{learn}}{$s, T$}
+            \IIf{\Call{succ}{$T$} $= \emptyset$}
+                \Return
+            \EndIIf
+            \State $n \gets $ non-leaf node with min height 
+            \State $\langle T_1, T_2 \rangle \gets $ \Call{gtSplit}{$T, n$}
+            \State $\mathcal{I} \gets $ \Call{interpolate}{$s(X_T) \land $ \Call{\textoverline{treeFormula}}{$k, T_1$}, \Call{\textoverline{treeFormula}}{$k, T_2$}}
+            \For{$i = 1$ to \Call{height}{$k, n$}}
+                \State $B^m[i] \gets B^m[i] \setminus \mathcal{I}$
+            \EndFor
+            \State \Call{\textoverline{learn}}{$s, T_1$}
+        \EndFunction
+    \end{algorithmic}
+    \caption{Learning algorithms}
+    \label{alg:learn}
+\end{algorithm}
+
+\begin{exmpInt}
+
+    Consider node $n$ in Figure~\ref{fig:interpolatetree}. At this node there
+    are two controller actions that prevent the environment from forcing the
+    game into an error state in one game round. We want to use this tree to
+    learn the states from which the controller can win playing one of these
+    actions.
+
+    One option is using a BDD solver, working backwards from the error set, to
+    find all losing states. One iteration of this operation on our example
+    would give the set: $\texttt{nrequests} = 3 \lor (\texttt{nrequests} = 2
+    \land ( \texttt{resource0} = 0 \lor \texttt{resource1} = 0)) \lor
+    (\texttt{nrequests} = 1 \land (\texttt{resource0} = 0 \land
+    \texttt{resource1} = 0))$.  In the general case there is no compact
+    representation of the losing set, so we try to avoid computing it by
+    employing interpolation instead. The benefit of interpolation is
+    that it allows approximating the losing states efficiently by obtaining 
+    an interpolant from a SAT solver.
+\end{exmpInt}
+
+
+Given two formulas $F_1$ and $F_2$ such that $F_1 \land F_2$ is unsatisfiable,
+it is possible to construct a Craig interpolant~\cite{craig1957} $\mathcal{I}$
+such that $F_1 \to \mathcal{I}$, $F_2 \land \mathcal{I}$ is unsatisfiable, and
+$\mathcal{I}$ refers only to the intersection of variables in $F_1$ and $F_2$.
+An interpolant can be constructed efficiently from a resolution proof of the
+unsatisfiability of $F_1 \land F_2$~\cite{pudlak1997}.
+
+We choose a non-leaf node $n$ of $T$ with maximal depth, i.e., a node whose
+children are leafs (Algorithm~\ref{alg:learn}, line~3). We then split the tree
+at $n$ such that both slices $T_1$ and $T_2$ contain a copy of $n$ (line~4).
+Figure~\ref{fig:treef1} shows $T_1$, which contains all of $T$ except $n$'s
+children, and $T_2$ (Figure~\ref{fig:treef2}), which contains only $n$ and its
+children.  There is no candidate strategy for $T$ so $s \land
+\textsc{\textoverline{treeFormula}}(k, T)$ is unsatisfiable.  By construction,
+$\textsc{\textoverline{treeFormula}}(k, T) \equiv
+\textsc{\textoverline{treeFormula}}(k, T_1) \land
+\textsc{\textoverline{treeFormula}}(k, T_2)$ and hence $s \land
+\textsc{\textoverline{treeFormula}}(k, T_1) \land
+\textsc{\textoverline{treeFormula}}(k, T_2)$ is also unsatisfiable.
+
+%%%This enables the construction of an interpolant that captures losing states at
+%%%node $n$.
+
+We construct an interpolant with $F_1 = s(X_T) \land \textsc{treeFormula}(k,
+T_1)$ and $F_2 = \textsc{treeFormula}(k, T_2)$ (line~5). The only variables
+shared between $F_1$ and $F_2$ are the state variable copies belonging to node
+$n$. By the properties of the interpolant, $F_2 \land \mathcal{I}$ is
+unsatisfiable, therefore all states in $\mathcal{I}$ are losing against
+abstract game tree $T_2$ in Figure~\ref{fig:treef2}.  We also know that $F_1
+\to \mathcal{I}$, thus $\mathcal{I}$ contains all states reachable at $n$ by
+following $T_1$ and avoiding error states. 
+
+\begin {exmp}
+
+    At node $n$, the interpolant $\texttt{nrequests} = 1 \land
+    \texttt{resource1} = 1$ captures the information we need. Any action by the
+    environment followed by one of the controller actions at $n$ will be
+    winning for the controller.
+
+\end{exmp}
+
+We have discovered a set $\mathcal{I}$ of states losing for the environment.
+Environment-losing states are only losing for a particular bound: given that
+there does not exist an environment strategy that forces the game into an error
+state in $k$ rounds or less; there may still exist a longer environment-winning
+strategy.  We therefore record learned environment-losing states along with
+associated bounds.  To this end, we maintain a conceptually infinite array of
+sets $B^m[k]$ that are may-losing for the controller, indexed by bound $k$.
+$B^m[k]$ are initialised to $E$ for all $k$.  Whenever an environment-losing
+set $\mathcal{I}$ is discovered for a node $n$ with bound $\textsc{height}(k,
+n)$ in line~13 of Algorithm~\ref{alg:learn}, this set is subtracted from
+$B^m[i]$, for all $i$ less than or equal to the bound (lines~14--16).
+
+The \textsc{\textoverline{treeFormula}} function is modified for the unbounded
+solver (Algorithm~\ref{alg:unboundedTreeFormula}) to constrain the environment
+to the appropriate $B^m$. This enables further interpolants to be constructed
+by the learning procedure recursively splitting more nodes from $T_1$
+(Algorithm~\ref{alg:learn}, line~7) since the states that are losing to $T_2$
+are no longer contained in $B^m$.
+
+\begin{algorithm}[t] \caption{Amended tree formulas for Controller and
+    Environment} \label{alg:unboundedTreeFormula} \begin{algorithmic}[1]
+        \Function{treeFormula}{$k, T$} \If{$\Call{height}{k, T} = 0$} \State
+        \Return{ $\lnot \Call{$B^M$}{X_{T}}$ } \Else \State \Return{$\lnot
+            \Call{$B^M$}{X_{T}} \land$ \\ $$\bigwedge_{\langle e, n \rangle \in
+            \Call{succ}{T}}(\Call{$\delta$}{X_T, U_e, C_n, X_n} \land U_e =
+            \Call{action}{e} \land \Call{treeFormula}{k, n})$$ } \EndIf
+        \EndFunction \algstore{tf1} \end{algorithmic}
+
+    \begin{algorithmic}[1]
+        \algrestore{tf1}
+        \Function{\textoverline{treeFormula}}{$k, T$}
+        \If{$\Call{height}{k, T} = 0$}
+        \State \Return{\Call{E}{$X_T$}}
+        \Else
+        \State \Return{ \Call{$B^m[\Call{height}{k, T}]$}{$X_{T}$} $\land$ \\
+            $$\bigg( \Call{E}{X_T} \lor \bigvee_{\langle e, n \rangle \in \Call{succ}{T}}(\Call{$\delta$}{X_T, U_n, C_e, X_n} \land C_e = \Call{action}{e} \land \Call{\textoverline{treeFormula}}{k, n})\bigg)$$ }
+        \EndIf
+        \EndFunction
+    \end{algorithmic}
+\end{algorithm}
+
+Learning of states losing from the controller is similar (\textsc{learn} in
+Algorithm~\ref{alg:learn}). The main difference is that environment-losing
+states are losing for all bounds. Therefore we record these states in a single
+set $B^M$ of must-losing states (Algorithm~\ref{alg:learn}, line~6).  This set
+is initialised to the error set $E$ and grows as new losing states are
+discovered.  The modified \textsc{\textoverline{treeFormula}} function
+(Algorithm~\ref{alg:unboundedTreeFormula}) blocks must-losing states, which
+also allows for recursive learning over the entire tree.
+
+\subsection{Main synthesis loop}
+
+Figure~\ref{alg:unbounded} shows the main loop of the unbounded synthesis algorithm.
+The algorithm invokes the modified bounded synthesis procedure with increasing bound $k$
+until the initial state is in $B^M$ (environment wins) or $B^m$ reaches a fixed point 
+(controller wins). We prove correctness in the next section.
+
+\begin{algorithm}[h]
+    \begin{algorithmic}[1]
+        \Function{solveUnbounded}{$T$}
+            \State $B^M \gets E$
+            \State $B^m[0] \gets E$
+            \For{$k = 1 \dots$}
+                \IIf{\Call{SAT}{$I \land B^M$}}
+                    \Return \texttt{unrealisable} \Comment{Losing in the initial state}
+                \EndIIf
+                \IIf{$\exists i < k . \  B^m[i] \equiv B^m[i+1]$} \Comment{Reached fixed point}
+                    \State \hspace{\algorithmicindent} \Return \texttt{realisable} 
+                \EndIIf
+                \State $B^m[k] \gets E$
+                \State \Call{checkBound}{$k$}
+            \EndFor
+        \EndFunction
+        \algstore{u1}
+    \end{algorithmic}
+
+    \begin{algorithmic}
+        \algrestore{u1}
+        \Require \emph{May} and \emph{must} invariants hold
+        \Ensure \emph{May} and \emph{must} invariants hold
+        \Ensure $I \not\in B^m[k]$ if there exists a winning controller strategy with bound $k$
+        \Ensure $I \in B^M$ if there exists a winning environment strategy with bound $k$
+%%%        $\exists u_{k..1} \forall c_{k..1} \  s(x_k) \land (E_k \lor (\delta(x_k, u_k, c_k) \land E(x_{k-1}) \lor ... \land E(x_1) \lor (\delta(x_1, u_1, c_1) \land E(x_0))...)$
+%%%            $\forall u_{k..1} \exists c_{k..1} \  s(x_k) \land \lnot E_k \land \delta(x_k, u_k, c_k) \land \lnot E(x_{k-1}) \land ... \land \delta(x_1, u_1, c_1) \land \lnot E(x_0)$
+        \Function{checkBound}{$k$}
+            \State \Return \Call{solveAbstract}{$\texttt{env}, I, k, \emptyset$}
+        \EndFunction
+    \end{algorithmic}
+    \caption{Unbounded Synthesis}
+    \label{alg:unbounded}
+\end{algorithm}
+
+
+
+\subsection{Correctness}
+
+
+We define two global invariants of the algorithm.  The \emph{may-invariant}
+states that sets $B^m[i]$ grow monotonically with $i$ and that each $B^m[i+1]$
+overapproximates the states from which the environment can force the game into
+$B^m[i]$. We call this operation $Upre$, the uncontrollable predecessor. So the
+\emph{may-invariant} is: $$\forall i<k.~B^m[i] \subseteq B^m[i+1], Upre(B^m[i])
+\subseteq B^m[i+1].$$
+
+The \emph{must-invariant} guarantees that the must-losing set $B^M$ is an
+underapproximation of the actual losing set $B$: $$B^M \subseteq B.$$
+
+Correctness of $\textsc{solveUnbounded}$ follows from these invariants. The
+must-invariant guarantees that the environment can force the game into an error
+state from $B^M$, therefore checking whether the initial state is in $B^M$ (as
+in line~5) is sufficient to return \texttt{unrealisable}. The may-invariant
+tells us that if $B^m[i] \equiv B^m[i+1]$ (line~6) then $Upre(B^m[i]) \subseteq
+B^m[i]$, i.e. $B^m[i]$ overapproximates the winning states for the environment.
+We know that $I \not\in B^m[k]$ due to the post-condition of
+\textsc{checkBound}, and since the may-invariant tells us that $B^m$ is
+monotonic then $I$ must not be in $B^m[i]$. If $I \not\in B^m[i]$ then $I$ is
+not in the winning states for the environment and the controller can always win
+from $I$. 
+
+Both invariants trivially hold after $B^m$ and $B^M$ have been initialised in
+the beginning of the algorithm. The sets $B^m$ and $B^M$ are only modified by
+the functions \textsc{learn} and \textoverline{\textsc{learn}}.  Below we prove
+that \textoverline{\textsc{learn}} maintains the invariants.  The proof of
+\textsc{learn} is similar.
+
+\subsection{Proof of \textoverline{\textsc{learn}}}
+
+We prove that postconditions of \textsc{\textoverline{learn}} are satisfied
+assuming that its preconditions hold.
+
+Line~(11--12) splits the tree $T$ into $T_1$ and $T_2$, such that $T_2$ has depth
+1.  Consider formulas $F_1=s(X_T) \land
+\textsc{\textoverline{treeFormula}}(k, T_1)$ and $F_2 =
+\textsc{\textoverline{treeFormula}}(k, T_2)$.  These formulas only share variables
+$X_n$.  Their conjunction $F_1 \land F_2$ is unsatisfiable, as by construction
+any solution of $F_1 \land F_2$ also satisfies $s(X_T) \land
+\textsc{\textoverline{treeFormula}}(k, T)$, which is unsatisfiable (precondition (b)).  Hence the
+interpolation operation is defined for $F_1$ and $F_2$.  
+
+Intuitively, the interpolant computed in line~(13) overapproximates the set of
+states reachable from $s$ by following the tree from the root node to $n$,
+and underapproximates the set of states from which the environment loses
+against tree $T_2$.  
+
+Formally, $\II$ has the property $\II \land F_2 \equiv \bot$.  Since $T_2$ is
+of depth 1, this means that the environment cannot force the game into
+$B^m[\textsc{height}(k, n)-1]$ playing against the counterexample moves in $T_2$.
+Hence, $\II \cap Upre(B^m[\textsc{height}(k, n)-1]) = \emptyset$.  Furthermore,
+since the may-invariant holds, $\II \cap Upre(B^m[i]) =
+\emptyset$, for all $i < \textsc{height}(k, n)$.  Hence, removing $\II$ from all
+$B^m[i], i\leq \textsc{height}(k, n)$ in line~(15) preserves the may-invariant,
+thus satisfying the first post-condition.
+
+Furthermore, the interpolant satisfies $F_1 \rightarrow \II$, i.e., any
+assignment to $X_n$ that satisfies $s(X_T) \land
+\textsc{\textoverline{treeFormula}}(k, T_1)$ also satisfies $\II$.  Hence,
+removing $\II$ from $B^m[\textsc{height}(k, n)]$ makes $s(X_T) \land
+\textsc{\textoverline{treeFormula}}(k, T_1)$ unsatisfiable, and hence all
+preconditions of the recursive invocation of \textsc{\textoverline{learn}} in
+line~(17) are satisfied.  
+
+At the second last recursive call to \textsc{\textoverline{learn}}, tree $T_1$
+is empty, $n$ is the root node, $\textsc{\textoverline{treeFormula}}(k, T_1)
+\equiv B^m[\textsc{height}(k, T_1)](X^T)$; hence $s(X_T) \land
+\textsc{\textoverline{treeFormula}}(k, T_1) \equiv s(X_T) \land
+B^m[\textsc{height}(k, T_1)](X^T) \equiv \bot$.  Thus the second postcondition of
+\textsc{\textoverline{learn}} holds.
+
+The proof of \textsc{learn} is similar to the above proof of \textsc{learn}. An
+interpolant constructed from $F_1=s(X_T) \land \textsc{treeFormula}(k, T_1)$
+and $F_2 = \textsc{treeFormula}(k, T_2)$ has the property $\II \land F_2 \equiv
+\bot$ and the precondition ensures that the controller is unable to force the
+game into $B^M$ playing against the counterexample moves in $T_2$. Thus adding
+$\II$ to $B^M$ maintains the must-invariant satisfying the first postcondition.
+
+Likewise, in the second last recursive call of \textsc{learn} with the empty
+tree $T_1$ and root node $n$: $\textsc{treeFormula}(k, T_1) \equiv \lnot
+B^M(X_T)$.  Hence $s(X_T) \land \textsc{treeFormula}(k, T_1) \equiv
+s(X_T) \land \lnot B^M(X_T) \equiv \bot$. Therefore $s(X_T) \land
+B^M(X_T) \not\equiv \bot$, the second postcondition, is true.
+
+\subsection{Proof of Termination}
+
+We must prove that $\textsc{checkBound}$ terminates and that upon termination
+its postcondition holds, i.e., state $I$ is removed from $B^m[\kappa]$ if there
+is a winning controller strategy on the bounded safety game of maximum bound
+$\kappa$ or it is added to $B^M$ otherwise. Termination follows from
+completeness of counterexample guided search, which terminates after
+enumerating all possible opponent moves in the worst case.
+
+Assume that there is a winning strategy for the controller at bound $\kappa$.
+This means that at some point the algorithm discovers a counterexample tree of
+bound $\kappa$ for which the environment cannot force into $E$. The algorithm
+then invokes the \textsc{\textoverline{learn}} method, which removes $I$ from
+$B^m[\kappa]$.  Alternatively, if there is a winning strategy for the
+environment at bound $\kappa$ then a counterexample losing for the controller
+will be found.  Subsequently \textsc{learn} will be called and $I$ added to
+$B^M$.
+
+\subsection{Optimisation: Generalising the initial state}
+
+This optimisation allows us to learn may and must losing states faster.
+Starting with a larger set of initial states we increase the reachable set and
+hence increase the number of states learned by interpolation. This optimisation
+requires a modification to $\textsc{solveAbstract}$ to handle sets of states,
+which is not shown.
+
+The optimisation is relatively simple and is inspired by a common greedy
+heuristic for minimising $\texttt{unsat}$ cores. Initial state $I$ assigns a value to
+each variable in $X$. If the environment loses $\langle I, k
+\rangle$ then we attempt to solve for a generalised version of $I$ by removing
+one variable assignment at a time. If the environment loses from the larger set of
+states then we continue generalising. In this way we learn more
+states by increasing the reachable set. In our benchmarks we have observed that
+this optimisation is beneficial on the first few iterations of
+\textsc{checkBound}.
+
+\begin{algorithm}
+    \begin{algorithmic}
+        \Function{checkBound}{$k$}
+            \State $r \gets $ \Call{solveAbstract}{$\texttt{env}, I, k, \emptyset$}
+            \IIf{$r \neq \emptyset$} \Return $r$ \EndIIf
+            \State $s' \gets I$
+            \For{$x \in X$}
+            \State $r \gets$ \Call{solveAbstract}{$\texttt{env}, s' \setminus \{x\}, k, \emptyset$} 
+                \IIf{$r = \texttt{NULL}$} $s' \gets s' \setminus \{x\}$ \EndIIf \Comment{Removes the assignment to $x$ from $s'$}
+            \EndFor
+            \State \Return $\texttt{NULL}$
+        \EndFunction
+    \end{algorithmic}
+    \caption{Generalise $I$ optimisation}
+    \label{alg:opt1}
+\end{algorithm}
