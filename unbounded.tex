@@ -3,23 +3,12 @@
 
 \newtheorem*{exmpInt}{Example: Why we use interpolants}
 
-Bounded synthesis can be used to prove the existence of a winning strategy for
-the environment on the unbounded game by providing a witness. For the
-controller, the strongest claim that can be made is that the strategy is
-winning as long as the game does not extend beyond the maximum bound.
+In previous chapters I outlined an algorithm to solve bounded realisability games and an extension that can extract strategies from the result. Bounded realisability can be used to prove the existence of a winning strategy for the environment on the unbounded game by providing a witness. For the controller, the strongest claim that can be made is that the strategy is winning as long as the game does not extend beyond the maximum bound. The work described in this chapter can be used to address this by presenting another extension to the algorithm that solves unbounded realisability games.
 
-It is possible to set a maximum bound such that all runs in the unbounded game will be
-considered. The na\"ive approach is to use size of the state space as the bound
-(${|\mathcal{X}|}$) so that all states may be explored by the algorithm. A more nuanced
-approach is to use the diameter of the game \cite{biere1999}, which is the
-smallest number $d$ such that for any state $x$ there is a path of length $\leq
-d$ to all other reachable states. However, the diameter is difficult to
-estimate and can still lead to infeasibly long games.
+The baseline solution to this problem is to set a maximum bound such that all runs in the unbounded game will be considered. The na\"ive approach is to use size of the state space as the bound (${|\mathcal{X}|}$) so that all states may be explored by the algorithm. A more nuanced approach is to use the diameter of the game \cite{biere1999}, which is the smallest number $d$ such that for any state $x$ there is a path of length $\leq d$ to all other reachable states. Computing the diameter, however, is also expensive and solving a game bounded to the size of the diameter may be infeasible.
 
-We instead present an approach that iteratively solves games of increasing
-bound while learning bad states from abstract games using interpolation. We
-show that reaching a fixed point in learned states is sufficient for
-completeness.
+Instead I present an approach that iteratively solves games of increasing
+bound while learning bad states from abstract games using Craig interpolation. We utilise the approximation properties of the interpolant to construct sets of states that underapproximate the total losing set for the controller. By underapproximating we avoid constructing a potentially large representation of this set that could be the cause of infeasibility in a BDD solver. Later in this chapter we will see that a careful construction of approximate sets enables a fixed point that is sufficient to prove the nonexistence of an environment-winning strategy.
 
 %%%\subsection{Extending Bounded Synthesis to Unbounded Games}
 
