@@ -1,48 +1,52 @@
 \chapter{Introduction}
 
-Since the explosion of computers into the modern world we have learned several important facts about the software systems that now surround us. First, that they are incredibly useful and we can now barely live without them. Second, when software is poorly written the cost in money, time, and even lives can be catastrophic. And lastly, it is very difficult to write software well.
+We rely on software systems to perform important tasks for us on a daily basis. Unfortunately we also frequently experience the frustration of an incorrect software system. However, as these systems become more ingrained into our lives the cost of incorrectness can be far greater than mere frustration.
 
-The dream of having our software automatically constructed for us, first formally considered by Alonzo Church in the middle of the last century~\cite{Church62}, has the potential to solve these problems by taking software out of the hands of humans. 
+In 1996 the European Space Agency lost their Ariane 5 rocket forty seconds after launch to an incorrect conversion from floating point to integer~\cite{Dowson97}. The cost of the failure was \$370 million in USD. More recently, Toyota has been forced to recall a large number of vehicles due to a failure in the software controlling the brakes~\cite{Parrish13}. The failures led to loss of life~\cite{CBS10}.
 
-\section{Device Drivers}
+As the desire for software and the consequences of incorrectness has grown, the need for a systematic methodology for producing correct software has become apparent. One solution has been to develop strict engineering practices, including rigorous testing, to reduce the chance of errors. Another solution is to produce a proof of correctness of the software, either with or without the aid of a mechanised proof assistant. Model checking can also be used in some cases to fully automate the correctness proof.
 
-Device drivers are the software that allows the operating system to interface
-with hardware. The role of the driver is to manipulate the inputs of the device
-so that it remains in a error-free state and correctly handles the requests of
-the operating system. By way of example consider an ethernet driver. The driver
-accepts requests to send and receive data packets from the OS and acts on those
-requests by reading from and writing to buffers on the device. It must ensure
-that those buffers are maintained in a usable state by correctly updating a
-register containing the location of the head of the buffer queue.
+A step further is to have our software automatically constructed for us, a technique first formally considered by Alonzo Church in the middle of the last century~\cite{Church62}. Software synthesis shifts the role of the developer from writing code to writing formal specifications. This completely eradicates the human error factor from the low level construction of software and allows developers to focus on high level system design. In all other approaches to software correctness the software must first be constructed; a process involving considerable time and effort.
 
-According to a study performed in 2011~\cite{Palix11}, drivers account for
-approximately 57\% of the lines of code in the Linux kernel and subsequently is
-the largest source of bugs. The study also analysed the staging directory of
-the kernel, which contains all in-progress drivers, and found it to contain the
-highest fault rate (faults per line of code) out of any directory in the
-kernel. The results of the study give evidence to the widely held belief that
-correct drivers are hard to produce.
+Unfortunately, automatic software synthesis involves nontrivial computation. In broad strokes, the synthesis algorithm must determine how the state of the system is affected by the software and its environment and then select actions for the software such that no matter the actions of the environment the system adheres to the specification. In practice, on certain system specifications the process can lead to significant \emph{state explosion} that renders synthesis infeasible.
 
-Consequences of buggy drivers
-
-This thesis focuses on automatic construction of correct drivers as a solution
-to the driver problem. Alternate approaches, of which there are many, will be
-discussed in Chapter~\ref{ch:relatedwork}.
+The state of the art in synthesis contains several methodologies that act as countermeasures to state explosion. However, no single approach is suited to all classes of specifications. In this thesis I propose an addition to the state of the art that is well suited to specifications with certain properties.
 
 \section{Synthesis}
 
-Explain what synthesis is
+The usual formulation of the synthesis problem is as a game between the software and its environment. This thesis is concerned with synthesis of safety games in which the software must enforce that the game remains within a set of safe states. The usual approach to solving safety games is to iteratively construct a set of winning states that are known to be safe regardless of the actions of the environment. Once that set exists a winning strategy can be formed by choosing actions that have successor states within the winning region.
 
-Briefly describe the current state of the art
+Explicit enumeration of the states in the winning region is infeasible even on small specifications so the set of states is usually represented symbolically. This is done by specifying the game with states as valuations of a set of boolean variables. A common choice for representing sets of states is to use Binary Decision Diagrams (BDDs) which can compactly represent a formula over boolean variables as a graph. However, in the worst case a BDD representation requires space that is exponential in the number of variables.
 
-Explain state space explosion
+Other approaches rely on satisfiability solvers to efficiently perform the operations required by synthesis on sets of states. The satisfiability problem (SAT) is the question of whether a value can be assigned to all variables in a formula such that the formula evaluates to true. Modern SAT solvers provide efficient implementations of backtracking search with computational learning that operate on clause normal form (CNF) formulas. In the case where SAT solvers are used for synthesis CNF is used as the symbolic representation. 
 
-\section{Synthesis with SAT}
+\section{Contribution}
 
-Explain SAT solvers
 
-Explain how they might help with state space explosion
+\section{Summary}
 
-(Explain that there is room for both approaches in the world)
+%%%\section{Device Drivers}
 
-Explain QBF and/or why this is nontrivial
+%%%Device drivers are the software that allows the operating system to interface
+%%%with hardware. The role of the driver is to manipulate the inputs of the device
+%%%so that it remains in a error-free state and correctly handles the requests of
+%%%the operating system. By way of example consider an ethernet driver. The driver
+%%%accepts requests to send and receive data packets from the OS and acts on those
+%%%requests by reading from and writing to buffers on the device. It must ensure
+%%%that those buffers are maintained in a usable state by correctly updating a
+%%%register containing the location of the head of the buffer queue.
+
+%%%According to a study performed in 2011~\cite{Palix11}, drivers account for
+%%%approximately 57\% of the lines of code in the Linux kernel and subsequently is
+%%%the largest source of bugs. The study also analysed the staging directory of
+%%%the kernel, which contains all in-progress drivers, and found it to contain the
+%%%highest fault rate (faults per line of code) out of any directory in the
+%%%kernel. The results of the study give evidence to the widely held belief that
+%%%correct drivers are hard to produce.
+
+%%%Consequences of buggy drivers
+
+%%%This thesis focuses on automatic construction of correct drivers as a solution
+%%%to the driver problem. Alternate approaches, of which there are many, will be
+%%%discussed in Chapter~\ref{ch:relatedwork}.
+
