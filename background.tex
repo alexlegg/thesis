@@ -121,15 +121,9 @@ will always be true at some future state. There is also ACTL*, which is CTL* wit
 
 \section{Model Checking}
 
-Once the desirable properties of a system have be laid out in temporal logic,
-the next step is to verify that a program adheres to its specification. One
-approach is to manually (or with the assistance of a proof checker) construct a
-proof for the program. However, this costs the verifier in both time and mental
-effort and so a mechanised approach is desired. The first such automatic
-\emph{model checker} was proposed by Clarke et al.~\cite{Clarke86} to verify
-temporal properties of finite state programs. The algorithm they proposed was a
-search based labelling of a finite state-transition graph, representing the
-program, with subformulas of the temporal logic specification. 
+Before turning our attention to the synthesis of a program that is correct according to its temporal logic specification let us consider the simpler problem of verifying that an existing program is correct. Verification can be done by manually constructing a proof of correctness but this is labour intensive process even with the assistance of a mechanised proof assistant. Here we consider \emph{model checking}, which is the problem of automatically verifying the system.
+
+The first such automatic model checker was proposed by Clarke et al.~\cite{Clarke86} to verify temporal properties of finite state programs. The algorithm they proposed was a search based labelling of a finite state transition graph, representing the program, with subformulas of the temporal logic specification. 
 
 Another approach is based on the notion that temporal logic properties can be
 expressed in terms of automata theory. Specifically, a finite state automaton
@@ -176,7 +170,7 @@ Rabin automata are also $\omega$-automata, which are similar to B\"uchi automata
 
 \section{Synthesis}
 
-Model checking is the art of deciding whether a program meets a specification. Synthesis is the related problem of building the program \emph{to} a specification. In the model checking literature discussed thus far, the program and its environment are considered to be the same entity. This approach contains the assumption that the program and environment are cooperating, which is not appropriate for reactive synthesis. Consider a driver that must perform some action on input from the operating system. Driver synthesis with a cooperating OS could assume that the input never occurs. For synthesis of reactive programs an adversarial relationship more accurately formalises the problem. As such, the problem is reformulated as a two player game between the reactive program and its environment~\cite{Pnueli89}.
+Model checking is the art of deciding whether a program meets a specification. Synthesis is the related problem of \emph{constructing} the program to meet a specification. In the model checking literature discussed thus far, the program and its environment are considered to be the same entity. This approach contains the assumption that the program and environment are cooperating, which is not appropriate for reactive synthesis. Consider a driver that must perform some action on input from the operating system. Driver synthesis with a cooperating OS could assume that the input never occurs. For synthesis of reactive programs an adversarial relationship more accurately formalises the problem. As such, the problem is reformulated as a two player game between the reactive program and its environment~\cite{Pnueli89}.
 
 A game is a structure $G = (S, \mathcal{U}, \mathcal{C}, \delta, s_0)$. We consider only two player games and we name those players the \emph{controller} and \emph{environment}. The structure is defined by:
 
@@ -292,3 +286,19 @@ A Craig interpolant, $\mathcal{I}$, is defined with respect to two formulas, $A$
 \end{itemize}
 
 Propositional logic interpolants can be efficiently derived from the resolution proof of unsatisfiability of $A$ and $B$. Due to their interesting properties and efficient construction, interpolants have be found to be useful in many areas of model checking~\cite{McMillan05}. In general, interpolants are valuable for their ability to approximate. Intuitively, an interpolant is an approximation of $A$ that captures only the details needed for a proof of unsatisfiability of $A$ and $B$. If the proof represents something important about the system, such as a counterexample to the specification, then the interpolant captures important details.  Interpolation can be used as an alternative to building a winning set in model checking by instead incrementally building an inductive invariant for the system from counterexample refutations. Chapter~\ref{ch:relatedwork} contains a survey of model checking and synthesis methods that exploit this intuition. Interpolation is also central to the algorithm presented in this thesis.
+
+\section{Summary}
+
+In this chapter we have introduced several concepts necessary for an understanding of the central work of this thesis. We briefly summarise some key points here as an aid to the reader.
+
+\begin{itemize}
+
+    \item Temporal logic is the language we use to describe systems when a formalisation of time is necessary to express correctness. The existing body of work on synthesis and model checking is vast and this mathematical foundation of temporal logic provides the common language we use to define particular specialisations. In this thesis we are concerned with safety synthesis, which is formalised as a two player game with a winning condition defined by a subset of linear temporal logic with a single global operator.
+
+    \item Model checking is an approach to automatically verifying the correctness of programs. In this chapter we briefly introduced the problem and two techniques used to solve it. In the next chapter we will expand on some existing work on model checking that is related to the synthesis techniques introduced by this thesis.
+
+    \item Synthesis is a game between a system and its environment. Synthesis games may be solved by constructing a winning region via a fixed point computation of the controllable predecessor operator. In order to make this process scalable states are represented symbolically. Binary decision diagrams, which are graphical representations of boolean formulas, are commonly used as a compact symbolic representation of a set of states.
+
+    \item The algorithm presented in this thesis constructs boolean formulas. Here we have defined the problem of satisfiability for boolean formulas and introduced the tools that solve them. Additionally the algorithm makes use of interpolation of boolean formulas, which can be performed efficiently using the certificate generated by SAT solvers.
+
+\end{itemize}

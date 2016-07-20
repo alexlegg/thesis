@@ -596,6 +596,15 @@ Completeness of the algorithm follows from the completeness of the backtracking 
 
 \section{Discussion}
 
-In this chapter I presented the fundamental building block of my thesis, a new algorithm for solving bounded realisability. In later chapters I will explain extensions to this algorithm to increase its applicability and in Chapter~\ref{ch:evaluation} I will present results and evaluate the work as a whole. Before that, however, we shall consider the contributions of the work in this chapter.
-
 The design of the algorithm is motivated by the desire to solve bounded safety games whilst avoiding the potential state explosion of computing the winning set. The key insight is to shift the emphasis from finding a winning set to finding winning strategies. The shift is made possible by searching for runs in an abstraction of the game and using the results to refine the abstraction. The advantage of this approach is that even when the winning set is difficult to represent symbolically (via a BDD or similar) a winning strategy may still be found. The reverse is also true: if the winning strategy requires too much branching it will become intractable to construct it using this algorithm. The difference can be likened to breadth-first versus depth-first search, the appropriate algorithm depends on the particular problem instance to be solved.
+
+\section{Summary}
+
+In this chapter I presented the fundamental building block of this thesis, a new algorithm for solving bounded realisability. In later chapters I will explain extensions to this algorithm to increase its applicability and in Chapter~\ref{ch:evaluation} I will present results and an evaluation of the contribution of this.
+
+\begin{itemize}
+    \item Here we introduce an algorithm for solving synthesis games that are bounded to a fixed number of game rounds. The algorithm is a counterexample guided abstraction refinement framework in which abstractions of the game are constructed from candidate strategies for the players. This is done in a way that allows a candidate strategy to be checked for a spoiling strategy by playing the game abstraction on behalf of the opponent. Spoiling strategies are counterexamples to a strategy that may be used for refinement.
+
+    \item The design of the algorithm is inspired by the exponential blow up that can result from constructing a symbolic representation of the winning region as a BDD. In this algorithm the winning region is never computed although some winning states are learned as an optimisation to prune the search tree. In Chapter~\ref{ch:unbounded} we will see how this algorithm may be extended to unbounded synthesis by approximating the winning region during the execution of the algorithm.
+
+\end{itemize}
