@@ -8,37 +8,71 @@ In this chapter I will describe my work on bounded realisability of reactive sys
 
 Realisability is the first step on the path to synthesis. In the subsequent chapter I will describe an algorithm that extracts the actions of the controller necessary for realisation. This strategy may be used for synthesis: automatic construction of the controller program. Reactive synthesis for controllers with safety properties has many practical uses in areas such as circuit design, device drivers, or industrial automation.
 
-The algorithm described in this chapter solves bounded safety games. Recall that Chapter~\ref{ch:background} introduced games as a formalism for synthesis. In this chapter we are concerned with \emph{bounded} games that restrict all runs to certain length. This concept is borrowed from model checking where it is used for similar aims. Specifically, runs of a bounded game can be checked by a purely propositional formula passed to a SAT solver. The SAT solver provides an efficient method for quickly discovering counterexamples. The algorithm presented here is a counterexample guided abstraction refinement framework that relies on counterexamples to find and refine player strategies.
+The algorithm described in this chapter solves bounded safety games. Recall that Chapter~\ref{ch:background} introduced games as a formalism for synthesis by stating the problem in terms of a game between a controller and its environment. In this chapter we are concerned with \emph{bounded} games that restrict all runs in the game to certain length. This concept is borrowed from model checking where it is used to verify that a program emits no erroneous traces of a certain length. A propositional formula may be constructed that is satisfiable when a trace that visits an error state exists. A SAT solver can be used to efficiently search for a satisfying assignment to this formula, which represents a counterexample to the correctness property of the specification. 
 
-The primary motivation of this work is to avoid computing the entire set of winning states as would be done in the standard controllable predecessor driven fixpoint algorithm. An explicit representation of the winning set would quickly run into the state explosion issues of synthesis so traditionally the set is represented symbolically with a binary decision diagram. However, a BDD is a canonical representation of a set that, in the worst case, may be exponential in the number of variables. For some systems there is no compact representation of the winning set and for those cases an algorithm that does not compute it, such as the one presented here, is desirable.
+In realisability it is not enough to check for the existence of a trace that visits an error state. Such a trace only implies a counterexample that requires the controller to cooperate with the environment to fail. Instead we are interested in strategies for the players. A controller strategy must avoid the error states for all possible environment actions. Likewise, a counterexample strategy must take into account all controller actions. We cannot use a SAT solver to search for a strategy directly as now we require quantifiers. We can, however, check if a strategy allows a counterexample trace without quantification. This sets us up for a counterexample guided methodology in which we construct candidate strategies and check them for correctness. If we discover a counterexample we use it to guide a refinement step in which we improve the candidate strategy.
 
-\section{Inspiration}
+Similar to bounded model checking, bounded realisability is not a complete procedure.  If we decide that the controller can avoid error states for a game bounded to $k$ rounds there is no guarantee that the environment can not force an error in a game with a bound higher than $k$. In Chapter~\ref{ch:unbounded} I present an extension to the algorithm that extends this algorithm to unbounded games.
 
-This work draws inspiration from a QBF solving algorithm that treats the QBF problem as a game~\cite{Janota12}. In that algorithm one player assumes the role of the universal quantifiers and the opponent takes on the existential quantifiers. In the game, the players take turns to chooses values for their variables from the outermost quantifier block in. One method of solving QBF games is to expand the formula for each quantified variable by either conjuncting (for universal quantification) or disjuncting (for existential) the formula with the variable set to each possible value. For large QBF instances this expanded formula becomes far too large to solve so the authors introduce abstractions, or partially expanded formulas, to avoid expanding on variables unnecessarily. The abstractions are refined through a CEGAR process of searching for candidate solutions and analysing counterexamples. The full algorithm is described in detail in Chapter~\ref{ch:related}. The bounded synthesis algorithm presented here takes inspiration from the CEGAR framework of this work and can be thought of as a domain specific version of the QBF algorithm.
+Restricting ourselves to solving a bounded safety game enables us to turn the focus of the algorithm from states to traces. The traditional approach of constructing a binary decision diagram to symbolically represent the winning region has the potential to consume exponential space. The advantage of concentrating on runs of the game is that we do not rely on computing the winning states and therefore do not suffer from the related state explosion. The factors affecting the upper limit on scalability for the bounded synthesis algorithm are different to those of the BDD based approach. The most efficient algorithm for a realisability problem depends on the properties of that problem instance.
 
 \section{Algorithm}
 
-\begin{exmp}
+This work draws inspiration from a QBF solving algorithm that treats the QBF problem as a game~\cite{Janota12}. In that algorithm one player assumes the role of the universal quantifiers and the opponent takes on the existential quantifiers. In the game, the players take turns to chooses values for their variables from the outermost quantifier block in. Quantifiers may be removed from a formula by iteratively constructing and merging copies of the formula for each quantified variable. The copies of the formula represent the two possible values, true or false, of the quantified boolean variable. Universal quantification can then be reduced to the conjunction of these copies, and existential quantifications corresponds to a disjunction. In practice, these expanded formulas are far too large to be solved so the authors introduce abstractions, or partially expanded formulas, to avoid expanding on variables unnecessarily. The abstractions are refined through a CEGAR process of searching for candidate solutions and analysing counterexamples. The full algorithm is described in detail in Chapter~\ref{ch:related}. 
 
-We introduce a running example to assist the explanation. We consider a simple
-arbiter system in which the environment makes a request for a number of
-resources (1 or 2), and the controller may grant access to up to two resources.
-The total number of requests grows each round by the number of environment
-requests and shrinks by the number of resources granted by the controller in
-the previous round.  The controller must ensure that the number of unhandled
-requests does not accumulate to more than 2.  Figure~\ref{fig:example} shows
-the variables (\ref{fig:examplevars}), the initial state of the system (\ref{fig:exampleinit}), 
-and the formulas for computing next-state
-variable assignments (\ref{fig:exampletrans}) for this example. We use primed identifiers
-to denote next-state variables and curly braces to define the domain of a
-variable.
+A quantified formula may be used to solve realisability of a bounded synthesis game. We construct the formula by unrolling the transition relationship for every game round up until the bound. A quantifier alternation is introduced to the formula for the variables corresponding to the actions of each player. Universal quantifiers are used for the environment variables and existential for the controller. The formula is constrained so that if the state at any game round is an error state the formula evaluates to false. In this way the formula is a satisfiable if and only if a strategy exists for the controller that avoids the error states.
 
-This example is the $n=2$ instance of the more general problem of an arbiter of
-$n$ resources. For large values of $n$, the set of winning states has no compact representation, which
-makes the problem hard for BDD solvers. In Section~3 we will outline how the
-unbounded game can be solved without enumerating all winning states.
+It is possible to solve this QBF na\"ively but we can do better by taking into account the inherent structure that arises in formulas constructed from realisability problems. The games we solve are deterministic so we know that state variables at a particular game unrolling are fully dependent on the action variables that come before. This enables a fine grained computational learning optimisation that would be difficult to reproduce in a general QBF algorithm.
 
-\end{exmp}
+The bounded realisability algorithm presented here takes inspiration from the CEGAR framework of the work of Janota et. al. and can be thought of as a domain specific version of the QBF algorithm.
+
+\section{Intuition}
+
+We introduce an example to assist an intuitive explanation of the algorithm. Consider a simple model of an ethernet device driver. The operating system makes requests of the driver to write or read data to or from the device. It is the role of the driver to grant these requests while ensuring that a \texttt{read} never occurs when a \texttt{write} was requests and vice versa.
+
+As detailed in Chapter~\ref{ch:background}, we formalise realisability by a game structure $G = (S, \mathcal{U}, \mathcal{C}, \delta, s_0)$. The structure for our example is:
+
+\begin{itemize}
+    \item $S = \{ \texttt{request}, \texttt{error} \} $. The game consists of two boolean variables to denote the current request, and whether an error has occurred. We use \texttt{request = 0} to represent a \texttt{read} and \texttt{request = 1} for \texttt{write}.
+    \item $\mathcal{U} = \{ \texttt{os\_request} \} $. The uncontrollable actions consists of a single boolean variable to describe a \texttt{read} or a \texttt{write}. We use the same values as before, 0 for \texttt{read} and 1 for \texttt{write}.
+    \item $\mathcal{C} = \{ \texttt{dev\_cmd} \}$. The controllable actions similarly consists of a single boolean variable to denote the command given to the device: a \texttt{read} (\texttt{dev\_cmd = 0}) or a \texttt{write} (\texttt{dev\_cmd = 1}).
+    \item The transition relation $\delta$ is defined by the following formula:
+
+        $$ \texttt{request'} \gets \texttt{os\_request} $$
+
+        $$ \texttt{err'} \gets \texttt{request} \neq \texttt{dev\_cmd} $$
+
+        Primed variables are used here to indicate how the value is assigned in the next game round.
+
+    \item $s_0 = \{ \texttt{request = 0, err = 0} \}$. To simplify the example there is no idle state so the model is initialised with a pending \texttt{read} request.
+
+\end{itemize}
+
+\begin{figure}
+    \centering
+    \begin{tikzpicture}[level distance = 5mm,baseline]
+            \node [circle,draw] (n00){(0, 0)};
+            \node [circle,draw,right=of n00] (n10){(1, 0)};
+            \node [circle,draw,below=of n00] (n01){(0, 1)};
+            \node [circle,draw,below=of n10] (n11){(1, 1)};
+
+            \draw (n00) -- (n01);
+    \end{tikzpicture}
+    \label{fig:example1}
+    \caption{State automata representation of $\delta$ in Example 1.}
+\end{figure}
+
+Our bounded synthesis algorithm is set within a counterexample guided abstraction refinement framework. Abstraction serves a dual purpose in our approach as both a method for discovering player strategies and as a way to reduce the search space of the game. This is achieved by employing one player's candidate strategy as its opponent's game abstraction. The effect is that the search for a player's strategy is directed by its opponent's current best effort at its own strategy and the search is guided toward winning strategies.
+
+We will now step through an execution of the algorithm using the example we have just introduced. The first step involves a search of the empty game abstraction for an initial candidate strategy for the environment player. In the empty abstraction we have not yet restricted the game in any way so all runs through the game are enabled. We search for a candidate strategy by finding a run that reaches an error state. Here we are only searching for the existence of a run and so we do not require quantifier alternations. A SAT solver can be used to efficiently do this search for us. Intuitively, an existential search is equivalent to the two players of the game cooperating. In most real world applications of synthesis the environment is in fact cooperating with the system so the cooperation heuristic turns out to be practical. Figure~\ref{fig:example1a} shows a trace through the example game that reaches an error state.
+
+Our bounded synthesis algorithm constructs abstractions of the game that restrict actions available to one of the players.  Specifically, we consider abstractions represented as trees of actions, referred to as \emph{abstract game trees} (AGTs).  Figure~\ref{fig:agt} shows an example abstract game tree restricting the environment (abstract game trees restricting the controller are similar).  In the abstract game, the controller can freely choose actions whilst the environment is required to pick actions from the tree.  After reaching a leaf, the environment continues playing unrestricted.  The tree in Figure~\ref{fig:agt} restricts the first environment action to \texttt{request=1}. At the leaf of the tree the game continues unrestricted.
+
+\section{Case Study: Arbiter}
+
+We consider a simple arbiter system in which the environment makes a request for a number of resources (1 or 2), and the controller may grant access to up to two resources.  The total number of requests grows each round by the number of environment requests and shrinks by the number of resources granted by the controller in the previous round.  The controller must ensure that the number of unhandled requests does not accumulate to more than 2.  Figure~\ref{fig:example} shows the variables (\ref{fig:examplevars}), the initial state of the system (\ref{fig:exampleinit}), and the formulas for computing next-state variable assignments (\ref{fig:exampletrans}) for this example. We use primed identifiers to denote next-state variables and curly braces to define the domain of a variable.
+
+This example is the $n=2$ instance of the more general problem of an arbiter of $n$ resources. For large values of $n$, the set of winning states has no compact representation, which makes the problem hard for BDD solvers. In Section~3 we will outline how the unbounded game can be solved without enumerating all winning states.
 
 \begin{figure}
     \begin{subfigure}[t]{\textwidth}
@@ -75,17 +109,7 @@ unbounded game can be solved without enumerating all winning states.
     \label{fig:example}
 \end{figure}
 
-Our bounded synthesis algorithm constructs abstractions of the game 
-that restrict actions available to one of the players.
-Specifically, we consider abstractions represented as trees of actions,
-referred to as \emph{abstract game trees} (AGTs).  Figure~\ref{fig:agt} shows
-an example abstract game tree restricting the environment (abstract game trees
-restricting the controller are similar).  In the abstract game, the controller
-can freely choose actions whilst the environment is required to pick actions
-from the tree.  After reaching a leaf, the environment continues playing
-unrestricted.  The tree in Figure~\ref{fig:agt} restricts the first environment
-action to \texttt{request=1}. At the leaf of the tree the game continues
-unrestricted.
+Our bounded synthesis algorithm constructs abstractions of the game that restrict actions available to one of the players.  Specifically, we consider abstractions represented as trees of actions, referred to as \emph{abstract game trees} (AGTs).  Figure~\ref{fig:agt} shows an example abstract game tree restricting the environment (abstract game trees restricting the controller are similar).  In the abstract game, the controller can freely choose actions whilst the environment is required to pick actions from the tree.  After reaching a leaf, the environment continues playing unrestricted.  The tree in Figure~\ref{fig:agt} restricts the first environment action to \texttt{request=1}. At the leaf of the tree the game continues unrestricted.
 
 The root of the tree is annotated by the initial state $s$ of the abstract game
 and the bound $k$ on the number of rounds.  We denote $\textsc{nodes}(T)$ the
