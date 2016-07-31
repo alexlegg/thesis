@@ -61,7 +61,7 @@
     {0pt}
     {\chapformat}
 
-\title{Addressing the Performance Bottlenecks of Device Driver Synthesis}
+\title{Addressing State Explosion in Reactive Synthesis}
 
 \author{Alexander Legg \\
     \\
@@ -76,33 +76,30 @@ Leonid Ryzhyk, Nina Narodytska, and Gernot Heiser}
 \setcounter{tocdepth}{3}
 \tableofcontents
 
+\newpage
+
 \begin{abstract}
 
-Device drivers are notorious for their contribution to the failure of software
-systems. A driver forms the interface between two complicated systems: an
-operating system and a hardware device. As a result, driver development is
-complicated and highly prone to human error. Driver reliability has been the
-focus of much research over the past two decades. One result of this research
-is device driver synthesis.
+Software controllers of reactive systems are ubiquitous in situations where incorrectness has a high cost. In order to place trust in the software, strong guarantees of its functional correctness are required. Reactive synthesis can be used to automatically construct software to a specification and ensure correctness. The drawback is that synthesis is computationally hard meaning that many specifications are infeasible to synthesise.
 
-Device driver synthesis aims to remove human error from the development process
-by removing humans. A synthesis tool can take a formal specification of
-requirements and produce a system. Thus, a driver can be synthesised by
-providing the tool with a specification of the OS and the hardware that it must
-interface with. The resulting driver is guaranteed to be correct with respect
-to the specifications.
+Synthesis is hard because reactive systems have many possible states that the synthesis procedure must consider. A standard way to mitigate this complexity is to symbolically represent sets of states with data structures such as binary decision diagrams (BDDs). The usual approach to synthesis is to construct the set of all states that are safe for the controller. In some specifications this set has no compact representation as a BDD and so it is slow or impossible to synthesise a controller in this way.
 
-The drawback of this approach is that synthesis is a computationally intensive
-task belonging to 2-EXPTIME. In practice synthesis tools are capable of
-producing drivers though there remain cases where synthesis is impossible. In
-this thesis I will present an algorithm that provides results on many of these
-previously unattainable cases.
+In this thesis I propose a synthesis algorithm that constructs an approximation of the set of safe states that is sufficient to show correctness of the controller. The algorithm enables synthesis of specifications that were previously infeasible.
 
 \end{abstract}
+
+\newpage
 
 \renewcommand{\abstractname}{Acknowledgements}
 \begin{abstract}
 Acknowledge some people
+\end{abstract}
+
+\newpage
+
+\renewcommand{\abstractname}{Publications}
+\begin{abstract}
+List publications
 \end{abstract}
 
 \input{introduction.tex}

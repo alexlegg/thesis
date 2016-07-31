@@ -12,7 +12,7 @@ can reason about what we describe in it.
 
 In this thesis we are concerned with reactive systems. Traditional programs can be verified by checking that the output is correct for each possible input. In a reactive system, i.e. a system that is in a continuous state of interaction with its environment, there is no termination and therefore no final output to verify. Instead the system is considered correct if it adheres to its specification indefinitely. A formalism of a reactive system must then consider the concept of time in order to specify its correctness property. 
 
-In this thesis, device drivers will be frequently used as an example of a reactive system. A driver accepts requests from the operating system and information about internal state from the device, and it responds by sending commands to the device and reporting to the operating system. The correctness of a device driver might be specified by a statement in temporal logic that corresponds to something similar to \emph{the driver does not enter an error state} or \emph{the driver always responds to requests}. In the following sections the syntax and semantics requires to make such statements formal will be introduced.
+In this thesis, device drivers will be frequently used as an example of a reactive system. A driver accepts requests from the operating system and information about internal state from the device, and it responds by sending commands to the device and reporting to the operating system. The correctness of a device driver might be specified by a statement in temporal logic that corresponds to something similar to \emph{the driver does not enter an error state} or \emph{the driver always responds to requests}. In the following sections the syntax and semantics required to make such statements formal will be introduced.
 
 \subsection{Kripke Structures}
 
@@ -77,9 +77,7 @@ state $s \in S$ of structure $M$. We definte $\models$ recursively:
     \item $M, s_0 \models \phi_1 U \phi_2$ iff for some path $(s_0, s_1, ...)$, $\exists i (i \geq 0 \land (M, s_i \models \phi_2) \land \forall j (j \geq 0 \land g < i \to (M, s_j \models \phi_1)))$.
 \end{itemize}
 
-Throughout this thesis will use $F$ and $G$ to represent the \emph{finally} and
-\emph{globally} operators. Elsewhere in the literature $\lozenge$ and $\square$
-are sometimes used to represent the same.
+Throughout this thesis we use $F$ and $G$ to represent the \emph{finally} and \emph{globally} operators. Elsewhere in the literature $\lozenge$ and $\square$ are sometimes used to represent the same.  
 
 \subsection{Computation Tree Logic}
 
@@ -136,8 +134,7 @@ In \cite{Vardi96}, the authors propose a model checking approach using this
 connection between temporal logic and automata theory. They propose the
 construction of a finite state, infinite word generator representing the
 program $P$, and an acceptor of the same, $\phi$, constructed from the temporal
-property to be checked. Thus the program may be model checked by determining
-whether $P \cap \lnot \phi$ is empty.
+property to be checked. Thus the program may be checked by determining whether $P \cap \lnot \phi$ is empty.
 
 \subsection{B\"uchi Automata}
 
@@ -156,7 +153,7 @@ regular language over the alphabet $\Sigma$ is
     \end{itemize}
 \end{itemize}
 
-The automata itself is defined as a tuple $A = (Q, \Sigma, \delta, q_0, F)$ where
+The automaton itself is defined as a tuple $A = (Q, \Sigma, \delta, q_0, F)$ where
 
 \begin{itemize} 
     \item $Q$ is a finite set of states,
@@ -170,7 +167,7 @@ Rabin automata are also $\omega$-automata, which are similar to B\"uchi automata
 
 \section{Synthesis}
 
-Model checking is the art of deciding whether a program meets a specification. Synthesis is the related problem of \emph{constructing} the program to meet a specification. In the model checking literature discussed thus far, the program and its environment are considered to be the same entity. This approach contains the assumption that the program and environment are cooperating, which is not appropriate for reactive synthesis. Consider a driver that must perform some action on input from the operating system. Driver synthesis with a cooperating OS could assume that the input never occurs. For synthesis of reactive programs an adversarial relationship more accurately formalises the problem. As such, the problem is reformulated as a two player game between the reactive program and its environment~\cite{Pnueli89}.
+Model checking is the art of deciding whether a program meets a specification. Synthesis is the related problem of \emph{constructing} the program to meet a specification. In model checking the actions of the program are decided by the software being checked. A synthesis procedure must instead decide how the controller chooses actions and the ways the environment can react to each decision. In order to model this requirement the controller and environment should be considered to be in an adversarial relationship. Thus the synthesis problem is formulated as a two player game between the reactive program and its environment~\cite{Pnueli89}.
 
 A game is a structure $G = (S, \mathcal{U}, \mathcal{C}, \delta, s_0)$. We consider only two player games and we name those players the \emph{controller} and \emph{environment}. The structure is defined by:
 
@@ -179,25 +176,30 @@ A game is a structure $G = (S, \mathcal{U}, \mathcal{C}, \delta, s_0)$. We consi
     \item $\mathcal{U}$ is a finite alphabet of \emph{uncontrollable} actions,
     \item $\mathcal{C}$ is a finite alphabet of \emph{controllable} actions,
     \item $\delta : S \times \mathcal{U} \times \mathcal{C} \to S$ is a transition relation mapping states, uncontrollable actions, and controllable actions to next states,
-    \item $s_0 \in S$ is an initial state, and
+    \item $s_0 \in S$ is an initial state.
 \end{itemize}
 
 Conceptually, the game structure is another finite state automaton where transitions are partially controlled by both players. In each state, the environment chooses an uncontrollable action from $\mathcal{U}$ and the system chooses a controllable action from $\mathcal{C}$. We consider only deterministic games where $\delta(s, u, c, s_1') \land \delta(s, u, c, s_2') \to (s_1' = s_2')$.  We modify the notion of a run to suit games: $(s_0, u_0, c_0), (s_1, u_1, c_1), ... (s_n, u_n, c_n)$ where $\forall i [i \geq 0 \to \delta(s_i, u_i, c_i, s_{i+1})]$. 
 
-In addition to the game structure itself we define a game \emph{objective} $\psi$ given by an LTL formula. We say that a run is \emph{winning} for the controller iff the run satisfies the objective. The game is zero-sum, therefore a run is winning for the environment in the dual case where the objective $\psi$ is not true. Although $\psi$ is given in LTL we formally define the objective of the game with the \emph{all paths} branching operator: $\forall \mathcal{U} \exists \mathcal{C} A \psi$.
+In addition to the game structure itself we define a game \emph{objective} $\psi$ given by an LTL formula. We say that a run is \emph{winning} for the controller iff the run satisfies the objective. The game is zero-sum, therefore a run is winning for the environment in the dual case where the objective $\psi$ is not true. For a controller to be correct it must ensure that all choices of the environment lead to runs that are winning for the controller. 
+
+%%%Although $\psi$ is given in LTL we formally define the objective of the game with the \emph{all paths} branching operator: $\forall \mathcal{U} \exists \mathcal{C} A \psi$.
 
 %%%Formally, a run is controller-winning iff $\forall i [i \geq 0 \to \lnot E(s_i)]$ environment-winning iff $\exists i [i \geq 0 \land E(s_i)]$.
 
 A \emph{controller strategy} $\pi^c : \mathcal{S} \times \mathcal{U} \to \mathcal{C}$ is a mapping of states and uncontrollable inputs to controllable actions. $\pi^c$ is a \emph{winning strategy} iff all runs $(s_0, u_0, \pi^c(s_0, u_0)), (s_1, u_1, \pi^c(s_1, u_1)) \dots$ are winning. \emph{Realisability} is the problem of determining the existence of a winning controller strategy and \emph{synthesis} is the problem of constructing it.
 
 An \emph{environment strategy} $\pi^e : \mathcal{S} \to \mathcal{U}$ is a mapping of states to uncontrollable actions. An environment strategy is winning
-iff all runs $(s_0, \pi^e(s_0), c_0)$, $(s_1, \pi^e(s_1), c_1) \dots$ are winning for the environment. The existence of an winning environment strategy implies the nonexistence of a winning controller strategy and vice versa.
+iff all runs $(s_0, \pi^e(s_0), c_0)$, $(s_1, \pi^e(s_1), c_1) \dots$ are winning for the environment. The existence of a winning environment strategy implies the nonexistence of a winning controller strategy and vice versa.
 
 \subsection{Solving Games}
 
 Reactive synthesis for a game with an LTL objective~\cite{Pnueli89} may be solved via the construction of an equivalent non-deterministic B\"uchi automaton that is subsequently determinised to a deterministic Rabin automaton. Without delving into details, the Rabin automaton is interpreted as a tree-automaton and checked for emptiness. This yields a double exponential time algorithm in the size of the specification.
 
-The double exponential complexity, or \emph{state explosion} problem, led to synthesis being considered infeasible for many years. However, synthesis has been applied in many real world scenarios by restricted the game objective to fragments of LTL. In this thesis we consider \emph{safety games}, or games with objectives of the form $G \phi$ where $\phi$ is a propositional formula only. Informally, a controller in a safety game has the objective to stay within a safe region or avoid error states. Safety games can be solved by drawing on $\mu$-calculus and solving a fixed point calculation~\cite{Asarin95}, which is a much less complex procedure than the above automata theoretic approach.
+The double exponential complexity causes a \emph{state explosion}, which led to synthesis being considered infeasible for many years. However, synthesis has been applied in many real world scenarios by restricting the game objective to fragments of LTL. In this thesis we consider \emph{safety games}, or games with objectives of the form $G \phi$ where $\phi$ is a propositional formula only. Informally, a controller in a safety game has the objective to stay within a safe region or avoid error states. Safety games can be solved by drawing on $\mu$-calculus and solving a fixed point calculation~\cite{Asarin95}, which is a much less complex procedure than the above automata theoretic approach. 
+
+Whilst the LTL fragment that is solvable via a safety game is not very expressive, fixed point computations can also be used to solve the much more expressive generalised reactivity fragment of LTL. Safety synthesis can be seen as the first step on the path to more useful yet practical synthesis techniques.
+
 
 \subsection{Fixed Point Computation}
 
