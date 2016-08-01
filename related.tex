@@ -1,0 +1,15 @@
+\chapter{Related Work}
+\label{ch:relatedwork}
+
+Reactive synthesis is an extensively studied topic and the work of this thesis is influenced by a wide array of prior work. In the previous chapter we identified symbolic representation of state sets and abstraction refinement as methodologies for mitigating state explosion. In this chapter we will approach the problem from a different angle. The work in this thesis is inspired by research in the model checking community and some prior efforts to apply that research to synthesis.
+
+\section{Bounded model checking}
+
+Bounded model checking~\cite{Biere99} (BMC), as introduced in Chapter~\ref{sec:boundedmodelchecking}, is a methodology that generates SAT queries to determine the existence of a trace in a game that violates its specification. The approach taken to realisability described in Chapter~\ref{ch:bounded} is inspired by BMC and also unrolls the transition relationship into a SAT query and searches for counterexample traces. 
+
+BMC considers the validity of CTL* formulas in Kripke structures in which the game is bounded to $k$ rounds. The authors of the procedure provide a semantics for the translation of CTL* formulas on bounded models, via LTL, to satisfiability constraints. Consider a safety property $AG \phi$ as an example. A safety property is universal and so is checked in BMC by searching existentially for counterexamples in the form of the negation $F \lnot \phi$. The search is translated into a SAT query by unrolling the transition relation $R$ like so: $s_0 \land \bigwedge_{i=0}^{k-1} R(s_i, s_{i+1})$. The LTL formula is similarly translated into a formula $\bigvee_{i=0}^{k} \lnot \phi \in L(s_i)$. The SAT query is equivalent to a check whether there is a path in the bounded Kripke structure $(s_0, s_1, ..., s_k)$ such that $\lnot \phi$ holds in some state $s_i$.
+
+For bounded realisability, the unrolling of the transition relation and the translation of the safety property can be done in much the same way. The difference is that in a synthesis problem the model has yet to be constructed and the algorithm must be given the freedom to choose the actions of the controller. For more details about how this difference is overcome, see Chapter~\ref{ch:bounded}.
+
+One of the motivations behind bounded model checking is aligned with the aim of this thesis: to avoid the high cost in space of approaches that construct a symbolic representation of the winning region as a binary decision diagram. By bounding the length the game the procedure can rely on SAT as a symbolic representation instead of BDDs. The drawback is that although BMC is sound, any counterexample is a true counterexample, it is not complete with respect to the unbounded game unless a sufficient bound is used. The diameter of the game, 
+

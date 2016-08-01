@@ -48,29 +48,89 @@ As detailed in Chapter~\ref{ch:background}, we formalise realisability by a game
 
 \end{itemize}
 
+\tikzset{
+    pil/.style={
+        -{Latex[length=3mm]},
+        thick
+    },
+    snode/.style={
+        align=center,
+        circle,
+        draw,
+        thick
+    }
+}
+
 \begin{figure}
     \centering
     \begin{tikzpicture}[level distance = 5mm,baseline]
-            \node [circle,draw] (n00){(0, 0)};
-            \node [circle,draw,right=of n00] (n10){(1, 0)};
-            \node [circle,draw,below=of n00] (n01){(0, 1)};
-            \node [circle,draw,below=of n10] (n11){(1, 1)};
+            \node [snode] (n00){(0, 0)};
+            \node [snode,right=2cm of n00] (n10){(1, 0)};
+            \node [snode,accepting,below=of n00] (n01){(0, 1)};
+            \node [snode,accepting,below=of n10] (n11){(1, 1)};
 
-            \draw (n00) -- (n01);
+            \draw [pil] (n00) edge [bend left] node [above] {(1, 0)} (n10);
+            \draw [pil] (n10) edge [bend left] node [below] {(0, 1)} (n00);
+
+            \draw [pil] (n00) edge [loop left] node [left] {(0, 0)} (n00);
+            \draw [pil] (n10) edge [loop right] node [right] {(1, 1)} (n10);
+
+            \draw [pil] (n00) edge node [left] {(*, 1)} (n01);
+            \draw [pil] (n10) edge node [right] {(*, 0)} (n11);
     \end{tikzpicture}
     \label{fig:example1}
-    \caption{State automata representation of $\delta$ in Example 1.}
+    \caption{State automata representation of $\delta$ in Example 1. Nodes are labelled by the tuple (\texttt{request}, \texttt{error}). Edges are labelled with uncontrollable and controllable actions: (\texttt{os\_request}, \texttt{dev\_cmd}). A star indicates that the transition occurs on both a 0 and a 1. Transitions from error states are not shown for simplicity.}
 \end{figure}
 
 Our bounded synthesis algorithm is set within a counterexample guided abstraction refinement framework. Abstraction serves a dual purpose in our approach as both a method for discovering player strategies and as a way to reduce the search space of the game. This is achieved by employing one player's candidate strategy as its opponent's game abstraction. The effect is that the search for a player's strategy is directed by its opponent's current best effort at its own strategy and the search is guided toward winning strategies.
+
+The abstractions of the game that we construct during the CEGAR search restrict actions available to one of the players.  Specifically, we consider abstractions represented as trees of actions, referred to as \emph{abstract game trees} (AGTs).  Figure~\ref{fig:agt} shows an example abstract game tree restricting the environment (abstract game trees restricting the controller are similar).  In the abstract game, the controller can freely choose actions whilst the environment is required to pick actions from the tree.  After reaching a leaf, the environment continues playing unrestricted.  The tree in Figure~\ref{fig:agt} restricts the first environment action to \texttt{request=1}. At the leaf of the tree the game continues unrestricted.
+
+\begin{figure}
+    \centering
+    \begin{subfigure}[t]{0.3\textwidth}
+        \begin{tikzpicture}
+            \node [circle,draw,inner sep=1pt] (root){}
+                child {node [circle,draw,inner sep=1pt] {}
+                    child {node [circle,draw,inner sep=1pt] {}
+                        child {node [circle,draw,inner sep=1pt] {}
+                            node [left=4pt] {\texttt{cmd=0}}
+                        }
+                        node [left=4pt] {\texttt{req=1}}
+                    }
+                node [left=4pt] {\texttt{cmd=0}}
+                }
+                node [left=4pt] {\texttt{req=1}}
+                node [above=4pt] {$\langle s, 2 \rangle$};
+        \end{tikzpicture}
+        \label{fig:example1a}
+        \caption{Environment winning trace}
+    \end{subfigure}%
+    \begin{subfigure}[t]{\textwidth}
+        \begin{tikzpicture}
+            \node [circle,draw,inner sep=1pt] (root){}
+                child {node [circle,draw,inner sep=1pt] {}
+                    child {node [circle,draw,inner sep=1pt] {}
+                        child {node [circle,draw,inner sep=1pt] {}
+                            node [left=4pt] {\texttt{cmd=0}}
+                        }
+                        node [left=4pt] {\texttt{req=1}}
+                    }
+                node [left=4pt] {\texttt{cmd=0}}
+                }
+                node [left=4pt] {\texttt{req=1}}
+                node [above=4pt] {$\langle s, 2 \rangle$};
+        \end{tikzpicture}
+    \end{subfigure}
+    \label{fig:example1}
+    \caption{Execution of bounded realisability on the example.}
+\end{figure}
 
 We will now step through an execution of the algorithm using the example we have just introduced. The first step involves a search of the empty game abstraction for an initial candidate strategy for the environment player. In the empty abstraction we have not yet restricted the game in any way so all runs through the game are enabled. We search for a candidate strategy by finding a run that reaches an error state. Here we are only searching for the existence of a run and so we do not require quantifier alternations. A SAT solver can be used to efficiently do this search for us. Intuitively, an existential search is equivalent to the two players of the game cooperating. In most real world applications of synthesis the environment is in fact cooperating with the system so the cooperation heuristic turns out to be practical. Figure~\ref{fig:example1a} shows a trace through the example game that reaches an error state.
 
 The trace tells us that by playing the actions contained in the trace it is possible for the environment to reach an error state. From this we conjecture that the first action in the trace is a reasonable choice for the environment's winning strategy. So we construct a candidate strategy in which the environment plays \texttt{sdfsdf} in the first game round. The next step is to validate our conjecture by searching for counterexamples. We do this by constructing a new abstraction of the game in which the environment is restricted to playing actions from its candidate strategy (Figure~\ref{fig:example1b}). Then we play this abstract game on the behalf of the controller. Once again we search for a trace through the game but this time the SAT solver is searching for a trace that avoids error states for the duration of the bounded game. Any traces found in this way indicate the possibility of a spoiling strategy for the controller that defeats the candidate strategy of the environment.
 
----------
-
-Our bounded synthesis algorithm constructs abstractions of the game that restrict actions available to one of the players.  Specifically, we consider abstractions represented as trees of actions, referred to as \emph{abstract game trees} (AGTs).  Figure~\ref{fig:agt} shows an example abstract game tree restricting the environment (abstract game trees restricting the controller are similar).  In the abstract game, the controller can freely choose actions whilst the environment is required to pick actions from the tree.  After reaching a leaf, the environment continues playing unrestricted.  The tree in Figure~\ref{fig:agt} restricts the first environment action to \texttt{request=1}. At the leaf of the tree the game continues unrestricted.
+When a counterexample is found it is used to refine the original candidate strategy. We do this by modifying the game abstraction to restrict the controller to playing the first action from its counterexample trace as well as the existing restriction to the environment. Now a SAT query for a environment winning trace must include this counterexample action. Once again we conjecturing that the first action in a trace is a useful action for our search and we are ensuring that the environment player takes this controller action into account when constructing its strategy. If a trace exists with this restriction to the game it can be used to refine the environment's candidate strategy by appending a new action.
 
 \section{Case Study: Arbiter}
 
