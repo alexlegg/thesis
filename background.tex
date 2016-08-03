@@ -279,6 +279,7 @@ Instead of constructing a set of winning states this technique, called \emph{bou
 One difficulty of this approach is choosing a maximum bound that is both \emph{sufficient} to verify the program correct and \emph{feasible} to compute the result of the propositional formula. For a finite state automaton, the \emph{diameter} is the minimal length such that every reachable state can by reached by a path of that length or less. The diameter is sufficient for model checking but not always feasible. In addition, computing the diameter itself is an inefficient quantified boolean formula. Despite this difficulty, bounded model checking is useful in many practical cases. In particular the ability to quickly find short counterexamples gives an advantage in cases when a BDD based approach hits state explosion issues.
 
 \subsection{Interpolation}
+\label{sec:backgroundInterpolation}
 
 A Craig interpolant, $\mathcal{I}$, is defined with respect to two formulas, $A$ and $B$, that are inconsistent ($A \land B \equiv \bot$) and has the following properties
 
