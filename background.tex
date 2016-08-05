@@ -136,6 +136,9 @@ construction of a finite state, infinite word generator representing the
 program $P$, and an acceptor of the same, $\phi$, constructed from the temporal
 property to be checked. Thus the program may be checked by determining whether $P \cap \lnot \phi$ is empty.
 
+
+In Section~\ref{sec:boundedmodelchecking} another approach to model checking is discussed that searches for counterexamples to safety properties using a SAT solver.
+
 \subsection{B\"uchi Automata}
 
 Like all $\omega$-automata, the language of a B\"uchi automaton is
@@ -290,6 +293,20 @@ A Craig interpolant, $\mathcal{I}$, is defined with respect to two formulas, $A$
 \end{itemize}
 
 Propositional logic interpolants can be efficiently derived from the resolution proof of unsatisfiability of $A$ and $B$. Due to their interesting properties and efficient construction, interpolants have be found to be useful in many areas of model checking~\cite{McMillan05}. In general, interpolants are valuable for their ability to approximate. Intuitively, an interpolant is an approximation of $A$ that captures only the details needed for a proof of unsatisfiability of $A$ and $B$. If the proof represents something important about the system, such as a counterexample to the specification, then the interpolant captures important details.  Interpolation can be used as an alternative to building a winning set in model checking by instead incrementally building an inductive invariant for the system from counterexample refutations. Chapter~\ref{ch:relatedwork} contains a survey of model checking and synthesis methods that exploit this intuition. Interpolation is also central to the algorithm presented in this thesis.
+
+\subsection{Quantified Boolean Formulas}
+\label{sec:backgroundQBF}
+
+A quantified boolean formula (QBF) extends satisfiability with the addition of quantifiers. We consider formulas in prenex normal form $Q_1 \hat{x} Q_2 \hat{y} ... F(\hat{x}, \hat{y}, ...)$ where $Q_i \in \{ \exists, \forall \}$, $\hat{x}, \hat{y}, ...$ are sets of boolean variables, and $F$ is a propositional formula over the quantified variables in CNF.
+
+Quantifiers over boolean variables may be \emph{expanded} into propositional formulas like so:
+
+\begin{itemize}
+    \item $\exists x F(x) \equiv F(\texttt{true}) \lor F(\texttt{false})$
+    \item $\forall x F(x) \equiv F(\texttt{true}) \land F(\texttt{false})$
+\end{itemize}
+
+Expansion may be used to construct a SAT problem from QBF but the CNF formula may be exponentially larger than its QBF representation. We will discussion alternative approaches to solving QBF problems in Chapter~\ref{ch:relatedwork}.
 
 \section{Summary}
 
