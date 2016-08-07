@@ -78,10 +78,24 @@ The universal quantification in the 2QBF query is costly to compute so the autho
 
 A recent approach~\cite{Chiang15} has a similar application of PDR to synthesis with the major difference being that the authors propose solving the game forwards from the initial states instead of backwards from the error set. Thus the relatively inductive sets represent overapproximations of reachable states. In the previous work the SAT query checks for environment actions that force a successor state into an approximation of environment winning states. As a result, when a transition is found to have a countering controller action it is only known to be a bad transition for the environment to force into the current target. In this more recent work the SAT query is always attempting to find transitions \emph{from} the (approximate) reachable sets into the error set. An advantage of this approach is that learned transitions may be blocked in \emph{all} future queries.
 
-\subsection{SAT Based Learning for Synthesis}
+\subsection{Clause Learning for Synthesis}
+
+In \cite{Bloem14} the authors propose a suite of learning algorithms for synthesis. Two of these algorithms are centred on learning unsafe states by solving a quantified formula that checks for environment controllable successor states outside the current approximation of the safe region. When such a state is discovered it is generalised into multiple cubes representing sets of states that are then blocked from the safe region. The specification is decided unrealisable when the initial states are no longer within the safe region and realisable when there are no states left to learn. 
+
+The two variations of this algorithm correspond to one based on a QBF solver and one based on two competing incremental SAT solvers. The latter contains an optimisation to ensure that the incremental nature of the solvers is exploited. Incremental solvers work well in the case where new constraints are added to the problem over time. Removing constraints requires either careful backtracking of learned clauses or restarting the session with no clauses. As the safe region is restricted by blocking cubes the constraints of the solver playing on the behalf of the environment are reduced by enabling the search for transitions to outside the safe region to visit the blocked cubes. The authors suggest maintaining a separate instance of the safe region that is lazily updated. The environment searches for states with successor states outside the old version of the safe region until it is necessary to make the costly update to the incremental solver to the more permissive new safe region.
+
+Another optimisation take inspiration from PDR to approximate reachability information during clause learning. It is not useful to learn unreachable states to remove from the safe region so the search space can be pruned by only considering an overapproximation of reachable states. The optimisation is implemented first by checking candidates for learning for inclusion in the initial set or a predecessor inside the current safe region estimate.
+
+The authors additionally propose two approaches that attempt to directly compute a winning region. The first of these searches for assignments to the parameters of a CNF template of the winning region with a call to a QBF solver. The parameters correspond to the polarity and inclusion of variables within clauses. The second constructs an \emph{effectively propositional logic} (EPR) formula that characterises the Skolem functions encoding the winning region of the game. This cannot be solved via QBF due to the nonlinear nature of quantifiers over current and successor variables that describe the winning region. The formula can be encoded in EPR and handed to an efficient solver.
+
+Each of these algorithms has been implemented in a tool that has the ability to run various combinations in parallel. The authors report a significant benefit to parallelisation and sharing of learned clauses in between algorithms.
 
 \section{Quantified Boolean Formula Solving}
 
 A quantified boolean formula (QBF) generalises the satisfiability problem to include universal and existential quantifiers. In accordance with the additional complexity of quantification QBF solvers have so far been less successful than SAT solvers at scaling to real world problems. However recent work in which competing SAT solvers are employed on behalf of each quantifier in a QBF problem have shown promising advances.
 
 The bounded realisability problems of Chapter~\ref{ch:bounded} are specialisations of QBF problems. The algorithm proposed to solve them is not a general QBF solver, however it is worth discussing the approaches that are. In particular the algorithm in Chapter~\ref{ch:bounded} is inspired by the QBF algorithm of \cite{Janota12}.
+
+QBFs may be solved by application of DPLL~\cite{sdfsdf} or by expansion into SAT~\cite{Ayari02} (see Section~\ref{sec:backgroundQBF} ) but more advanced techniques have been shown to be more effective.
+
+\subsection{}

@@ -306,7 +306,9 @@ Quantifiers over boolean variables may be \emph{expanded} into propositional for
     \item $\forall x F(x) \equiv F(\texttt{true}) \land F(\texttt{false})$
 \end{itemize}
 
-Expansion may be used to construct a SAT problem from QBF but the CNF formula may be exponentially larger than its QBF representation. We will discussion alternative approaches to solving QBF problems in Chapter~\ref{ch:relatedwork}.
+Expansion may be used to construct a SAT problem from QBF but the CNF formula may be exponentially larger than its QBF representation. We will discuss alternative approaches to solving QBF problems in Chapter~\ref{ch:relatedwork}.
+
+A \emph{Skolem function} for variables $\hat{s}$ with respect to a QBF $$\exists \hat{x}_1 \forall \hat{y}_1 ... \exists \hat{x}_i \forall \hat{y}_i \exists \hat{s} Q_1 \hat{z}_1 ... Q_j \hat{z}_j F(\hat{x}_1, \hat{y}_1, ..., \hat{x}_i, \hat{y}_i, \hat{s}, \hat{z}_1, ..., \hat{z}_j)$$ is a function $f : 2^{|\hat{y}_1|} \times ... \times 2^{|\hat{y}_i|} \to 2^{|\hat{s}|}$ such that $$\exists \hat{x}_1 \forall \hat{y}_1 ... \exists \hat{x}_i \forall \hat{y}_i Q_1 \hat{z}_1 ... Q_j \hat{z}_j F(\hat{x}_1, \hat{y}_1, ..., \hat{x}_i, \hat{y}_i, f(\hat{y}_1, ..., \hat{y}_i), ..., \hat{z}_1, ..., \hat{z}_j)$$ In other words $f$ is assigns a value to $\hat{s}$ for every assignment to universally quantified variables in the prefix such that the formula is satisfiable.
 
 \section{Summary}
 
