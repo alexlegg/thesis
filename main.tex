@@ -12,6 +12,7 @@
 \usepackage{fixltx2e}
 \usepackage{hyperref}
 \usepackage{stmaryrd}
+\usepackage{pdfpages}
 \hypersetup{
     colorlinks,
     citecolor=black,
@@ -61,7 +62,7 @@
     {0pt}
     {\chapformat}
 
-\title{Addressing State Explosion in Reactive Synthesis}
+\title{Addressing the Space Explosions of Reactive Synthesis}
 
 \author{Alexander Legg \\
     \\
@@ -70,21 +71,49 @@ Leonid Ryzhyk, Nina Narodytska, and Gernot Heiser}
 
 \begin{document}
 
-\maketitle
+\frontmatter
+
+\thispagestyle{empty}
+
+\calccentering{\unitlength}                         % Calculate center length and stores in unitlength
+\begin{adjustwidth*}{\unitlength}{-\unitlength}     % Adjust center
+        \begin{adjustwidth}{-1cm}{-1cm}                 % Extra lage front page
+
+\mbox{}
+\vfill
+\begin{center}
+    {\Huge\sffamily\bfseries Addressing State Explosion in Reactive Synthesis\\[2cm]\par}
+{\Large\sffamily\bfseries Alexander Legg}\\[1.5cm]
+Submitted in fulfilment of the requirements for the degree of \\
+Doctor of Philosophy\\[1cm]
+\includegraphics[width=0.32\linewidth]{unsw-crest-color-smaller} \\[1cm]
+School of Computer Science and Engineering \\[0.5cm]
+University of New South Wales \\[0.5cm]
+Sydney, Australia \\[1.0cm]
+August 2016
+\end{center}
+\par
+\vfill
+
+    \end{adjustwidth}
+\end{adjustwidth*}
+
+\clearpage
+
+\includepdf{thesisdissertation_0.pdf}
 
 \setcounter{secnumdepth}{3}
 \setcounter{tocdepth}{3}
 \tableofcontents
-
-\newpage
+\clearpage
 
 \begin{abstract}
 
-Software controllers of reactive systems are ubiquitous in situations where incorrectness has a high cost. In order to place trust in the software, strong guarantees of its functional correctness are required. Reactive synthesis can be used to automatically construct software to a specification and ensure correctness. The drawback is that synthesis is computationally hard meaning that many specifications are infeasible to synthesise.
+Software controllers of reactive systems are ubiquitous in situations where incorrectness has a high cost. In order to place trust in the software, strong guarantees of its functional correctness are required. Reactive synthesis can be used to automatically construct software to a specification and ensure correctness. The drawback is that synthesis is computationally hard and it is infeasible to synthesise a controller for many specifications.
 
-Synthesis is hard because reactive systems have many possible states that the synthesis procedure must consider. A standard way to mitigate this complexity is to symbolically represent sets of states with data structures such as binary decision diagrams (BDDs). The usual approach to synthesis is to construct the set of all states that are safe for the controller. In some specifications this set has no compact representation as a BDD and so it is slow or impossible to synthesise a controller in this way.
+Synthesis is formalised as a game between the controller and its environment. In this thesis we consider safety specifications that define the winning condition of the game for the controller as never allowing the game to visit an error state. The usual approach for solving controller synthesis is to compute the set of all winning states in the system and construct a controller that never deviates from this set. The set may be very large so it is standard practice to represent sets of states symbolically as a relation over the variables of the system. Binary decision diagrams (BDDs) are an efficient data structure used to store and manipulate sets of states for synthesis. The drawback of this approach is that a set of states has only one representation as a BDD and in some cases it may be exponentially large in the number of variables. The state explosion of BDDs causes controller synthesis to be infeasible on specifications with no compact representation of the set of winning states.
 
-In this thesis I propose a synthesis algorithm that constructs an approximation of the set of safe states that is sufficient to show correctness of the controller. The algorithm enables synthesis of specifications that were previously infeasible.
+In this thesis I propose a synthesis algorithm that constructs an approximation of the set of safe states that is sufficient to show correctness of the controller. The algorithm constructs an abstraction of the game and searches for a candidate strategy for the controller. Counterexamples are used to refine the strategy until it is winning for the game abstraction. Similar to bounded model checking, a SAT solver is used to efficiently implement the search for a counterexample trace. When a strategy is found to be winning in the abstraction of the game an approximation of the states for which the strategy wins is extracted from the strategy via interpolation. The search continues by refining the abstraction until the approximation of winning states converges on a fixed point that is sufficient to prove that the specification is realisable.
 
 \end{abstract}
 
@@ -101,6 +130,8 @@ Acknowledge some people
 \begin{abstract}
 List publications
 \end{abstract}
+
+\mainmatter
 
 \input{introduction.tex}
 
