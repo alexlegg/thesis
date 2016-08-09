@@ -10,10 +10,15 @@
 \usepackage{amssymb}
 \usepackage{subcaption}
 \usepackage{fixltx2e}
-\usepackage{hyperref}
 \usepackage{stmaryrd}
 \usepackage{pdfpages}
+\usepackage{booktabs}
+\usepackage{datetime}
+\newdateformat{monthyear}{\monthname[\THEMONTH] \THEYEAR}
+\usepackage[pdftex,hyperindex,bookmarks]{hyperref}
 \hypersetup{
+    pdfborder = {0 0 0.75 [1.5 3]},
+    allbordercolors = {0.122 0.471 0.706},
     colorlinks,
     citecolor=black,
     filecolor=black,
@@ -62,14 +67,18 @@
     {0pt}
     {\chapformat}
 
-\title{Addressing the Space Explosions of Reactive Synthesis}
+\setsecnumdepth{subsection}
 
-\author{Alexander Legg \\
-    \\
-    Supervised by \\
-Leonid Ryzhyk, Nina Narodytska, and Gernot Heiser}
+%%%\title{Addressing the Space Explosions of Reactive Synthesis}
+
+%%%\author{Alexander Legg \\
+%%%    \\
+%%%    Supervised by \\
+%%%Leonid Ryzhyk, Nina Narodytska, and Gernot Heiser}
 
 \begin{document}
+
+\nobibliography*
 
 \frontmatter
 
@@ -82,7 +91,7 @@ Leonid Ryzhyk, Nina Narodytska, and Gernot Heiser}
 \mbox{}
 \vfill
 \begin{center}
-    {\Huge\sffamily\bfseries Addressing State Explosion in Reactive Synthesis\\[2cm]\par}
+    {\Huge\sffamily\bfseries A Counterexample Guided Method for Reactive Synthesis\\[1cm]\par}
 {\Large\sffamily\bfseries Alexander Legg}\\[1.5cm]
 Submitted in fulfilment of the requirements for the degree of \\
 Doctor of Philosophy\\[1cm]
@@ -90,7 +99,7 @@ Doctor of Philosophy\\[1cm]
 School of Computer Science and Engineering \\[0.5cm]
 University of New South Wales \\[0.5cm]
 Sydney, Australia \\[1.0cm]
-August 2016
+\monthyear\today
 \end{center}
 \par
 \vfill
@@ -100,15 +109,29 @@ August 2016
 
 \clearpage
 
-\includepdf{thesisdissertation_0.pdf}
+\includepdf{declaration.pdf}
 
-\setcounter{secnumdepth}{3}
-\setcounter{tocdepth}{3}
-\tableofcontents
-\clearpage
+\thispagestyle{plain}
+\section*{Originality Statement}
+\addcontentsline{toc}{chapter}{Originality Statement}
+
+`I hereby declare that this submission is my own work and to the best of my
+knowledge it contains no materials previously published or written by another
+person, or substantial proportions of material which have been accepted for
+the award of any other degree or diploma at UNSW or any other educational
+institution, except where due acknowledgement is made in the thesis. Any
+contribution made to the research by others, with whom I have worked at UNSW
+or elsewhere, is explicitly acknowledged in the thesis.  I also declare that
+the intellectual content of this thesis is the product of my own work, except
+to the extent that assistance from others in the project's design and
+conception or in style, presentation and linguistic expression is
+acknowledged.'\\[0.5cm]
+Signed\hspace{0.5cm}\dotfill\hfill\\[0.5cm]
+Date\hspace{0.5cm}\dotfill\hfill\\
+\vfil\clearpage
 
 \begin{abstract}
-
+    \addcontentsline{toc}{chapter}{Abstract}
 Software controllers of reactive systems are ubiquitous in situations where incorrectness has a high cost. In order to place trust in the software, strong guarantees of its functional correctness are required. Reactive synthesis can be used to automatically construct software to a specification and ensure correctness. The drawback is that synthesis is computationally hard and it is infeasible to synthesise a controller for many specifications.
 
 Synthesis is formalised as a game between the controller and its environment. In this thesis we consider safety specifications that define the winning condition of the game for the controller as never allowing the game to visit an error state. The usual approach for solving controller synthesis is to compute the set of all winning states in the system and construct a controller that never deviates from this set. The set may be very large so it is standard practice to represent sets of states symbolically as a relation over the variables of the system. Binary decision diagrams (BDDs) are an efficient data structure used to store and manipulate sets of states for synthesis. The drawback of this approach is that a set of states has only one representation as a BDD and in some cases it may be exponentially large in the number of variables. The state explosion of BDDs causes controller synthesis to be infeasible on specifications with no compact representation of the set of winning states.
@@ -124,12 +147,20 @@ In this thesis I propose a synthesis algorithm that constructs an approximation 
 Acknowledge some people
 \end{abstract}
 
-\newpage
+\chapter{Publications}
+\begin{itemize}
+    \item \bibentry{Legg16}
+    \item \bibentry{Een15}
+    \item \bibentry{Narodytska14}
+\end{itemize}
 
-\renewcommand{\abstractname}{Publications}
-\begin{abstract}
-List publications
-\end{abstract}
+\clearpage
+
+\setcounter{secnumdepth}{3}
+\setcounter{tocdepth}{3}
+\tableofcontents
+
+\newpage
 
 \mainmatter
 
@@ -149,6 +180,8 @@ List publications
 
 \chapter{Conclusion}
 
+\backmatter
+\cleardoublepage
 \bibliographystyle{thesisnat}
 \bibliography{main}
 
