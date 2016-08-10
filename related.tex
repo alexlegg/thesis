@@ -116,16 +116,28 @@ Additionally, certain standard optimisations to the search procedure rely on dep
 
 Structural information about a formula can be used for other optimisations to QBF. Reconstructing a circuit similar to the original problem formulation can lead to a compressed representation and more efficient quantifier elimination~\cite{Pigorsch10, Pigorsch09}. The authors propose an and-inverter graph (AIG) representation and the application of circuit compression techniques such as BDD-sweeping for compression. BDDs may also be used to do quantifier elimination in cases where the representation does not explode. Otherwise quantification is performed directly on the AIG by symbolically expanding the circuit followed by compression.
 
-Circuits may also be used as a representation of the problem in a search-based QBF solver~\cite{Goultiaeva09}. The advantages in this setting include propagation of assignments both forwards and backwards as well as identification of irrelevant \emph{don't care} literals.
-
-GhostQ
+Circuits may also be used as a representation of the problem in a search-based QBF solver~\cite{Goultiaeva09}. The advantages in this setting include propagation of assignments both forwards and backwards as well as identification of irrelevant \emph{don't care} literals by analysing the gates of a circuit. This technique was further improved by the introduction of ghost literals~\cite{Klieber10}, which enables the solver to propagate cubes of learned satisfying assignments in the same way that learned constraints are.
 
 \subsection{SAT for QBF}
 
-SAT-To-SAT
+SAT solvers are very efficient at finding satisfying assignment to existential queries but less efficient at proving unsatisfiability or, equivalently, satisfiability of universal queries. This asymmetry has been recognised and turned to an advantage in QBF solvers that use SAT to discover counterexamples to the universal component of QBF problems.
 
-Rareqs
+Counterexamples may be used to guide the careful expansion of a QBF~\cite{Janota15} into a propositional formula. This algorithm provides the inspiration for the domain specific QBF solver in \ref{ch:bounded}. The QBF is viewed as a game between an existential player and a universal player in which the existential player attempts to satisfy the formula and the universal player seeks to falsify it. The algorithm solves the game recursively by construction an abstraction, finding a candidate solution for one player under that abstraction, and subsequently verifying that candidate in the concrete game. The game is abstracted by partially expanding the QBF into propositional logic. A subset of possible assignments at each quantifier level are expanded into a disjunction for existential levels or conjunction for universal levels. If the current player cannot win in the abstraction against a restricted opponent then it cannot win in the concrete game so the abstraction can be used to find a candidate valuation to the player's current level variables with an efficient SAT call. The candidate is then checked by recursively calling the solver on the suffix of the formula. This effectively replaces the current player's choice with its candidate selection and hands control to the opponent. If the recursive call discovers a counterexample it is added to the abstraction and a new candidate is found. If there is no counterexample then the current player wins. If the refined abstraction now allows no candidate solution then the opponent wins. The full algorithm is listed in Algorithm~\ref{alg:rareqs}.
+
+\begin{algorithm}
+
+    \caption{Counterexample guided QBF}
+    \label{alg:rareqs}
+\end{algorithm}
+
+Two recent counterexample guided approaches work on the idea of abstracting the QBF via the selection of a subset of clauses~\cite{Rabe15,Janota15}. In both works the authors suggest that competing SAT solvers select a subset of clauses for the opposing solver to satisfy at each quantifier alternation. In \cite{Janota12} the QBF abstraction is refined via expansion and may lead to an exponential increase in the size of the formula. By instead linearly increasing the formula to include selection variables enabling an abstraction over clauses the more recent approaches avoid that potential explosion.
+
+An orthogonal approach uses nested SAT solvers to solve formulas of the form $\exists \sigma (\varphi \land (\lnot \exists \tau (\psi)))$ where $\varphi$ is a CNF, $\psi$ is a QBF~\cite{Bogaerts16}. At each quantifier level an underapproximation of $\psi$ is given to a recursive solver while the CNF portion is solved via SAT. The SAT solver hands partial assignments gathered by propagating assignments through $\varphi$ to the nested solvers. The partial assignment is validated on the underapproximation in order to discover conflicts from further inside the QBF. 
 
 \subsection{}
 
-CADET and Caqe
+CADET
+
+\subsection{Summary}
+
+
