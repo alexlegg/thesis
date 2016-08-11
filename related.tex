@@ -125,7 +125,23 @@ SAT solvers are very efficient at finding satisfying assignment to existential q
 Counterexamples may be used to guide the careful expansion of a QBF~\cite{Janota15} into a propositional formula. This algorithm provides the inspiration for the domain specific QBF solver in \ref{ch:bounded}. The QBF is viewed as a game between an existential player and a universal player in which the existential player attempts to satisfy the formula and the universal player seeks to falsify it. The algorithm solves the game recursively by construction an abstraction, finding a candidate solution for one player under that abstraction, and subsequently verifying that candidate in the concrete game. The game is abstracted by partially expanding the QBF into propositional logic. A subset of possible assignments at each quantifier level are expanded into a disjunction for existential levels or conjunction for universal levels. If the current player cannot win in the abstraction against a restricted opponent then it cannot win in the concrete game so the abstraction can be used to find a candidate valuation to the player's current level variables with an efficient SAT call. The candidate is then checked by recursively calling the solver on the suffix of the formula. This effectively replaces the current player's choice with its candidate selection and hands control to the opponent. If the recursive call discovers a counterexample it is added to the abstraction and a new candidate is found. If there is no counterexample then the current player wins. If the refined abstraction now allows no candidate solution then the opponent wins. The full algorithm is listed in Algorithm~\ref{alg:rareqs}.
 
 \begin{algorithm}
-
+    \begin{algorithmic}[1]
+        \Function{solve}{$QX(\varphi)$}
+        \If{$\varphi$ has no quantifiers}
+            \State \Return $(Q = \exists)$ ? \Call{SAT}{$\varphi$} : \Call{SAT}{$\lnot\varphi$}
+        \EndIf
+        \State $\omega \gets \emptyset$
+        \Loop
+        \State $\alpha \gets (Q = \exists)$ ? $\bigwedge_{\mu \in \omega} \varphi[\mu]$ : $\bigvee_{\mu \in \omega} \varphi[\mu]$
+        \State $\tau' \gets$ \Call{solve}{\Call{prenex}{$QX(\alpha)$}}
+        \IIf{$\tau' = \texttt{NULL}$} \Return $\texttt{NULL}$ \EndIIf
+        \State $\tau \gets \{ l\ |\ l \in \tau' \land \texttt{var}(l) \in X \}$
+        \State $\mu \gets $ \Call{solve}{$\varphi[\tau]$}
+        \IIf{$\mu = \texttt{NULL}$} \Return $\tau$ \EndIIf
+        \State $\omega \gets \omega \cup \{ \mu \}$
+        \EndLoop
+        \EndFunction
+    \end{algorithmic}
     \caption{Counterexample guided QBF}
     \label{alg:rareqs}
 \end{algorithm}
@@ -134,10 +150,9 @@ Two recent counterexample guided approaches work on the idea of abstracting the 
 
 An orthogonal approach uses nested SAT solvers to solve formulas of the form $\exists \sigma (\varphi \land (\lnot \exists \tau (\psi)))$ where $\varphi$ is a CNF, $\psi$ is a QBF~\cite{Bogaerts16}. At each quantifier level an underapproximation of $\psi$ is given to a recursive solver while the CNF portion is solved via SAT. The SAT solver hands partial assignments gathered by propagating assignments through $\varphi$ to the nested solvers. The partial assignment is validated on the underapproximation in order to discover conflicts from further inside the QBF. 
 
-\subsection{}
+\section{Summary}
 
-CADET
+The bounded realisability algorithm presented in this thesis can be seen as an extension of bounded model checking techniques into synthesis. Bounded realisability replaces the SAT calls in bounded model checking with QBF queries. 
+In Chapter~\ref{ch:bounded} I present a domain specific QBF algorithm that solves these queries more efficiently than a generalised QBF solver. In Chaper~\ref{ch:strategy} and Chapter~\ref{ch:unbounded} I present extensions of the bounded realisability algorithm to synthesis and to unbounded games respectively. The approaches of those chapters are similar to existing extensions of bounded model checking into unbounded model checking. In this chapter we reviewed the literature on both bounded and unbounded model checking and the state of the art in QBF solving in order to show the inspirations for the work in this thesis.
 
-\subsection{Summary}
-
-
+This chapter also presented methodologies with a similar aim of applying the efficiency of SAT solving to synthesis. In the following chapters I will present my approach and defer a thorough comparison to the related methodologies until then.

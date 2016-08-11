@@ -18,7 +18,7 @@ Restricting ourselves to solving a bounded safety game enables us to turn the fo
 
 \section{Algorithm}
 
-This work draws inspiration from a QBF solving algorithm that treats the QBF problem as a game~\cite{Janota12}. In that algorithm one player assumes the role of the universal quantifiers and the opponent takes on the existential quantifiers. In the game, the players take turns to chooses values for their variables from the outermost quantifier block in. Quantifiers may be removed from a formula by iteratively constructing and merging copies of the formula for each quantified variable. The copies of the formula represent the two possible values, true or false, of the quantified boolean variable. Universal quantification can then be reduced to the conjunction of these copies, and existential quantifications corresponds to a disjunction. In practice, these expanded formulas are far too large to be solved so the authors introduce abstractions, or partially expanded formulas, to avoid expanding on variables unnecessarily. The abstractions are refined through a CEGAR process of searching for candidate solutions and analysing counterexamples. The full algorithm is described in detail in Chapter~\ref{ch:related}. 
+This work draws inspiration from a QBF solving algorithm that treats the QBF problem as a game~\cite{Janota12}. In that algorithm one player assumes the role of the universal quantifiers and the opponent takes on the existential quantifiers. In the game, the players take turns to chooses values for their variables from the outermost quantifier block in. Quantifiers may be removed from a formula by iteratively constructing and merging copies of the formula for each quantified variable. The copies of the formula represent the two possible values, true or false, of the quantified boolean variable. Universal quantification can then be reduced to the conjunction of these copies, and existential quantifications corresponds to a disjunction. In practice, these expanded formulas are far too large to be solved so the authors introduce abstractions, or partially expanded formulas, to avoid expanding on variables unnecessarily. The abstractions are refined through a CEGAR process of searching for candidate solutions and analysing counterexamples. The full algorithm is described in detail in Chapter~\ref{ch:relatedwork}. 
 
 A quantified formula may be used to solve realisability of a bounded synthesis game. We construct the formula by unrolling the transition relationship for every game round up until the bound. A quantifier alternation is introduced to the formula for the variables corresponding to the actions of each player. Universal quantifiers are used for the environment variables and existential for the controller. The formula is constrained so that if the state at any game round is an error state the formula evaluates to false. In this way the formula is a satisfiable if and only if a strategy exists for the controller that avoids the error states.
 
@@ -26,7 +26,7 @@ It is possible to solve this QBF na\"ively but we can do better by taking into a
 
 The bounded realisability algorithm presented here takes inspiration from the CEGAR framework of the work of Janota et. al. and can be thought of as a domain specific version of the QBF algorithm.
 
-\section{Intuition}
+\subsection{Example}
 
 We introduce an example to assist an intuitive explanation of the algorithm. Consider a simple model of an ethernet device driver. The operating system makes requests of the driver to write or read data to or from the device. It is the role of the driver to grant these requests while ensuring that a \texttt{read} never occurs when a \texttt{write} was requests and vice versa.
 
@@ -509,6 +509,10 @@ transition relation and constrained to the winning condition of the player.
     \end{algorithmic}
 \end{algorithm}
 
+\subsection{Correctness}
+
+Completeness of the algorithm follows from the completeness of the backtracking search. In the worst case the algorithm will construct the entire concrete game tree and effectively expand all quantifiers. Soundness follows from the existential search of the SAT solver in \textsc{findCandidate}. The algorithm terminates after searching for a candidate strategy on an abstract game tree with actions fixed only for the opponent. If no candidate can be found with the opponent restricted in this way then no strategy exists for the player.
+
 \section{Optimisations}
 
 In this section we present several optimisations to the algorithm.
@@ -592,13 +596,14 @@ During the search for a candidate strategy the SAT solver selects actions for th
 
 To avoid problematic action selection the solver can instead use some heuristic to select the arbitrary action required in the SAT call in \textsc{findCandidate}. This does not affect the correctness of the algorithm. If no candidate can be found with the opponent playing an arbitrary action then clearly the selected action (or a different opponent action that is winning) would have eventually been refined into the abstract game if the opponent instead cooperated. A simple action selection heuristic has been observed to improve the performance of the solver during benchmarking. Before the main algorithm executes two SAT calls are made with formulas constructed from \textsc{treeFormula} and \textsc{\textoverline{treeFormula}} called on an empty abstract game tree. From the result a mapping of height to \emph{default action} is made for each player. During \textsc{findCandidate} calls the arbitrary opponent actions are taken from the corresponding map at the appropriate height.
 
-\section{Correctness}
-
-Completeness of the algorithm follows from the completeness of the backtracking search. In the worst case the algorithm will construct the entire concrete game tree and effectively expand all quantifiers. Soundness follows from the existential search of the SAT solver in \textsc{findCandidate}. The algorithm terminates after searching for a candidate strategy on an abstract game tree with actions fixed only for the opponent. If no candidate can be found with the opponent restricted in this way then no strategy exists for the player.
 
 \section{Discussion}
 
 The design of the algorithm is motivated by the desire to solve bounded safety games whilst avoiding the potential state explosion of computing the winning set. The key insight is to shift the emphasis from finding a winning set to finding winning strategies. The shift is made possible by searching for runs in an abstraction of the game and using the results to refine the abstraction. The advantage of this approach is that even when the winning set is difficult to represent symbolically (via a BDD or similar) a winning strategy may still be found. The reverse is also true: if the winning strategy requires too much branching it will become intractable to construct it using this algorithm. The difference can be likened to breadth-first versus depth-first search, the appropriate algorithm depends on the particular problem instance to be solved.
+
+\subsection{Comparison to QBF}
+
+
 
 \section{Summary}
 
