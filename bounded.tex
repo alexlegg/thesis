@@ -4,7 +4,7 @@
 \newtheorem*{exmp}{Example}
 \newtheorem*{exmpI}{Example: Intuition behind the algorithm}
 
-In this chapter I will describe my work on bounded realisability of reactive systems with safety properties. As introduced in Chapter~\ref{ch:background} reactive realisability is the problem of determining the existence of a program, which we call a \emph{controller}, that continuously interacts with its environment in adherence with a specification. A safety property is a simple correctness condition that lays out a set of states of the system that controller must stay within. In this chapter we will refer to this property in the negation: the controller must avoid \emph{error states}.
+In this chapter I will describe my work on bounded realisability of reactive systems with safety properties. As introduced in Chapter~\ref{ch:background} reactive realisability is the problem of determining the existence of a program, which we call a \emph{controller}, that continuously interacts with its environment in adherence with a specification. A safety property is a simple condition that defines a set of \emph{error states} that the controller must avoid in order to be correct.
 
 Realisability is the first step on the path to synthesis. In the subsequent chapter I will describe an algorithm that extracts the actions of the controller necessary for realisation. This strategy may be used for synthesis: automatic construction of the controller program. Reactive synthesis for controllers with safety properties has many practical uses in areas such as circuit design, device drivers, or industrial automation.
 
@@ -20,11 +20,19 @@ Restricting ourselves to solving a bounded safety game enables us to turn the fo
 
 This work draws inspiration from a QBF solving algorithm that treats the QBF problem as a game~\cite{Janota12}. In that algorithm one player assumes the role of the universal quantifiers and the opponent takes on the existential quantifiers. In the game, the players take turns to chooses values for their variables from the outermost quantifier block in. Quantifiers may be removed from a formula by iteratively constructing and merging copies of the formula for each quantified variable. The copies of the formula represent the two possible values, true or false, of the quantified boolean variable. Universal quantification can then be reduced to the conjunction of these copies, and existential quantifications corresponds to a disjunction. In practice, these expanded formulas are far too large to be solved so the authors introduce abstractions, or partially expanded formulas, to avoid expanding on variables unnecessarily. The abstractions are refined through a CEGAR process of searching for candidate solutions and analysing counterexamples. The full algorithm is described in detail in Chapter~\ref{ch:relatedwork}. 
 
-A quantified formula may be used to solve realisability of a bounded synthesis game. We construct the formula by unrolling the transition relationship for every game round up until the bound. A quantifier alternation is introduced to the formula for the variables corresponding to the actions of each player. Universal quantifiers are used for the environment variables and existential for the controller. The formula is constrained so that if the state at any game round is an error state the formula evaluates to false. In this way the formula is a satisfiable if and only if a strategy exists for the controller that avoids the error states.
+We define a safety game by the tuple $G = (S, \mathcal{U}, \mathcal{C}, \delta, s_0, E)$. $S$, $\mathcal{U}$, and $\mathcal{C}$ are sets of boolean variables representing game states, environment actions, and controller actions respectively. The transition relation, $\delta$, is a boolean formula $2^{S} \times 2^{\mathcal{U}} \times 2^{\mathcal{C}} \to 2^{S}$ that maps current states and actions to successor states. The game begins in the initial state $s_0$ and the $E$ is the set of error states that the controller must avoid.
 
-It is possible to solve this QBF na\"ively but we can do better by taking into account the inherent structure that arises in formulas constructed from realisability problems. The games we solve are deterministic so we know that state variables at a particular game unrolling are fully dependent on the action variables that come before. This enables a fine grained computational learning optimisation that would be difficult to reproduce in a general QBF algorithm.
+The following quantified formula may be used to solve realisability of a safety game bounded to $k$ game rounds: 
+\begin{equation*}
+    \begin{multlined}
+        \forall u_0 \exists c_0 ... \forall u_k \exists c_k \exists s_{0..k+1} \\
+        \shoveright{[\lnot E(s_0) \land \delta(s_0, u_0, c_0, s_1) \land ... \land \lnot E(s_k) \land \delta(s_k, u_k, c_k, s_{k+1}) \land \lnot E(s_{k+1})]}
+    \end{multlined}
+\end{equation*}
 
-The bounded realisability algorithm presented here takes inspiration from the CEGAR framework of the work of Janota et. al. and can be thought of as a domain specific version of the QBF algorithm.
+The formula is constructed by unrolling the transition relationship for every game round until the bound is reached. A quantifier alternation is introduced to the formula for the variables corresponding to the actions of each player. Universal quantifiers are used for the environment variables and existential for the controller. The formula is constrained so that if the state at any game round is an error state the formula evaluates to false. In this way the formula is a satisfiable if and only if a strategy exists for the controller that avoids the error states.
+
+It is possible to solve the QBF na\"ively but we can do better by taking into account structural information in the realisability problem that is lost in the translation to prenex normal form. In particular, awareness that the formula is constructed of a repeated transition relation enables more effective learning. A na\"ive solver may learn sets of actions in order to prune the search tree. Instead we learn sets of states and, where possible, we transmit learned information between game rounds. For example, if we discover that the environment can force a visit to an error state from some set of states $s$ in $n$ rounds we also know that the environment can win from $s$ in $n+m$ rounds for all $m > 1$. Knowledge of how to construct the formula also enables the solver to efficiently produce a smaller expanded formula when necessary by simply copying only the parts of the formula corresponding to game rounds after the action of the expanded quantifier.
 
 \subsection{Example}
 
@@ -79,17 +87,22 @@ As detailed in Chapter~\ref{ch:background}, we formalise realisability by a game
             \draw [pil] (n10) edge node [right] {(*, 0)} (n11);
     \end{tikzpicture}
     \label{fig:example1}
-    \caption{State automata representation of $\delta$ in Example 1. Nodes are labelled by the tuple (\texttt{request}, \texttt{error}). Edges are labelled with uncontrollable and controllable actions: (\texttt{os\_request}, \texttt{dev\_cmd}). A star indicates that the transition occurs on both a 0 and a 1. Transitions from error states are not shown for simplicity.}
+    \caption{State automata representation of $\delta$ in Example 1. Nodes are labelled by the tuple (\texttt{request}, \texttt{error}). Edges are labelled with uncontrollable and controllable actions: (\texttt{os\_request}, \texttt{dev\_cmd}). A star indicates that the transition occurs on both a 0 and a 1. Transitions from error states are elided for simplicity.}
 \end{figure}
 
-The bounded synthesis algorithm is set within a counterexample guided abstraction refinement framework. Abstraction serves a dual purpose in this approach as both a method for discovering player strategies and as a way to reduce the search space of the game. This is achieved by employing one player's candidate strategy as its opponent's game abstraction. The effect is that the search for a player's strategy is directed by its opponent's current best effort at its own strategy and the search is guided toward winning strategies.
+The bounded synthesis algorithm is set within a counterexample guided abstraction refinement framework. An abstraction serves a dual purpose in this approach as both a representation of a player strategy and as a way to reduce the search space of the game. This is achieved by employing one player's candidate strategy as its opponent's game abstraction. The effect is that the search for a player's strategy is directed by its opponent's current best effort strategy. Intuitively both players escalate their strategies until one of them converges on a winning strategy.
 
 The abstractions of the game that we construct during the CEGAR search restrict actions available to one of the players.  Specifically, we consider abstractions represented as trees of actions, referred to as \emph{abstract game trees} (AGTs).  Figure~\ref{fig:agt} shows an example abstract game tree restricting the environment (abstract game trees restricting the controller are similar).  In the abstract game, the controller can freely choose actions whilst the environment is required to pick actions from the tree.  After reaching a leaf, the environment continues playing unrestricted.  The tree in Figure~\ref{fig:agt} restricts the first environment action to \texttt{request=1}. At the leaf of the tree the game continues unrestricted.
 
+\captionsetup[subfigure]{singlelinecheck=off,justification=centering}
+\tikzset{every node/.style={solid}}
+\tikzset{align at top/.style={baseline=(current bounding box.north)}}
 \begin{figure}
     \centering
     \begin{subfigure}[t]{0.3\textwidth}
-        \begin{tikzpicture}
+        \centering
+        \begin{minipage}[t][3.9cm][t]{\textwidth}
+        \begin{tikzpicture}[align at top, level distance = 10mm]
             \node [circle,draw,inner sep=1pt] (root){}
                 child {node [circle,draw,inner sep=1pt] {}
                     child {node [circle,draw,inner sep=1pt] {}
@@ -103,48 +116,59 @@ The abstractions of the game that we construct during the CEGAR search restrict 
                 node [left=4pt] {\texttt{req=1}}
                 node [above=4pt] {$\langle s, 2 \rangle$};
         \end{tikzpicture}
+        \end{minipage}
+        \caption{Trace to error}
         \label{fig:example1a}
-        \caption{Environment winning trace}
     \end{subfigure}%
-    \begin{subfigure}[t]{\textwidth}
-        \begin{tikzpicture}
+    \begin{subfigure}[t]{0.3\textwidth}
+        \centering
+        \begin{minipage}[t][3.9cm][t]{\textwidth}
+        \begin{tikzpicture}[align at top, level distance = 10mm]
+            \node [circle,draw] (root){}
+                child {node [circle,draw] {}
+                    edge from parent node [left] {\texttt{req=1}}
+                }
+                node [left=4pt] {}
+                node [above=4pt] {$\langle s, 2 \rangle$};
+        \end{tikzpicture}
+        \end{minipage}
+        \caption{Candidate environment strategy}
+        \label{fig:example1b}
+    \end{subfigure}%
+    \begin{subfigure}[t]{0.3\textwidth}
+        \centering
+        \begin{minipage}[t][3.9cm][t]{\textwidth}
+        \begin{tikzpicture}[align at top, level distance = 10mm]
             \node [circle,draw,inner sep=1pt] (root){}
                 child {node [circle,draw,inner sep=1pt] {}
                     child {node [circle,draw,inner sep=1pt] {}
                         child {node [circle,draw,inner sep=1pt] {}
-                            node [left=4pt] {\texttt{cmd=0}}
+                            node [left=4pt] {\texttt{cmd=1}}
                         }
                         node [left=4pt] {\texttt{req=1}}
                     }
-                node [left=4pt] {\texttt{cmd=0}}
+                node [left=4pt] {\texttt{cmd=1}}
                 }
                 node [left=4pt] {\texttt{req=1}}
                 node [above=4pt] {$\langle s, 2 \rangle$};
         \end{tikzpicture}
+        \end{minipage}
+        \caption{Counterexample trace}
+        \label{fig:example1a}
     \end{subfigure}
-    \label{fig:example1}
     \caption{Execution of bounded realisability on the example.}
+    \label{fig:example1}
 \end{figure}
 
-We will now step through an execution of the algorithm using the example we have just introduced. The first step involves a search of the empty game abstraction for an initial candidate strategy for the environment player. In the empty abstraction we have not yet restricted the game in any way so all runs through the game are enabled. We search for a candidate strategy by finding a run that reaches an error state. Here we are only searching for the existence of a run and so we do not require quantifier alternations. A SAT solver can be used to efficiently do this search for us. Intuitively, an existential search is equivalent to the two players of the game cooperating. In most real world applications of synthesis the environment is in fact cooperating with the system so the cooperation heuristic turns out to be practical. Figure~\ref{fig:example1a} shows a trace through the example game that reaches an error state.
+We will now step through an execution of the algorithm using the example just introduced. The first step involves a search of the empty game abstraction for an initial candidate strategy for the environment player. In the empty abstraction we have not yet restricted the game in any way so all runs through the game are enabled. We search for a candidate strategy by finding a run that reaches an error state. Here we are only searching for the existence of a run and so we do not require quantifier alternations and a SAT solver can be used to efficiently perform the search. Intuitively, an existential search is equivalent to the two players of the game cooperating. In most real world applications of synthesis the environment is in fact cooperating with the system so the cooperation heuristic turns out to be practical. Figure~\ref{fig:example1a} shows a trace through the example game that reaches an error state.
 
-The trace tells us that by playing the actions contained in the trace it is possible for the environment to reach an error state. From this we conjecture that the first action in the trace is a reasonable choice for the environment's winning strategy. So we construct a candidate strategy in which the environment plays \texttt{sdfsdf} in the first game round. The next step is to validate our conjecture by searching for counterexamples. We do this by constructing a new abstraction of the game in which the environment is restricted to playing actions from its candidate strategy (Figure~\ref{fig:example1b}). Then we play this abstract game on the behalf of the controller. Once again we search for a trace through the game but this time the SAT solver is searching for a trace that avoids error states for the duration of the bounded game. Any traces found in this way indicate the possibility of a spoiling strategy for the controller that defeats the candidate strategy of the environment.
+The trace informs us that by playing the actions contained in the trace it is possible for the environment to reach an error state. From this we conjecture that the first action in the trace is a reasonable choice for the environment's winning strategy. So we construct a candidate strategy in which the environment plays \texttt{request=1} in the first game round. The next step is to validate our conjecture by searching for counterexamples. We do this by constructing a new abstraction of the game in which the environment is restricted to playing actions from its candidate strategy (Figure~\ref{fig:example1b}). Then we play this abstract game on the behalf of the controller. Once again we search for a trace through the game but this time the SAT solver is searching for a trace that avoids error states for the duration of the bounded game. Any traces found in this way indicate the possibility of a spoiling strategy for the controller that defeats the candidate strategy of the environment.
 
 When a counterexample is found it is used to refine the original candidate strategy. We do this by modifying the game abstraction to restrict the controller to playing the first action from its counterexample trace as well as the existing restriction to the environment. Now a SAT query for a environment winning trace must include this counterexample action. Once again we conjecturing that the first action in a trace is a useful action for our search and we are ensuring that the environment player takes this controller action into account when constructing its strategy. If a trace exists with this restriction to the game it can be used to refine the environment's candidate strategy by appending a new action.
 
 \subsection{Abstract game trees}
 
-During bounded synthesis the algorithm constructs abstractions of the game that restrict actions available to one of the players.  Specifically, we consider abstractions represented as trees of actions, referred to as \emph{abstract game trees} (AGTs).  Figure~\ref{fig:agt} shows an example abstract game tree restricting the environment (abstract game trees restricting the controller are similar).  In the abstract game, the controller can freely choose actions whilst the environment is required to pick actions from the tree.  After reaching a leaf, the environment continues playing unrestricted.  The tree in Figure~\ref{fig:agt} restricts the first environment action to \texttt{request=1}. At the leaf of the tree the game continues unrestricted.
-
-The root of the tree is annotated by the initial state $s$ of the abstract game
-and the bound $k$ on the number of rounds.  We denote $\textsc{nodes}(T)$ the
-set of all nodes of a tree $T$, $\textsc{leaves}(T)$ the subset of leaf nodes.
-For edge $e$, $\textsc{action}(e)$ is the action that labels the edge, and for
-node $n$, $\textsc{height}(k, n)$ is the distance from n to the last round of a
-game bounded to $k$ rounds.  $\textsc{height}(k, T)$ is the height of the root
-node of the tree.  For node $n$ of the tree, $\textsc{succ}(n)$ is the set of
-pairs $\langle e, n' \rangle$ where $n'$ is a child node of $n$ and $e$ is the
-edge connecting $n$ and $n'$.
+An abstract game tree (AGT) is a restricted version of the concrete game in which fewer actions are available. The root of the tree is annotated by the initial state $s$ of the abstract game and the bound $k$ on the number of rounds.  We denote $\textsc{nodes}(T)$ the set of all nodes of a tree $T$, $\textsc{leaves}(T)$ the subset of leaf nodes.  For edge $e$, $\textsc{action}(e)$ is the action that labels the edge, and for node $n$, $\textsc{height}(k, n)$ is the distance from n to the last round of a game bounded to $k$ rounds.  $\textsc{height}(k, T)$ is the height of the root node of the tree.  For node $n$ of the tree, $\textsc{succ}(n)$ is the set of pairs $\langle e, n' \rangle$ where $n'$ is a child node of $n$ and $e$ is the edge connecting $n$ and $n'$.
 
 \tikzset{every node/.style={solid}}
 \tikzstyle{fixed}=[solid]
