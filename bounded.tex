@@ -741,6 +741,12 @@ The design of the algorithm is motivated by the desire to solve bounded safety g
 
 \subsection{Comparison to QBF}
 
+As previously stated the bounded realisability problem is a specialisation of QBF and the algorithm presented in this chapter is a domain specific QBF solver. In Chapter~\ref{ch:relatedwork} several approaches to solving general QBF problems were described. The state of the art in QBF is focused on several areas: dependency analysis, circuit analysis, and counterexample guided search. 
+
+Analysing dependencies or the original circuit of the presented QBF are both aimed at reconstructing information that was lost during the conversion to a prenex normal form formula. The aim is to use that information to speed up the search for a solution. The bounded realisability algorithm is aware of the original problem formulation and constructs parts of it on the fly. For example, the quantifier dependency graph for a bounded realisability problem would normally be mostly linear due to the construction via unrollings of the transition relation, which rarely contains fully independent subformulas. An exception to this is the set of state and Tseitin variable which belongs to the last existential quantifier in the prefix. Those variables are decided by the action variables preceding them in the game. The algorithm presented here never includes anything other than action variables in player strategies, which reflects an awareness of that dependency. 
+
+The algorithm contains a higher level of information about the original problem than an analysis of the circuit could provide. It may be possible to implement some the propagation techniques introduced by these methods but in general learning sets of states provides a greater pruning of the search tree. We are able to transmit learned states between game rounds...
+
 
 
 \section{Summary}
