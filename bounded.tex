@@ -86,13 +86,13 @@ As detailed in Chapter~\ref{ch:background}, we formalise realisability by a game
             \draw [pil] (n00) edge node [left] {(*, 1)} (n01);
             \draw [pil] (n10) edge node [right] {(*, 0)} (n11);
     \end{tikzpicture}
-    \label{fig:example1}
     \caption{State automata representation of $\delta$ in Example 1. Nodes are labelled by the tuple (\texttt{request}, \texttt{error}). Edges are labelled with uncontrollable and controllable actions: (\texttt{os\_request}, \texttt{dev\_cmd}). A star indicates that the transition occurs on both a 0 and a 1. Transitions from error states are elided for simplicity.}
+    \label{fig:example1}
 \end{figure}
 
 The bounded synthesis algorithm is set within a counterexample guided abstraction refinement framework. An abstraction serves a dual purpose in this approach as both a representation of a player strategy and as a way to reduce the search space of the game. This is achieved by employing one player's candidate strategy as its opponent's game abstraction. The effect is that the search for a player's strategy is directed by its opponent's current best effort strategy. Intuitively both players escalate their strategies until one of them converges on a winning strategy.
 
-The abstractions of the game that we construct during the CEGAR search restrict actions available to one of the players.  Specifically, we consider abstractions represented as trees of actions, referred to as \emph{abstract game trees} (AGTs).  Figure~\ref{fig:agt} shows an example abstract game tree restricting the environment (abstract game trees restricting the controller are similar).  In the abstract game, the controller can freely choose actions whilst the environment is required to pick actions from the tree.  After reaching a leaf, the environment continues playing unrestricted.  The tree in Figure~\ref{fig:agt} restricts the first environment action to \texttt{request=1}. At the leaf of the tree the game continues unrestricted.
+The abstractions of the game that we construct during the CEGAR search restrict actions available to one of the players.  Specifically, we consider abstractions represented as trees of actions, referred to as \emph{abstract game trees} (AGTs).  Figure~\ref{fig:agt} shows an example abstract game tree restricting the environment (abstract game trees restricting the controller are similar).  In the abstract game, the controller can freely choose actions whilst the environment is required to pick actions from the tree.  After reaching a leaf, the environment continues playing unrestricted.  The tree in Figure~\ref{fig:agt} restricts the first environment action to \texttt{os\_request=1}. At the leaf of the tree the game continues unrestricted.
 
 \captionsetup[subfigure]{singlelinecheck=off,justification=centering}
 \tikzset{every node/.style={solid}}
@@ -111,10 +111,10 @@ The abstractions of the game that we construct during the CEGAR search restrict 
                         }
                         node [left=4pt] {\texttt{req=1}}
                     }
-                node [left=4pt] {\texttt{cmd=0}}
+                node [left=4pt] {\texttt{cmd=1}}
                 }
                 node [left=4pt] {\texttt{req=1}}
-                node [above=4pt] {$\langle s, 2 \rangle$};
+                node [above=4pt] {$\langle (0, 0), 2 \rangle$};
         \end{tikzpicture}
         \end{minipage}
         \caption{Trace to error}
@@ -129,7 +129,7 @@ The abstractions of the game that we construct during the CEGAR search restrict 
                     edge from parent node [left] {\texttt{req=1}}
                 }
                 node [left=4pt] {}
-                node [above=4pt] {$\langle s, 2 \rangle$};
+                node [above=4pt] {$\langle (0, 0), 2 \rangle$};
         \end{tikzpicture}
         \end{minipage}
         \caption{Candidate environment strategy}
@@ -147,24 +147,146 @@ The abstractions of the game that we construct during the CEGAR search restrict 
                         }
                         node [left=4pt] {\texttt{req=1}}
                     }
-                node [left=4pt] {\texttt{cmd=1}}
+                node [left=4pt] {\texttt{cmd=0}}
                 }
                 node [left=4pt] {\texttt{req=1}}
-                node [above=4pt] {$\langle s, 2 \rangle$};
+                node [above=4pt] {$\langle (0, 0), 2 \rangle$};
         \end{tikzpicture}
         \end{minipage}
         \caption{Counterexample trace}
-        \label{fig:example1a}
+        \label{fig:example1c}
     \end{subfigure}
     \caption{Execution of bounded realisability on the example.}
-    \label{fig:example1}
+    \label{fig:example1exe}
 \end{figure}
 
 We will now step through an execution of the algorithm using the example just introduced. The first step involves a search of the empty game abstraction for an initial candidate strategy for the environment player. In the empty abstraction we have not yet restricted the game in any way so all runs through the game are enabled. We search for a candidate strategy by finding a run that reaches an error state. Here we are only searching for the existence of a run and so we do not require quantifier alternations and a SAT solver can be used to efficiently perform the search. Intuitively, an existential search is equivalent to the two players of the game cooperating. In most real world applications of synthesis the environment is in fact cooperating with the system so the cooperation heuristic turns out to be practical. Figure~\ref{fig:example1a} shows a trace through the example game that reaches an error state.
 
-The trace informs us that by playing the actions contained in the trace it is possible for the environment to reach an error state. From this we conjecture that the first action in the trace is a reasonable choice for the environment's winning strategy. So we construct a candidate strategy in which the environment plays \texttt{request=1} in the first game round. The next step is to validate our conjecture by searching for counterexamples. We do this by constructing a new abstraction of the game in which the environment is restricted to playing actions from its candidate strategy (Figure~\ref{fig:example1b}). Then we play this abstract game on the behalf of the controller. Once again we search for a trace through the game but this time the SAT solver is searching for a trace that avoids error states for the duration of the bounded game. Any traces found in this way indicate the possibility of a spoiling strategy for the controller that defeats the candidate strategy of the environment.
+The trace informs us that by playing the actions contained in the trace it is possible for the environment to reach an error state. From this we conjecture that the first action in the trace is a reasonable choice for the environment's winning strategy. So we construct a candidate strategy in which the environment plays \texttt{os\_request=1} in the first game round. The next step is to validate our conjecture by searching for counterexamples. We do this by constructing a new abstraction of the game in which the environment is restricted to playing actions from its candidate strategy (Figure~\ref{fig:example1b}). Then we play this abstract game on the behalf of the controller. Once again we search for a trace through the game but this time the SAT solver is searching for a trace that avoids error states for the duration of the bounded game. Any traces found in this way indicate the possibility of a spoiling strategy for the controller that defeats the candidate strategy of the environment. Figure~\ref{fig:example1c} shows a trace in which the controller counters the environment by playing \texttt{dev\_cmd=0} in the first round to match the initial state of \texttt{request=0}.
 
-When a counterexample is found it is used to refine the original candidate strategy. We do this by modifying the game abstraction to restrict the controller to playing the first action from its counterexample trace as well as the existing restriction to the environment. Now a SAT query for a environment winning trace must include this counterexample action. Once again we conjecturing that the first action in a trace is a useful action for our search and we are ensuring that the environment player takes this controller action into account when constructing its strategy. If a trace exists with this restriction to the game it can be used to refine the environment's candidate strategy by appending a new action.
+The trace can be used to label nodes in the AGT representing a partial strategy for the controller for that abstract game (Figure~\ref{fig:example1d}). Our goal now is to refine the candidate strategy for the environment so that it wins against the controller's partial strategy. In the candidate strategy we have not yet selected an environment action for the second game round, so we may refine the strategy by doing this now. Since the game is deterministic we can capture the actions in the AGT and the counterexample strategy with a single state: $\{ \texttt{request=1, err=0} \}$. We now solve an unrestricted abstract game with a bound of 1 from this state in order to determine which action the environment should select for the second game round. 
+
+The shorter game is solve via a recursive call to the algorithm. First a trace to an error state is found (Figure~\ref{fig:example1e}) and a candidate constructed followed by a counterexample trace in which the controller chooses to correctly play \texttt{cmd=1}. At this point it is impossible to refine the environment candidate strategy by appending additional actions because the bound on game length has been reached. Instead an action from the candidate is backtracked and the search continues on a refined AGT that now includes the counterexample (Figure~\ref{fig:example1f}).
+
+
+\begin{figure}
+    \centering
+    \begin{subfigure}[t]{0.3\textwidth}
+        \centering
+        \begin{minipage}[t][3.9cm][t]{\textwidth}
+        \begin{tikzpicture}[align at top, level distance = 10mm]
+            \node [circle,draw] (root){}
+                child {node [circle,draw] {}
+                    node [left=4pt] {\texttt{cmd=0}}
+                    edge from parent node [left] {\texttt{req=1}}
+                }
+                node [above=4pt] {$\langle (0, 0), 2 \rangle$};
+        \end{tikzpicture}
+        \end{minipage}
+        \caption{Partial strategy}
+        \label{fig:example1d}
+    \end{subfigure}%
+    \begin{subfigure}[t]{0.3\textwidth}
+        \centering
+        \begin{minipage}[t][3.9cm][t]{\textwidth}
+        \begin{tikzpicture}[align at top, level distance = 10mm]
+            \node [circle,draw,inner sep=1pt] (root){}
+                child {node [circle,draw,inner sep=1pt] {}
+                    node [left=4pt] {\texttt{cmd=0}}
+                }
+                node [left=4pt] {\texttt{req=1}}
+                node [above=4pt] {$\langle (1, 0), 1 \rangle$};
+        \end{tikzpicture}
+        \end{minipage}
+        \caption{Trace to error}
+        \label{fig:example1e}
+    \end{subfigure}%
+    \begin{subfigure}[t]{0.3\textwidth}
+        \centering
+        \begin{minipage}[t][3.9cm][t]{\textwidth}
+        \begin{tikzpicture}[align at top, level distance = 10mm]
+            \node [circle,draw] (root){}
+                child {node [circle,draw] {}
+                    edge from parent node [left] {\texttt{cmd=1}}
+                }
+                node [left=4pt] {}
+                node [above=4pt] {$\langle (1, 0), 1 \rangle$};
+        \end{tikzpicture}
+        \end{minipage}
+        \caption{Refined AGT}
+        \label{fig:example1f}
+    \end{subfigure}%
+    \caption{Continued example algorithm execution}
+    \label{fig:example1execont}
+\end{figure}
+
+The environment is now playing against a restricted opponent. In this case there is no possible action that the controller can take to reach an error state. This can be seen in the state machine for the game in Figure~\ref{fig:example1}. If the environment cannot win from this state against a restricted controller then clearly it cannot win against an unrestricted controller in the game bounded to one round. We can therefore conclude that the candidate strategy that led to this state was not a winning strategy for its abstract game.
+
+Actually we may conclude a stronger assertion that any strategy that results in this state with one game round remaining is a bad strategy. It is possible to exclude these strategies from future searches in an optimisation described in Section~\ref{sec:boundedLearning}.
+
+The algorithm now backtracks to the very beginning. We have determined that the candidate environment strategy in Figure~\ref{fig:example1b} can be defeated by the partial controller strategy in Figure~\ref{fig:example1d}. Now the abstraction of the game is refined to include the counterexample. The original empty abstraction refined with a single counterexample action is shown in Figure~\ref{fig:example1g}. Note that a trace reaching an error in which the environment plays \texttt{os\_request=1} is still possible in this abstract game. The algorithm without optimisation will consider this candidate again for the new abstract game. The result will be the same and refinement occurs again, except now the game is refined to include a counterexample action from the second round (Figure~\ref{fig:exampl1h}). On this game abstraction the candidate is blocked because the trace must include \texttt{dev\_cmd=1} in the second round.
+
+As a result the environment must choose a different action for the first round of the game. A SAT query will reveal that \texttt{os\_request=0} can lead to an error when the controller plays \texttt{dev\_cmd=1} in the second round. However, this candidate can be defeated by the controller choosing \texttt{dev\_cmd=0} instead. The algorithm will discover this and refine the abstraction again to include the counterexample. In refined abstract game (Figure~\ref{fig:example1i}) the environment has no winning trace and therefore the algorithm terminates and returns realisable for the controller.
+
+\begin{figure}
+    \begin{subfigure}[t]{0.3\textwidth}
+        \centering
+        \begin{minipage}[t][3.9cm][t]{\textwidth}
+        \begin{tikzpicture}[align at top, level distance = 10mm]
+            \node [circle,draw] (root){}
+                child {node [circle,draw] {}
+                    edge from parent node [left] {\texttt{cmd=0}}
+                }
+                node [left=4pt] {}
+                node [above=4pt] {$\langle (0, 0), 2 \rangle$};
+        \end{tikzpicture}
+        \end{minipage}
+        \caption{Refined AGT}
+        \label{fig:example1g}
+    \end{subfigure}%
+    \begin{subfigure}[t]{0.3\textwidth}
+        \centering
+        \begin{minipage}[t][3.9cm][t]{\textwidth}
+        \begin{tikzpicture}[align at top, level distance = 10mm]
+            \node [circle,draw] (root){}
+                child {node [circle,draw] {}
+                    child {node [circle,draw] {}
+                        edge from parent node [left] {\texttt{cmd=1}}
+                    }
+                    edge from parent node [left] {\texttt{cmd=0}}
+                }
+                node [left=4pt] {}
+                node [above=4pt] {$\langle (0, 0), 2 \rangle$};
+        \end{tikzpicture}
+        \end{minipage}
+        \caption{Refined AGT}
+        \label{fig:example1h}
+    \end{subfigure}%
+    \begin{subfigure}[t]{0.3\textwidth}
+        \centering
+        \begin{minipage}[t][3.9cm][t]{\textwidth}
+        \begin{tikzpicture}[align at top, level distance = 10mm]
+            \node [circle,draw] (root){}
+                child {node [circle,draw] {}
+                    child {node [circle,draw] {}
+                        edge from parent node [left] {\texttt{cmd=1}}
+                    }
+                    child {node [circle,draw] {}
+                        edge from parent node [right] {\texttt{cmd=0}}
+                    }
+                    edge from parent node [left] {\texttt{cmd=0}}
+                }
+                node [left=4pt] {}
+                node [above=4pt] {$\langle (0, 0), 2 \rangle$};
+        \end{tikzpicture}
+        \end{minipage}
+        \caption{Refined AGT}
+        \label{fig:example1i}
+    \end{subfigure}%
+    \caption{Continued example algorithm execution}
+    \label{fig:example1execont2}
+\end{figure}
+
 
 \subsection{Abstract game trees}
 
@@ -265,17 +387,7 @@ An abstract game tree (AGT) is a restricted version of the concrete game in whic
 \end{figure}
 
 
-Given an environment (controller) abstract game tree $T$ a \emph{partial
-strategy} $Strat: \textsc{nodes}(T) \rightarrow \mathcal{C}$ ($Strat: \textsc{nodes}(T)
-\rightarrow \mathcal{U}$) labels each node of the tree with the controller's
-(environment's) action to be played in that node.   Given a partial strategy
-$Strat$, we can map each leaf $l$ of the abstract game tree to $\langle
-s',i'\rangle=\textsc{outcome}(\langle s, i\rangle, Strat, l)$ obtained by
-playing all controllable and uncontrollable actions on the path from the root
-to the leaf.  An environment (controller) partial strategy is \emph{winning against $T$} 
-if all its outcomes are states that are winning for the environment (controller)
-in the concrete game.
-
+Given an environment (controller) abstract game tree $T$ a \emph{partial strategy} $Strat: \textsc{nodes}(T) \rightarrow \mathcal{C}$ ($Strat: \textsc{nodes}(T) \rightarrow \mathcal{U}$) labels each node $n$ of the tree with the controller's (environment's) action to be played in the game round corresponding to $\textsc{height}(k, n)$.  Given a partial strategy $Strat$, we can map each leaf $l$ of the abstract game tree to $\langle s',i'\rangle=\textsc{outcome}(\langle s, i\rangle, Strat, l)$ obtained by playing all controllable and uncontrollable actions on the path from the root to the leaf.  An environment (controller) partial strategy is \emph{winning against $T$} if all its outcomes are states that are winning for the environment (controller) in the concrete game.
 
 %%%Figure~\ref{fig:strategy} shows an example partial strategy for
 %%%the controller.  The controller responds to the requests by first granting
@@ -403,8 +515,9 @@ in the concrete game.
         \Function{verify}{$p, s, k, T, cand$}
             \For{$l \in leaves(gt)$}
             \State $\langle k', s'\rangle \gets $ \Call{outcome}{$s, k, cand, l$} \Comment{Get bound and state at leaf}
-                \State $u \gets $ \Call{solveAbstract}{\Call{opponent}{$p$}, $s'$, $k'$, $\emptyset$} \Comment{Solve for the opponent}
-                \IIf{$u \neq \texttt{NULL}$} \Return $\langle \True, l, u \rangle$ \EndIIf \Comment{Return counterexample}
+            \State $T' \gets$ \IfElse{$p = \textsc{cont}$}{$\emptyset$}{$\{ cand(l) \}$ } \EndIfElse
+                \State $a \gets $ \Call{solveAbstract}{\Call{opponent}{$p$}, $s'$, $k'$, $T'$} \Comment{Solve for the opponent}
+                \IIf{$a \neq \texttt{NULL}$} \Return $\langle \True, l, a \rangle$ \EndIIf \Comment{Return counterexample}
             \EndFor
             \State \Return $\langle \False, \emptyset, \emptyset \rangle$
         \EndFunction
@@ -542,6 +655,7 @@ Completeness of the algorithm follows from the completeness of the backtracking 
 In this section we present several optimisations to the algorithm.
 
 \subsection{Bad State Learning}
+\label{sec:boundedLearning}
 
 The most important optimisation that allows the algorithm to avoid much of the search space is to record states that are known to be losing for one player. On subsequent calls to the SAT solver we encode these states in the candidate strategy formula (see Algorithm~\ref{alg:treeFormulaLearning}). Thus the algorithm avoids choosing moves that lead to states that are already known to be losing.
 
