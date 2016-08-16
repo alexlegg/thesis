@@ -59,7 +59,6 @@ controller or environment losing states respectively
 %%%that $s$ is a losing state either always (for the controller) or for bound $k$
 %%%(for the environment). 
 
-
 \begin{figure}[t]
     \centering
     \begin{subfigure}[t]{.32\textwidth}
@@ -69,19 +68,19 @@ controller or environment losing states respectively
             \node [circle,draw] (root){}
                 child {node [circle,draw] {}
                     child {node [circle,draw,right=5pt] {}
-                        edge from parent [fixed] node [left=2pt,text width=1cm] {\texttt{gr0=1 gr1=0}}
+                        edge from parent node [left=2pt,text width=1cm] {\texttt{gr0=1 gr1=0}}
                     }
                     child {node [circle,draw,left=5pt] {}
-                        edge from parent [fixed] node [right=2pt,text width=1cm] {\texttt{gr0=1 gr1=1}}
+                        edge from parent node [right=2pt,text width=1cm] {\texttt{gr0=1 gr1=1}}
                     }
                     node [left=5pt] {$n$}
-                    edge from parent [fixed] node [left=2pt,text width=1cm] {\texttt{gr0=0 gr1=1}}
+                    edge from parent node [left=2pt,text width=1cm] {\texttt{gr0=0 gr1=1}}
                 }
                 child {node [circle,draw] (n) {}
                     child {node [circle,draw] {}
-                        edge from parent [fixed] node [right=2pt,text width=1cm] {\texttt{gr0=1 gr1=1}}
+                        edge from parent node [right=2pt,text width=1cm] {\texttt{gr0=1 gr1=1}}
                     }
-                    edge from parent [fixed] node [right=2pt,text width=1cm] {\texttt{gr0=1 gr1=1}}
+                    edge from parent node [right=2pt,text width=1cm] {\texttt{gr0=1 gr1=1}}
                 }
                 node [above=4pt] {$\langle s, k \rangle$};
         \end{tikzpicture}
@@ -94,13 +93,13 @@ controller or environment losing states respectively
             \node [circle,draw] (root){}
                 child {node [circle,draw] {}
                     node [left=5pt] {$n$}
-                    edge from parent [fixed] node [left=2pt,text width=1cm] {\texttt{gr0=1 gr1=0}}
+                    edge from parent node [left=2pt,text width=1cm] {\texttt{gr0=1 gr1=0}}
                 }
                 child {node [circle,draw] (n) {}
                     child {node [circle,draw] {}
-                        edge from parent [fixed] node [right=2pt,text width=1cm] {\texttt{gr0=1 gr1=1}}
+                        edge from parent node [right=2pt,text width=1cm] {\texttt{gr0=1 gr1=1}}
                     }
-                    edge from parent [fixed] node [right=2pt=2pt=2pt=2pt,text width=1cm] {\texttt{gr0=1 gr1=1}}
+                    edge from parent node [right=2pt=2pt=2pt=2pt,text width=1cm] {\texttt{gr0=1 gr1=1}}
                 }
                 node [above=4pt] {$\langle s, k \rangle$};
         \end{tikzpicture}
@@ -112,10 +111,10 @@ controller or environment losing states respectively
         \begin{tikzpicture}[dash pattern = on 2pt off 2pt, level distance = 10mm]
             \node [circle,draw] {}
                 child {node [circle,draw,right=5pt] {}
-                    edge from parent [fixed] node [left=2pt,text width=1cm] {\texttt{gr0=1 gr1=0}}
+                    edge from parent node [left=2pt,text width=1cm] {\texttt{gr0=1 gr1=0}}
                 }
                 child {node [circle,draw,left=5pt] {}
-                    edge from parent [fixed] node [right=2pt,text width=1cm] {\texttt{gr0=1 gr1=1}}
+                    edge from parent node [right=2pt,text width=1cm] {\texttt{gr0=1 gr1=1}}
                 }
                 node [left=5pt] {$n$};
         \end{tikzpicture}

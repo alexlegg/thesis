@@ -447,7 +447,7 @@ Completeness of the algorithm follows from the completeness of the backtracking 
 
 \section{Optimisations}
 
-In this section we present several optimisations to the algorithm.
+The bounded realisability algorithm has an exponential worst case running time when the entire search tree must be explored before discovering a winning strategy. In this section I present some optimisations that aim to prune the search tree as well as discover winning strategies earlier in the search.
 
 \subsection{Bad State Learning}
 \label{sec:boundedLearning}
@@ -538,15 +538,29 @@ The design of the algorithm is motivated by the desire to solve bounded safety g
 
 As previously stated the bounded realisability problem is a specialisation of QBF and the algorithm presented in this chapter is a domain specific QBF solver. In Chapter~\ref{ch:relatedwork} several approaches to solving general QBF problems were described. The state of the art in QBF is focused on several areas: dependency analysis, circuit analysis, and counterexample guided search. 
 
-Analysing dependencies or the original circuit of the presented QBF are both aimed at reconstructing information that was lost during the conversion to a prenex normal form formula. The aim is to use that information to speed up the search for a solution. The bounded realisability algorithm is aware of the original problem formulation and constructs parts of it on the fly. For example, the quantifier dependency graph for a bounded realisability problem would normally be mostly linear due to the construction via unrollings of the transition relation, which rarely contains fully independent subformulas. An exception to this is the set of state and Tseitin variable which belongs to the last existential quantifier in the prefix. Those variables are decided by the action variables preceding them in the game. The algorithm presented here never includes anything other than action variables in player strategies, which reflects an awareness of that dependency. 
+Analysing dependencies or the original circuit of the presented QBF are both aimed at reconstructing information that was lost during the conversion to a prenex normal form formula. The aim is to use that information to speed up the search for a solution. The bounded realisability algorithm is aware of the original problem formulation and constructs parts of it on the fly. For example, the quantifier dependency graph for a bounded realisability problem would normally be mostly linear due to the construction via unrollings of the transition relation, which rarely contains fully independent subformulas. An exception to this is the set of state and Tseitin variables which belongs to the last existential quantifier in the prefix. Those variables are decided by the action variables preceding them in the game. The algorithm presented here never includes anything other than action variables in player strategies, which reflects an awareness of that dependency. 
 
-The algorithm contains a higher level of information about the original problem than an analysis of the circuit could provide. It may be possible to implement some the propagation techniques introduced by these methods but in general learning sets of states provides a greater pruning of the search tree. We are able to transmit learned states between game rounds...
+The algorithm contains a higher level of information about the original problem than an analysis of the circuit could provide. It may be possible to implement some the propagation techniques introduced by these methods but in general learning sets of states provides a greater pruning of the search tree. We are able to transmit learned states between game rounds, which would not be possible in a general QBF solver.
+
+The ability to learn states is also the primary difference between the specialised solver and the counterexample guided QBF algorithm proposed in \cite{Janota12}. More recent QBF approaches use counterexamples to guide an abstraction of the problem via clause selection. It would interesting to apply these techniques to bounded realisability although the extension to unbounded synthesis in Chapter~\ref{ch:unbounded} would not be applicable without and abstract game tree.
+
+\subsection{Model checking}
+
+The concept of solving games by searching for counterexamples of a certain length with a SAT solver was first introduced in a bounded approach to model checking~\cite{Biere99}. Replacing counterexample traces with trees is the natural extension of this approach to realisability given that the controller now has agency to select actions in the game rather than modelling an implementation. The move from model checking to realisability brings additional complexity to the problem but the efficiency of SAT is still exploited to discover counterexamples quickly.
+
+\subsection{Related synthesis techniques}
+
+Bounded synthesis~\cite{Finkbeiner13} uses an SMT solver to search for a bounded \emph{implementation} for an LTL specification. Lazy synthesis~\cite{Finkbeiner12} similarly searches for a bounded partial implementation and uses BDD based model checking to search for counterexamples in order to refine the partial implementation. Both of these techniques are for full LTL synthesis, which is a different problem to the safety specifications solved in this chapter, but the overarching framework is similar. 
+
+Algorithms that avoid BDDs in favour of SAT solving have been proposed for safety synthesis in the past~\cite{Morgenstern13,Chiang15,Bloem14} but none of these take the approach of unrolling the transition relation to a bound. In these previous works states belonging to a winning region for one player are collected over a series of SAT queries concerning single transitions. These works have more in common with the extension of bounded realisability to unbounded games in Chapter~\ref{ch:unbounded}.
+
+\subsection{Limitations}
 
 
 
 \section{Summary}
 
-In this chapter I presented the fundamental building block of this thesis, a new algorithm for solving bounded realisability. In later chapters I will explain extensions to this algorithm to increase its applicability and in Chapter~\ref{ch:evaluation} I will present results and an evaluation of the contribution of this.
+In this chapter I presented the fundamental building block of this thesis, a new algorithm for solving bounded realisability. In later chapters I will explain extensions to this algorithm to increase its applicability and in Chapter~\ref{ch:evaluation} I will present results and an evaluation of the contribution of this work.
 
 \begin{itemize}
     \item Here we introduce an algorithm for solving synthesis games that are bounded to a fixed number of game rounds. The algorithm is a counterexample guided abstraction refinement framework in which abstractions of the game are constructed from candidate strategies for the players. This is done in a way that allows a candidate strategy to be checked for a spoiling strategy by playing the game abstraction on behalf of the opponent. Spoiling strategies are counterexamples to a strategy that may be used for refinement.
@@ -555,256 +569,256 @@ In this chapter I presented the fundamental building block of this thesis, a new
 
 \end{itemize}
 
-\section{Case Study: Arbiter}
+%%%\section{Case Study: Arbiter}
 
-We consider a simple arbiter system in which the environment makes a request for a number of resources (1 or 2), and the controller may grant access to up to two resources.  The total number of requests grows each round by the number of environment requests and shrinks by the number of resources granted by the controller in the previous round.  The controller must ensure that the number of unhandled requests does not accumulate to more than 2.  Figure~\ref{fig:example} shows the variables (\ref{fig:examplevars}), the initial state of the system (\ref{fig:exampleinit}), and the formulas for computing next-state variable assignments (\ref{fig:exampletrans}) for this example. We use primed identifiers to denote next-state variables and curly braces to define the domain of a variable.
+%%%We consider a simple arbiter system in which the environment makes a request for a number of resources (1 or 2), and the controller may grant access to up to two resources.  The total number of requests grows each round by the number of environment requests and shrinks by the number of resources granted by the controller in the previous round.  The controller must ensure that the number of unhandled requests does not accumulate to more than 2.  Figure~\ref{fig:example} shows the variables (\ref{fig:examplevars}), the initial state of the system (\ref{fig:exampleinit}), and the formulas for computing next-state variable assignments (\ref{fig:exampletrans}) for this example. We use primed identifiers to denote next-state variables and curly braces to define the domain of a variable.
 
-This example is the $n=2$ instance of the more general problem of an arbiter of $n$ resources. For large values of $n$, the set of winning states has no compact representation, which makes the problem hard for BDD solvers. In Section~3 we will outline how the unbounded game can be solved without enumerating all winning states.
+%%%This example is the $n=2$ instance of the more general problem of an arbiter of $n$ resources. For large values of $n$, the set of winning states has no compact representation, which makes the problem hard for BDD solvers. In Section~3 we will outline how the unbounded game can be solved without enumerating all winning states.
 
-\begin{figure}
-    \begin{subfigure}[t]{\textwidth}
-        \centering
-        \begin{tabular}{l | l | l}
-            \textbf{Controllable} & \textbf{Uncontrollable} & \textbf{State} \\
-            \hline
-            \texttt{request : \{1, 2\}} & \texttt{grant0 = \{0, 1\}} & \texttt{resource0 = \{0, 1\}} \\
-            & \texttt{grant1 : \{0, 1\}} & \texttt{resource1 = \{0, 1\}} \\
-            & & \texttt{nrequests : \{0, 1, 2, 3\}} \\
-        \end{tabular}
-        \caption{Variables}
-        \label{fig:examplevars}
-    \end{subfigure}
+%%%\begin{figure}
+%%%    \begin{subfigure}[t]{\textwidth}
+%%%        \centering
+%%%        \begin{tabular}{l | l | l}
+%%%            \textbf{Controllable} & \textbf{Uncontrollable} & \textbf{State} \\
+%%%            \hline
+%%%            \texttt{request : \{1, 2\}} & \texttt{grant0 = \{0, 1\}} & \texttt{resource0 = \{0, 1\}} \\
+%%%            & \texttt{grant1 : \{0, 1\}} & \texttt{resource1 = \{0, 1\}} \\
+%%%            & & \texttt{nrequests : \{0, 1, 2, 3\}} \\
+%%%        \end{tabular}
+%%%        \caption{Variables}
+%%%        \label{fig:examplevars}
+%%%    \end{subfigure}
 
-    \begin{subfigure}[t]{\textwidth}
-        \centering
-        \texttt{resource0 = 0; resource1 = 0; nrequests = 0;}
-        \caption{Initial State}
-        \label{fig:exampleinit}
-    \end{subfigure}
+%%%    \begin{subfigure}[t]{\textwidth}
+%%%        \centering
+%%%        \texttt{resource0 = 0; resource1 = 0; nrequests = 0;}
+%%%        \caption{Initial State}
+%%%        \label{fig:exampleinit}
+%%%    \end{subfigure}
 
-    \begin{subfigure}[t]{\textwidth}
-        \begin {align*}
-            \texttt{resource0'} & \texttt{ = grant0;} \\
-            \texttt{resource1'} & \texttt{ = grant1;} \\
-            \texttt{nrequests'} & \texttt{ = (nrequests + request >= resource0 + resource1)} \\ 
-                                & \texttt{ ? (nrequests + request - resource0 - resource1) : 0;}
-        \end{align*}
-        \caption{Transition Relation}
-        \label{fig:exampletrans}
-    \end{subfigure}
-    \caption{Example}
-    \label{fig:example}
-\end{figure}
+%%%    \begin{subfigure}[t]{\textwidth}
+%%%        \begin {align*}
+%%%            \texttt{resource0'} & \texttt{ = grant0;} \\
+%%%            \texttt{resource1'} & \texttt{ = grant1;} \\
+%%%            \texttt{nrequests'} & \texttt{ = (nrequests + request >= resource0 + resource1)} \\ 
+%%%                                & \texttt{ ? (nrequests + request - resource0 - resource1) : 0;}
+%%%        \end{align*}
+%%%        \caption{Transition Relation}
+%%%        \label{fig:exampletrans}
+%%%    \end{subfigure}
+%%%    \caption{Example}
+%%%    \label{fig:example}
+%%%\end{figure}
 
 
-\begin{exmpI}
+%%%\begin{exmpI}
 
-    %% Make it clear that this is intuition only
-    We present the intuition behind our bounded synthesis method by applying
-    its \emph{simplified version} to the running example.  We begin by finding
-    a trace of length $k$ (here we consider $k=3$) that is winning for the
-    controller, i.e., that starts from the initial state and avoids the error
-    set for three game rounds (see Figure~\ref{fig:trace}).  We use a SAT
-    solver to find such a trace, precisely as one would do in bounded model
-    checking.  Given this trace we make an initial conjecture that any trace
-    starting with action \texttt{gr0=1 gr1=0} is winning for the controller.
-    This conjecture is captured in the abstract game tree shown in
-    Figure~\ref{fig:agt}.  We validate this conjecture by searching for a
-    counterexample trace that reaches an error state with the first controller
-    action fixed to \texttt{gr0=1 gr1=0}.   Such a trace, that refutes the
-    conjecture, is shown in Figure~\ref{fig:trace2}.  In this trace, the
-    environment wins by playing \texttt{req=2} in the first round.  This move
-    represents the environment's partial strategy against the abstract game
-    tree in Figure~\ref{fig:agt}.  This partial strategy is shown in
-    Figure~\ref{fig:strategy}.
-    
-    Next we strengthen the abstract game tree taking this partial strategy into account.
-    To this end we again use a SAT solver to find a trace where the contoller
-    wins while the environment plays according to the partial strategy.  In the
-    resulting trace (Figure~\ref{fig:trace3}), the controller plays \texttt{gr0=1 gr1=1} in
-    the second round.  We refine the abstract game tree using this move as
-    shown in Figure~\ref{fig:refined1}.  The environment's partial strategy was
-    to make two requests in the first round, to which the controller responds
-    by now granting an additional two resources in the second round.
+%%%    %% Make it clear that this is intuition only
+%%%    We present the intuition behind our bounded synthesis method by applying
+%%%    its \emph{simplified version} to the running example.  We begin by finding
+%%%    a trace of length $k$ (here we consider $k=3$) that is winning for the
+%%%    controller, i.e., that starts from the initial state and avoids the error
+%%%    set for three game rounds (see Figure~\ref{fig:trace}).  We use a SAT
+%%%    solver to find such a trace, precisely as one would do in bounded model
+%%%    checking.  Given this trace we make an initial conjecture that any trace
+%%%    starting with action \texttt{gr0=1 gr1=0} is winning for the controller.
+%%%    This conjecture is captured in the abstract game tree shown in
+%%%    Figure~\ref{fig:agt}.  We validate this conjecture by searching for a
+%%%    counterexample trace that reaches an error state with the first controller
+%%%    action fixed to \texttt{gr0=1 gr1=0}.   Such a trace, that refutes the
+%%%    conjecture, is shown in Figure~\ref{fig:trace2}.  In this trace, the
+%%%    environment wins by playing \texttt{req=2} in the first round.  This move
+%%%    represents the environment's partial strategy against the abstract game
+%%%    tree in Figure~\ref{fig:agt}.  This partial strategy is shown in
+%%%    Figure~\ref{fig:strategy}.
+%%%    
+%%%    Next we strengthen the abstract game tree taking this partial strategy into account.
+%%%    To this end we again use a SAT solver to find a trace where the contoller
+%%%    wins while the environment plays according to the partial strategy.  In the
+%%%    resulting trace (Figure~\ref{fig:trace3}), the controller plays \texttt{gr0=1 gr1=1} in
+%%%    the second round.  We refine the abstract game tree using this move as
+%%%    shown in Figure~\ref{fig:refined1}.  The environment's partial strategy was
+%%%    to make two requests in the first round, to which the controller responds
+%%%    by now granting an additional two resources in the second round.
 
-    When the controller cannot refine the tree by extending existing branches,
-    it backtracks and creates new branches. Eventually, we obtain the abstract
-    game tree shown in Figure~\ref{fig:refined2} for which there does not exist
-    a winning partial strategy on behalf of the environment.  We conclude that
-    the bounded game is winning for the controller.
+%%%    When the controller cannot refine the tree by extending existing branches,
+%%%    it backtracks and creates new branches. Eventually, we obtain the abstract
+%%%    game tree shown in Figure~\ref{fig:refined2} for which there does not exist
+%%%    a winning partial strategy on behalf of the environment.  We conclude that
+%%%    the bounded game is winning for the controller.
 
-\end{exmpI}
+%%%\end{exmpI}
 
-\tikzset{every node/.style={solid}}
-\tikzstyle{fixed}=[solid]
-\begin{figure}
-    \centering
-    \captionsetup[subfigure]{width=\textwidth,justification=raggedleft}
-    \begin{subfigure}[t]{.4\textwidth}
-        \centering
-        \begin{minipage}[t][3.8cm][t]{\textwidth}
-        \begin{tikzpicture}[level distance = 5mm,baseline]
-            \node [circle,draw,inner sep=1pt] (root){}
-                child {node [circle,draw,inner sep=1pt] {}
-                    child {node [circle,draw,inner sep=1pt] {}
-                        child {node [circle,draw,inner sep=1pt] {}
-                            child {node [circle,draw,inner sep=1pt] {}
-                                child {node [circle,draw,inner sep=1pt] {}
-                                    node [left=4pt] {\texttt{gr0=0 gr1=0}}
-                                }
-                                node [left=4pt] {\texttt{req=1}}
-                            }
-                            node [left=4pt] {\texttt{gr0=0 gr1=0}}
-                        }
-                        node [left=4pt] {\texttt{req=1}}
-                    }
-                node [left=4pt] {\texttt{gr0=1 gr1=0}}
-                }
-                node [left=4pt] {\texttt{req=1}}
-                node [above=4pt] {$\langle s, 3 \rangle$};
-        \end{tikzpicture}
-    \end{minipage}
-        \caption{Controller winning trace}
-        \label{fig:trace}
-    \end{subfigure}
-    \begin{subfigure}[t]{.4\textwidth}
-        \centering
-        \begin{minipage}[t][3.8cm][t]{\textwidth}
-        \begin{tikzpicture}[dash pattern = on 2pt off 2pt, level distance = 10mm,baseline]
-            \node [circle,draw] (root){}
-                child {node [circle,draw] {}
-                    edge from parent [fixed] node [left] {\texttt{gr0=1 gr1=0}}
-                }
-                node [left=4pt] {}
-                node [above=4pt] {$\langle s, 3 \rangle$};
-        \end{tikzpicture}
-        \end{minipage}
-        \caption{AGT}
-        \label{fig:agt}
-    \end{subfigure}
+%%%\tikzset{every node/.style={solid}}
+%%%\tikzstyle{fixed}=[solid]
+%%%\begin{figure}
+%%%    \centering
+%%%    \captionsetup[subfigure]{width=\textwidth,justification=raggedleft}
+%%%    \begin{subfigure}[t]{.4\textwidth}
+%%%        \centering
+%%%        \begin{minipage}[t][3.8cm][t]{\textwidth}
+%%%        \begin{tikzpicture}[level distance = 5mm,baseline]
+%%%            \node [circle,draw,inner sep=1pt] (root){}
+%%%                child {node [circle,draw,inner sep=1pt] {}
+%%%                    child {node [circle,draw,inner sep=1pt] {}
+%%%                        child {node [circle,draw,inner sep=1pt] {}
+%%%                            child {node [circle,draw,inner sep=1pt] {}
+%%%                                child {node [circle,draw,inner sep=1pt] {}
+%%%                                    node [left=4pt] {\texttt{gr0=0 gr1=0}}
+%%%                                }
+%%%                                node [left=4pt] {\texttt{req=1}}
+%%%                            }
+%%%                            node [left=4pt] {\texttt{gr0=0 gr1=0}}
+%%%                        }
+%%%                        node [left=4pt] {\texttt{req=1}}
+%%%                    }
+%%%                node [left=4pt] {\texttt{gr0=1 gr1=0}}
+%%%                }
+%%%                node [left=4pt] {\texttt{req=1}}
+%%%                node [above=4pt] {$\langle s, 3 \rangle$};
+%%%        \end{tikzpicture}
+%%%    \end{minipage}
+%%%        \caption{Controller winning trace}
+%%%        \label{fig:trace}
+%%%    \end{subfigure}
+%%%    \begin{subfigure}[t]{.4\textwidth}
+%%%        \centering
+%%%        \begin{minipage}[t][3.8cm][t]{\textwidth}
+%%%        \begin{tikzpicture}[dash pattern = on 2pt off 2pt, level distance = 10mm,baseline]
+%%%            \node [circle,draw] (root){}
+%%%                child {node [circle,draw] {}
+%%%                    edge from parent [fixed] node [left] {\texttt{gr0=1 gr1=0}}
+%%%                }
+%%%                node [left=4pt] {}
+%%%                node [above=4pt] {$\langle s, 3 \rangle$};
+%%%        \end{tikzpicture}
+%%%        \end{minipage}
+%%%        \caption{AGT}
+%%%        \label{fig:agt}
+%%%    \end{subfigure}
 
-    \begin{subfigure}[t]{.4\textwidth}
-        \centering
-        \begin{minipage}[t][3.8cm][t]{\textwidth}
-        \begin{tikzpicture}[level distance = 5mm,baseline]
-            \node [circle,draw,inner sep=1pt] (root){}
-                child {node [circle,draw,inner sep=1pt] {}
-                    child {node [circle,draw,inner sep=1pt] {}
-                        child {node [circle,draw,inner sep=1pt] {}
-                            child {node [circle,draw,inner sep=1pt] {}
-                                child {node [circle,draw,inner sep=1pt] {}
-                                    node [left=4pt] {\texttt{gr0=0 gr1=0}}
-                                }
-                                node [left=4pt] {\texttt{req=1}}
-                            }
-                            node [left=4pt] {\texttt{gr0=0 gr1=0}}
-                        }
-                        node [left=4pt] {\texttt{req=1}}
-                    }
-                node [left=4pt] {\texttt{gr0=1 gr1=0}}
-                }
-                node [left=4pt] {\texttt{req=2}}
-                node [above=4pt] {$\langle s, 3 \rangle$};
-        \end{tikzpicture}
-        \end{minipage}
-        \caption{Environment winning trace}
-        \label{fig:trace2}
-    \end{subfigure}
-    \begin{subfigure}[t]{.4\textwidth}
-        \centering
-        \begin{minipage}[t][3.8cm][t]{\textwidth}
-        \begin{tikzpicture}[dash pattern = on 2pt off 2pt, level distance = 10mm,baseline]
-            \node [circle,draw] (root){}
-                child {node [circle,draw] {}
-                    edge from parent [fixed] node [left] {\texttt{gr0=1 gr1=0}}
-                }
-                node [left=4pt] {\texttt{req=2}}
-                node [above=4pt] {$\langle s, 3 \rangle$};
-        \end{tikzpicture}
-        \end{minipage}
-        \caption{Partial Strategy}
-        \label{fig:strategy}
-    \end{subfigure}
-    \caption{Abstract game trees.}
-    \label{fig:alltrees}
-\end{figure}
+%%%    \begin{subfigure}[t]{.4\textwidth}
+%%%        \centering
+%%%        \begin{minipage}[t][3.8cm][t]{\textwidth}
+%%%        \begin{tikzpicture}[level distance = 5mm,baseline]
+%%%            \node [circle,draw,inner sep=1pt] (root){}
+%%%                child {node [circle,draw,inner sep=1pt] {}
+%%%                    child {node [circle,draw,inner sep=1pt] {}
+%%%                        child {node [circle,draw,inner sep=1pt] {}
+%%%                            child {node [circle,draw,inner sep=1pt] {}
+%%%                                child {node [circle,draw,inner sep=1pt] {}
+%%%                                    node [left=4pt] {\texttt{gr0=0 gr1=0}}
+%%%                                }
+%%%                                node [left=4pt] {\texttt{req=1}}
+%%%                            }
+%%%                            node [left=4pt] {\texttt{gr0=0 gr1=0}}
+%%%                        }
+%%%                        node [left=4pt] {\texttt{req=1}}
+%%%                    }
+%%%                node [left=4pt] {\texttt{gr0=1 gr1=0}}
+%%%                }
+%%%                node [left=4pt] {\texttt{req=2}}
+%%%                node [above=4pt] {$\langle s, 3 \rangle$};
+%%%        \end{tikzpicture}
+%%%        \end{minipage}
+%%%        \caption{Environment winning trace}
+%%%        \label{fig:trace2}
+%%%    \end{subfigure}
+%%%    \begin{subfigure}[t]{.4\textwidth}
+%%%        \centering
+%%%        \begin{minipage}[t][3.8cm][t]{\textwidth}
+%%%        \begin{tikzpicture}[dash pattern = on 2pt off 2pt, level distance = 10mm,baseline]
+%%%            \node [circle,draw] (root){}
+%%%                child {node [circle,draw] {}
+%%%                    edge from parent [fixed] node [left] {\texttt{gr0=1 gr1=0}}
+%%%                }
+%%%                node [left=4pt] {\texttt{req=2}}
+%%%                node [above=4pt] {$\langle s, 3 \rangle$};
+%%%        \end{tikzpicture}
+%%%        \end{minipage}
+%%%        \caption{Partial Strategy}
+%%%        \label{fig:strategy}
+%%%    \end{subfigure}
+%%%    \caption{Abstract game trees.}
+%%%    \label{fig:alltrees}
+%%%\end{figure}
 
-\begin{figure}
-    \centering
-    \begin{subfigure}[t]{.2\textwidth}
-        \centering
-        \begin{minipage}[t][3.8cm][t]{\textwidth}
-        \begin{tikzpicture}[level distance = 5mm,baseline]
-            \node [circle,draw,inner sep=1pt] (root){}
-                child {node [circle,draw,inner sep=1pt] {}
-                    child {node [circle,draw,inner sep=1pt] {}
-                        child {node [circle,draw,inner sep=1pt] {}
-                            child {node [circle,draw,inner sep=1pt] {}
-                                child {node [circle,draw,inner sep=1pt] {}
-                                    node [left=4pt] {\texttt{gr0=0 gr1=0}}
-                                }
-                                node [left=4pt] {\texttt{req=1}}
-                            }
-                            node [left=4pt] {\texttt{gr0=1 gr1=1}}
-                        }
-                        node [left=4pt] {\texttt{req=1}}
-                    }
-                node [left=4pt] {\texttt{gr0=1 gr1=0}}
-                }
-                node [left=4pt] {\texttt{req=2}}
-                node [above=4pt] {$\langle s, 3 \rangle$};
-        \end{tikzpicture}
-        \end{minipage}
-        \caption{Controller winning trace}
-        \label{fig:trace3}
-    \end{subfigure}
-    \begin{subfigure}[t]{.3\textwidth}
-        \centering
-        \begin{minipage}[t][3.8cm][t]{\textwidth}
-        \hspace*{0.8cm}
-        \begin{tikzpicture}[dash pattern = on 2pt off 2pt, level distance = 10mm,baseline]
-            \node [circle,draw] (root){}
-                child {node [circle,draw] {}
-                    child {node [circle,draw] {}
-                        edge from parent [fixed] node [left] {\texttt{gr0=1 gr1=1}}
-                    }
-                    edge from parent [fixed] node [left] {\texttt{gr0=1 gr1=0}}
-                }
-                node [above=4pt] {$\langle s, 3 \rangle$};
-        \end{tikzpicture}
-        \end{minipage}
-        \caption{First refined AGT}
-        \label{fig:refined1}
-    \end{subfigure}
-    \begin{subfigure}[t]{.4\textwidth}
-        \centering
-        \begin{minipage}[t][3.8cm][t]{\textwidth}
-        \begin{tikzpicture}[dash pattern = on 2pt off 2pt, level distance = 10mm,baseline]
-            \node [circle,draw] (root){}
-                child {node [circle,draw] {}
-                    child {node [circle,draw] {}
-                        child {node [circle,draw] {}
-                            edge from parent [fixed] node [left] {\texttt{gr0=1 gr1=1}}
-                        }
-                        edge from parent [fixed] node [left] {\texttt{gr0=1 gr1=1}}
-                    }
-                    edge from parent [fixed] node [left] {\texttt{gr0=1 gr1=0}}
-                }
-                child {node [circle,draw] {}
-                    child {node [circle,draw] {}
-                        child {node [circle,draw] {}
-                            edge from parent [fixed] node [right] {\texttt{gr0=1 gr1=1}}
-                        }
-                        edge from parent [fixed] node [right] {\texttt{gr0=1 gr1=1}}
-                    }
-                    edge from parent [fixed] node [right] {\texttt{gr0=1 gr1=1}}
-                }
-                node [above=4pt] {$\langle s, 3 \rangle$};
-        \end{tikzpicture}
-        \end{minipage}
-        \caption{Final Refined AGT}
-        \label{fig:refined2}
-    \end{subfigure}
-    \caption{Refined abstract game trees.}
-    \label{fig:refinedtrees}
-\end{figure}
+%%%\begin{figure}
+%%%    \centering
+%%%    \begin{subfigure}[t]{.2\textwidth}
+%%%        \centering
+%%%        \begin{minipage}[t][3.8cm][t]{\textwidth}
+%%%        \begin{tikzpicture}[level distance = 5mm,baseline]
+%%%            \node [circle,draw,inner sep=1pt] (root){}
+%%%                child {node [circle,draw,inner sep=1pt] {}
+%%%                    child {node [circle,draw,inner sep=1pt] {}
+%%%                        child {node [circle,draw,inner sep=1pt] {}
+%%%                            child {node [circle,draw,inner sep=1pt] {}
+%%%                                child {node [circle,draw,inner sep=1pt] {}
+%%%                                    node [left=4pt] {\texttt{gr0=0 gr1=0}}
+%%%                                }
+%%%                                node [left=4pt] {\texttt{req=1}}
+%%%                            }
+%%%                            node [left=4pt] {\texttt{gr0=1 gr1=1}}
+%%%                        }
+%%%                        node [left=4pt] {\texttt{req=1}}
+%%%                    }
+%%%                node [left=4pt] {\texttt{gr0=1 gr1=0}}
+%%%                }
+%%%                node [left=4pt] {\texttt{req=2}}
+%%%                node [above=4pt] {$\langle s, 3 \rangle$};
+%%%        \end{tikzpicture}
+%%%        \end{minipage}
+%%%        \caption{Controller winning trace}
+%%%        \label{fig:trace3}
+%%%    \end{subfigure}
+%%%    \begin{subfigure}[t]{.3\textwidth}
+%%%        \centering
+%%%        \begin{minipage}[t][3.8cm][t]{\textwidth}
+%%%        \hspace*{0.8cm}
+%%%        \begin{tikzpicture}[dash pattern = on 2pt off 2pt, level distance = 10mm,baseline]
+%%%            \node [circle,draw] (root){}
+%%%                child {node [circle,draw] {}
+%%%                    child {node [circle,draw] {}
+%%%                        edge from parent [fixed] node [left] {\texttt{gr0=1 gr1=1}}
+%%%                    }
+%%%                    edge from parent [fixed] node [left] {\texttt{gr0=1 gr1=0}}
+%%%                }
+%%%                node [above=4pt] {$\langle s, 3 \rangle$};
+%%%        \end{tikzpicture}
+%%%        \end{minipage}
+%%%        \caption{First refined AGT}
+%%%        \label{fig:refined1}
+%%%    \end{subfigure}
+%%%    \begin{subfigure}[t]{.4\textwidth}
+%%%        \centering
+%%%        \begin{minipage}[t][3.8cm][t]{\textwidth}
+%%%        \begin{tikzpicture}[dash pattern = on 2pt off 2pt, level distance = 10mm,baseline]
+%%%            \node [circle,draw] (root){}
+%%%                child {node [circle,draw] {}
+%%%                    child {node [circle,draw] {}
+%%%                        child {node [circle,draw] {}
+%%%                            edge from parent [fixed] node [left] {\texttt{gr0=1 gr1=1}}
+%%%                        }
+%%%                        edge from parent [fixed] node [left] {\texttt{gr0=1 gr1=1}}
+%%%                    }
+%%%                    edge from parent [fixed] node [left] {\texttt{gr0=1 gr1=0}}
+%%%                }
+%%%                child {node [circle,draw] {}
+%%%                    child {node [circle,draw] {}
+%%%                        child {node [circle,draw] {}
+%%%                            edge from parent [fixed] node [right] {\texttt{gr0=1 gr1=1}}
+%%%                        }
+%%%                        edge from parent [fixed] node [right] {\texttt{gr0=1 gr1=1}}
+%%%                    }
+%%%                    edge from parent [fixed] node [right] {\texttt{gr0=1 gr1=1}}
+%%%                }
+%%%                node [above=4pt] {$\langle s, 3 \rangle$};
+%%%        \end{tikzpicture}
+%%%        \end{minipage}
+%%%        \caption{Final Refined AGT}
+%%%        \label{fig:refined2}
+%%%    \end{subfigure}
+%%%    \caption{Refined abstract game trees.}
+%%%    \label{fig:refinedtrees}
+%%%\end{figure}
