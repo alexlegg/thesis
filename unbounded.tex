@@ -465,3 +465,56 @@ this optimisation is beneficial on the first few iterations of
     \caption{Generalise $I$ optimisation}
     \label{alg:opt1}
 \end{algorithm}
+
+\begin{algorithm}
+    \begin{algorithmic}[1]
+        \Function{solveAbstract}{$p, s, k, T$}
+        \State $cand \gets $ \Call{findCandidate}{$p, s, k, T$} \Comment{Look for a candidate}
+        \IIf{$k = 1$} \Return $cand$ \EndIIf \Comment{Reached the bound}
+        \State $T' \gets T$
+        \Loop
+            \IIf{$cand = \texttt{NULL}$} \Return $\texttt{NULL}$ \EndIIf \Comment{No candidate: return with no solution}
+            \State $\langle cex, l, u \rangle \gets $ \Call{verify}{$p, s, k, T, cand$} \Comment{Verify candidate}
+            \IIf{$cex = \False$} \Return $cand$ \EndIIf \Comment{No counterexample: return candidate}
+            \State $T' \gets $ \Call{append}{$T', l, u$} \Comment{Refine $T'$ with counterexample}
+            \State $cand \gets $ \Call{solveAbstract}{$p, s, k, T'$} \Comment{Solve refined game tree}
+        \EndLoop
+        \EndFunction
+        \algstore{b1}
+    \end{algorithmic}
+
+    \begin{algorithmic}
+        \algrestore{b1}
+        \Function{findCandidate}{$p, s, k, T$}
+        \State $\hat{T} \gets $ \Call{extend}{$T$} \Comment{Extend the tree with unfixed actions}
+            \State $f \gets $ \IfElse{$p = \texttt{cont}$}{\Call{treeFormula}{$k, \hat{T}$}}{\Call{\textoverline{treeFormula}}{$k, \hat{T}$}} \EndIfElse
+            \State $sol \gets $ \Call{SAT}{$s(X_{\hat{T}}) \land f$}
+            \If{$sol = \texttt{unsat}$} 
+                \If{\texttt{unbounded}} \Comment{Active only in the unbounded solver}
+                    %\State $\sigma \gets $ \Call{generalise}{$s$} \Comment{Expand $s$ to a set of states}
+                    \State \IfElse{$p = \texttt{cont}$}{\Call{learn}{$s, \hat{T}$}}{\Call{\textoverline{learn}}{$s, \hat{T}$}} \EndIfElse
+                \EndIf
+                \State \Return $\texttt{NULL}$ \Comment{No candidate exists}
+            \Else
+                \State \Return $\{ \langle n, c \rangle | n \in $ \Call{nodes}{$T$} $, c = \Call{sol}{n} \}$ \Comment{Fix candidate moves in $T$}
+            \EndIf
+        \EndFunction
+        \algstore{b2}
+    \end{algorithmic}
+
+    \begin{algorithmic}
+        \algrestore{b2}
+        \Function{verify}{$p, s, k, T, cand$}
+            \For{$l \in leaves(gt)$}
+            \State $\langle k', s'\rangle \gets $ \Call{outcome}{$s, k, cand, l$} \Comment{Get bound and state at leaf}
+            \State $T' \gets$ \IfElse{$p = \textsc{cont}$}{$\emptyset$}{$\{ cand(l) \}$ } \EndIfElse
+                \State $a \gets $ \Call{solveAbstract}{\Call{opponent}{$p$}, $s'$, $k'$, $T'$} \Comment{Solve for the opponent}
+                \IIf{$a \neq \texttt{NULL}$} \Return $\langle \True, l, a \rangle$ \EndIIf \Comment{Return counterexample}
+            \EndFor
+            \State \Return $\langle \False, \emptyset, \emptyset \rangle$
+        \EndFunction
+    \end{algorithmic}
+
+    \caption{Bounded synthesis}
+    \label{alg:bounded}
+\end{algorithm}

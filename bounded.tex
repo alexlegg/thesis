@@ -292,187 +292,11 @@ As a result the environment must choose a different action for the first round o
 
 An abstract game tree (AGT) is a restricted version of the concrete game in which fewer actions are available. The root of the tree is annotated by the initial state $s$ of the abstract game and the bound $k$ on the number of rounds.  We denote $\textsc{nodes}(T)$ the set of all nodes of a tree $T$, $\textsc{leaves}(T)$ the subset of leaf nodes.  For edge $e$, $\textsc{action}(e)$ is the action that labels the edge, and for node $n$, $\textsc{height}(k, n)$ is the distance from n to the last round of a game bounded to $k$ rounds.  $\textsc{height}(k, T)$ is the height of the root node of the tree.  For node $n$ of the tree, $\textsc{succ}(n)$ is the set of pairs $\langle e, n' \rangle$ where $n'$ is a child node of $n$ and $e$ is the edge connecting $n$ and $n'$.
 
-\tikzset{every node/.style={solid}}
-\tikzstyle{fixed}=[solid]
-\begin{figure}
-    \centering
-    \captionsetup[subfigure]{width=\textwidth,justification=raggedleft}
-    \begin{subfigure}[t]{.4\textwidth}
-        \centering
-        \begin{minipage}[t][3.8cm][t]{\textwidth}
-        \begin{tikzpicture}[level distance = 5mm,baseline]
-            \node [circle,draw,inner sep=1pt] (root){}
-                child {node [circle,draw,inner sep=1pt] {}
-                    child {node [circle,draw,inner sep=1pt] {}
-                        child {node [circle,draw,inner sep=1pt] {}
-                            child {node [circle,draw,inner sep=1pt] {}
-                                child {node [circle,draw,inner sep=1pt] {}
-                                    node [left=4pt] {\texttt{gr0=0 gr1=0}}
-                                }
-                                node [left=4pt] {\texttt{req=1}}
-                            }
-                            node [left=4pt] {\texttt{gr0=0 gr1=0}}
-                        }
-                        node [left=4pt] {\texttt{req=1}}
-                    }
-                node [left=4pt] {\texttt{gr0=1 gr1=0}}
-                }
-                node [left=4pt] {\texttt{req=1}}
-                node [above=4pt] {$\langle s, 3 \rangle$};
-        \end{tikzpicture}
-    \end{minipage}
-        \caption{Controller winning trace}
-        \label{fig:trace}
-    \end{subfigure}
-    \begin{subfigure}[t]{.4\textwidth}
-        \centering
-        \begin{minipage}[t][3.8cm][t]{\textwidth}
-        \begin{tikzpicture}[dash pattern = on 2pt off 2pt, level distance = 10mm,baseline]
-            \node [circle,draw] (root){}
-                child {node [circle,draw] {}
-                    edge from parent [fixed] node [left] {\texttt{gr0=1 gr1=0}}
-                }
-                node [left=4pt] {}
-                node [above=4pt] {$\langle s, 3 \rangle$};
-        \end{tikzpicture}
-        \end{minipage}
-        \caption{AGT}
-        \label{fig:agt}
-    \end{subfigure}
-
-    \begin{subfigure}[t]{.4\textwidth}
-        \centering
-        \begin{minipage}[t][3.8cm][t]{\textwidth}
-        \begin{tikzpicture}[level distance = 5mm,baseline]
-            \node [circle,draw,inner sep=1pt] (root){}
-                child {node [circle,draw,inner sep=1pt] {}
-                    child {node [circle,draw,inner sep=1pt] {}
-                        child {node [circle,draw,inner sep=1pt] {}
-                            child {node [circle,draw,inner sep=1pt] {}
-                                child {node [circle,draw,inner sep=1pt] {}
-                                    node [left=4pt] {\texttt{gr0=0 gr1=0}}
-                                }
-                                node [left=4pt] {\texttt{req=1}}
-                            }
-                            node [left=4pt] {\texttt{gr0=0 gr1=0}}
-                        }
-                        node [left=4pt] {\texttt{req=1}}
-                    }
-                node [left=4pt] {\texttt{gr0=1 gr1=0}}
-                }
-                node [left=4pt] {\texttt{req=2}}
-                node [above=4pt] {$\langle s, 3 \rangle$};
-        \end{tikzpicture}
-        \end{minipage}
-        \caption{Environment winning trace}
-        \label{fig:trace2}
-    \end{subfigure}
-    \begin{subfigure}[t]{.4\textwidth}
-        \centering
-        \begin{minipage}[t][3.8cm][t]{\textwidth}
-        \begin{tikzpicture}[dash pattern = on 2pt off 2pt, level distance = 10mm,baseline]
-            \node [circle,draw] (root){}
-                child {node [circle,draw] {}
-                    edge from parent [fixed] node [left] {\texttt{gr0=1 gr1=0}}
-                }
-                node [left=4pt] {\texttt{req=2}}
-                node [above=4pt] {$\langle s, 3 \rangle$};
-        \end{tikzpicture}
-        \end{minipage}
-        \caption{Partial Strategy}
-        \label{fig:strategy}
-    \end{subfigure}
-    \caption{Abstract game trees.}
-    \label{fig:alltrees}
-\end{figure}
-
-
 Given an environment (controller) abstract game tree $T$ a \emph{partial strategy} $Strat: \textsc{nodes}(T) \rightarrow \mathcal{C}$ ($Strat: \textsc{nodes}(T) \rightarrow \mathcal{U}$) labels each node $n$ of the tree with the controller's (environment's) action to be played in the game round corresponding to $\textsc{height}(k, n)$.  Given a partial strategy $Strat$, we can map each leaf $l$ of the abstract game tree to $\langle s',i'\rangle=\textsc{outcome}(\langle s, i\rangle, Strat, l)$ obtained by playing all controllable and uncontrollable actions on the path from the root to the leaf.  An environment (controller) partial strategy is \emph{winning against $T$} if all its outcomes are states that are winning for the environment (controller) in the concrete game.
 
-%%%Figure~\ref{fig:strategy} shows an example partial strategy for
-%%%the controller.  The controller responds to the requests by first granting
-%%%access to \texttt{resource1}, then to \texttt{resource0} in the second round.
+\subsection{Counterexample guided realisability}
 
-\begin{figure}
-    \centering
-    \begin{subfigure}[t]{.2\textwidth}
-        \centering
-        \begin{minipage}[t][3.8cm][t]{\textwidth}
-        \begin{tikzpicture}[level distance = 5mm,baseline]
-            \node [circle,draw,inner sep=1pt] (root){}
-                child {node [circle,draw,inner sep=1pt] {}
-                    child {node [circle,draw,inner sep=1pt] {}
-                        child {node [circle,draw,inner sep=1pt] {}
-                            child {node [circle,draw,inner sep=1pt] {}
-                                child {node [circle,draw,inner sep=1pt] {}
-                                    node [left=4pt] {\texttt{gr0=0 gr1=0}}
-                                }
-                                node [left=4pt] {\texttt{req=1}}
-                            }
-                            node [left=4pt] {\texttt{gr0=1 gr1=1}}
-                        }
-                        node [left=4pt] {\texttt{req=1}}
-                    }
-                node [left=4pt] {\texttt{gr0=1 gr1=0}}
-                }
-                node [left=4pt] {\texttt{req=2}}
-                node [above=4pt] {$\langle s, 3 \rangle$};
-        \end{tikzpicture}
-        \end{minipage}
-        \caption{Controller winning trace}
-        \label{fig:trace3}
-    \end{subfigure}
-    \begin{subfigure}[t]{.3\textwidth}
-        \centering
-        \begin{minipage}[t][3.8cm][t]{\textwidth}
-        \hspace*{0.8cm}
-        \begin{tikzpicture}[dash pattern = on 2pt off 2pt, level distance = 10mm,baseline]
-            \node [circle,draw] (root){}
-                child {node [circle,draw] {}
-                    child {node [circle,draw] {}
-                        edge from parent [fixed] node [left] {\texttt{gr0=1 gr1=1}}
-                    }
-                    edge from parent [fixed] node [left] {\texttt{gr0=1 gr1=0}}
-                }
-                node [above=4pt] {$\langle s, 3 \rangle$};
-        \end{tikzpicture}
-        \end{minipage}
-        \caption{First refined AGT}
-        \label{fig:refined1}
-    \end{subfigure}
-    \begin{subfigure}[t]{.4\textwidth}
-        \centering
-        \begin{minipage}[t][3.8cm][t]{\textwidth}
-        \begin{tikzpicture}[dash pattern = on 2pt off 2pt, level distance = 10mm,baseline]
-            \node [circle,draw] (root){}
-                child {node [circle,draw] {}
-                    child {node [circle,draw] {}
-                        child {node [circle,draw] {}
-                            edge from parent [fixed] node [left] {\texttt{gr0=1 gr1=1}}
-                        }
-                        edge from parent [fixed] node [left] {\texttt{gr0=1 gr1=1}}
-                    }
-                    edge from parent [fixed] node [left] {\texttt{gr0=1 gr1=0}}
-                }
-                child {node [circle,draw] {}
-                    child {node [circle,draw] {}
-                        child {node [circle,draw] {}
-                            edge from parent [fixed] node [right] {\texttt{gr0=1 gr1=1}}
-                        }
-                        edge from parent [fixed] node [right] {\texttt{gr0=1 gr1=1}}
-                    }
-                    edge from parent [fixed] node [right] {\texttt{gr0=1 gr1=1}}
-                }
-                node [above=4pt] {$\langle s, 3 \rangle$};
-        \end{tikzpicture}
-        \end{minipage}
-        \caption{Final Refined AGT}
-        \label{fig:refined2}
-    \end{subfigure}
-    \caption{Refined abstract game trees.}
-    \label{fig:refinedtrees}
-\end{figure}
-
+The bounded realisability algorithm constructs candidate strategies for one player that serve the dual purpose of game abstraction for its opponent. The algorithm begins by discovering a candidate for the environment. Next we must determine is there are counterexamples to the candidate. This step is executed by constructing an abstract game tree from the environment's candidate strategy and recursively invoking the algorithm on this new abstraction. The recursive call plays against the environment's strategy on behalf of the controller. Thus the algorithm can be seen as running two competing solvers, for the controller and for the environment. By symmetrically playing for both players achieve the goal of directing the search towards strong strategies and counterexamples.
 
 \begin{algorithm}
     \begin{algorithmic}[1]
@@ -481,114 +305,85 @@ Given an environment (controller) abstract game tree $T$ a \emph{partial strateg
         \IIf{$k = 1$} \Return $cand$ \EndIIf \Comment{Reached the bound}
         \State $T' \gets T$
         \Loop
-            \IIf{$cand = \texttt{NULL}$} \Return $\texttt{NULL}$ \EndIIf \Comment{No candidate: return with no solution}
+            \If{$cand = \texttt{NULL}$} \Comment{No candidate: return with no solution}
+                \State \Return $\texttt{NULL}$
+            \EndIf 
             \State $\langle cex, l, u \rangle \gets $ \Call{verify}{$p, s, k, T, cand$} \Comment{Verify candidate}
-            \IIf{$cex = \False$} \Return $cand$ \EndIIf \Comment{No counterexample: return candidate}
+            \If{$cex = \False$} \Comment{No counterexample: return candidate}
+                \State \Return $cand$ 
+            \EndIf 
             \State $T' \gets $ \Call{append}{$T', l, u$} \Comment{Refine $T'$ with counterexample}
             \State $cand \gets $ \Call{solveAbstract}{$p, s, k, T'$} \Comment{Solve refined game tree}
         \EndLoop
         \EndFunction
         \algstore{b1}
     \end{algorithmic}
+    \caption{Solve an abstract bounded game}
+    \label{alg:solveabstract}
+\end{algorithm}
 
+
+The full procedure is illustrated in \Cref{alg:solveabstract,alg:findcandidate,alg:verify}. \textsc{solveAbstract} takes a concrete game $G$ with maximum bound $\kappa$ as an implicit argument.  In addition, it takes a player $p$ (controller or environment), state $s$, bound $k$ and an abstract game tree $T$ and returns a winning partial strategy for $p$, if one exists.  The initial invocation of the algorithm takes the initial state $I$, bound $\kappa$ and an empty abstract game tree $\emptyset$.  Initially the solver is playing on behalf of the environment since that player takes the first move in every game round.  The empty game tree does not constrain opponent moves, hence solving such an abstraction is equivalent to solving the original concrete game.  
+
+The algorithm is organised as a counterexample-guided abstraction refinement (CEGAR) loop.  The first step of the algorithm uses the \textsc{findCandidate} function, described below, to come up with a candidate partial strategy that is winning when the opponent is restricted to $T$.  If it fails to find a strategy, this means that no winning partial strategy exists against the opponent playing according to $T$.  If, on the other hand, a candidate partial strategy is found, we need to verify if it is indeed winning for the abstract game $T$.
+
+The \textsc{verify} procedure searches for a \emph{spoiling} counterexample strategy in each leaf of the candidate partial strategy by calling \textsc{solveAbstract} for the opponent. The dual solver solves games on behalf of the opponent player.  
+
+\begin{algorithm}
     \begin{algorithmic}
         \algrestore{b1}
         \Function{findCandidate}{$p, s, k, T$}
         \State $\hat{T} \gets $ \Call{extend}{$T$} \Comment{Extend the tree with unfixed actions}
-            \State $f \gets $ \IfElse{$p = \texttt{cont}$}{\Call{treeFormula}{$k, \hat{T}$}}{\Call{\textoverline{treeFormula}}{$k, \hat{T}$}} \EndIfElse
+            \If{$p = \texttt{cont}$}
+                \State $f \gets $ \Call{treeFormula}{$k, \hat{T}$}
+            \Else
+                \State $f \gets $ \Call{\textoverline{treeFormula}}{$k, \hat{T}$}
+            \EndIf
             \State $sol \gets $ \Call{SAT}{$s(X_{\hat{T}}) \land f$}
             \If{$sol = \texttt{unsat}$} 
-                \If{\texttt{unbounded}} \Comment{Active only in the unbounded solver}
-                    %\State $\sigma \gets $ \Call{generalise}{$s$} \Comment{Expand $s$ to a set of states}
-                    \State \IfElse{$p = \texttt{cont}$}{\Call{learn}{$s, \hat{T}$}}{\Call{\textoverline{learn}}{$s, \hat{T}$}} \EndIfElse
-                \EndIf
                 \State \Return $\texttt{NULL}$ \Comment{No candidate exists}
             \Else
-                \State \Return $\{ \langle n, c \rangle | n \in $ \Call{nodes}{$T$} $, c = \Call{sol}{n} \}$ \Comment{Fix candidate moves in $T$}
+                \LineComment{Return partial strategy for $T$}
+                \State \Return $\{ \langle n, c \rangle\ |\ n \in $ \Call{nodes}{$T$}$, c = \Call{sol}{n} \}$
             \EndIf
         \EndFunction
         \algstore{b2}
     \end{algorithmic}
+    \caption{Find a candidate strategy}
+    \label{alg:findcandidate}
+\end{algorithm}
 
+
+\begin{algorithm}
     \begin{algorithmic}
         \algrestore{b2}
         \Function{verify}{$p, s, k, T, cand$}
             \For{$l \in leaves(gt)$}
             \State $\langle k', s'\rangle \gets $ \Call{outcome}{$s, k, cand, l$} \Comment{Get bound and state at leaf}
-            \State $T' \gets$ \IfElse{$p = \textsc{cont}$}{$\emptyset$}{$\{ cand(l) \}$ } \EndIfElse
-                \State $a \gets $ \Call{solveAbstract}{\Call{opponent}{$p$}, $s'$, $k'$, $T'$} \Comment{Solve for the opponent}
+            \If{$p = \textsc{cont}$}
+                \State $T' \gets \emptyset$
+            \Else
+                \State $T' \gets \{ cand(l) \}$
+            \EndIf
+                \LineComment{Solve for the opponent}
+                \State $a \gets $ \Call{solveAbstract}{\Call{opponent}{$p$}, $s'$, $k'$, $T'$} 
                 \IIf{$a \neq \texttt{NULL}$} \Return $\langle \True, l, a \rangle$ \EndIIf \Comment{Return counterexample}
             \EndFor
-            \State \Return $\langle \False, \emptyset, \emptyset \rangle$
+            \State \Return $\langle \False, \emptyset, \emptyset \rangle$ \Comment{There was no counterexample}
         \EndFunction
     \end{algorithmic}
 
-    \caption{Bounded synthesis}
-    \label{alg:bounded}
+    \caption{Verify a candidate strategy}
+    \label{alg:verify}
 \end{algorithm}
 
-\subsection{Counterexample guided realisability}
+If the dual solver can find no spoiling strategy at any of the leaves, then the candidate partial strategy is a winning one. Otherwise, \textsc{verify} returns the move used by the opponent to defeat a leaf of the partial strategy, which is appended to the corresponding node in $T$ in order to refine it in line~(9).  
 
-The bounded realisability algorithm constructs candidate strategies for one player that serve the dual purpose of game abstraction for its opponent. The algorithm begins by discovering a candidate for the environment. Next we must determine is there are counterexamples to the candidate. This step is executed by constructing an abstract game tree from the environment's candidate strategy and recursively invoking the algorithm on this new abstraction. The recursive call plays against the environment's strategy on behalf of the controller. Thus the algorithm can be seen as running two competing solvers, for the controller and for the environment. By symmetrically playing for both players achieve the goal of directing the search towards strong strategies and counterexamples.
+We solve the refined game by recursively invoking \textsc{solveAbstract} on it.  If no partial winning strategy is found for the refined game then there is also no partial winning strategy for the original abstract game, and the algorithm returns a failure.  Otherwise, the partial strategy for the refined game is \emph{projected} on the original abstract game by removing the leaves introduced by refinements. The resulting partial strategy becomes a candidate strategy to be verified at the next iteration of the loop. In the worst case the loop terminates after all actions in the game are refined into the abstract game.  
 
-The full procedure is illustrated in Algorithm~\ref{alg:bounded}.  The
-algorithm takes a concrete game $G$ with maximum bound $\kappa$ as an implicit
-argument.  In addition, it takes a player $p$ (controller or environment),
-state $s$, bound $k$ and an abstract game tree $T$ and returns a winning
-partial strategy for $p$, if one exists.  The initial invocation of the
-algorithm takes the initial state $I$, bound $\kappa$ and an empty abstract
-game tree $\emptyset$.  Initially the solver is playing on behalf of the
-environment since that player takes the first move in every game round.  The
-empty game tree does not constrain opponent moves, hence solving such an
-abstraction is equivalent to solving the original concrete game.
+The CEGAR loop depends on the ability to guess candidate partial strategies in \textsc{findCandidate}. For this purpose we use the heuristic that a partial strategy may be winning if each \textsc{outcome} of the strategy can be extended to a run of the game that is winning for the current player.  Clearly, if such a partial strategy does not exist then no winning partial strategy can exist for the abstract game tree. We can formulate this heuristic as a SAT query, which is constructed recursively by $\textsc{treeFormula}$ (for the controller) or $\textsc{\textoverline{treeFormula}}$ (for the environment) in Algorithm~\ref{alg:treeFormula}.  
 
-The algorithm is organised as a counterexample-guided abstraction refinement
-(CEGAR) loop.  The first step of the algorithm uses the \textsc{findCandidate}
-function, described below, to come up with a candidate partial strategy that is
-winning when the opponent is restricted to $T$.  If it fails to find a
-strategy, this means that no winning partial strategy exists against the opponent
-playing according to $T$.  If, on the other hand, a
-candidate partial strategy is found, we need to verify if it is indeed winning
-for the abstract game $T$.
-
-The \textsc{verify} procedure searches for a \emph{spoiling} counterexample
-strategy in each leaf of the candidate partial strategy by calling
-\textsc{solveAbstract} for the opponent. The dual solver solves games on behalf
-of the opponent player.  
-
-If the dual solver can find no spoiling strategy at any of the leaves, then the
-candidate partial strategy is a winning one. Otherwise, \textsc{verify} returns
-the move used by the opponent to defeat a leaf of the partial strategy, which
-is appended to the corresponding node in $T$ in order to refine it in line~(9).
-
-We solve the refined game by recursively invoking \textsc{solveAbstract} on it.
-If no partial winning strategy is found for the refined game then there is also
-no partial winning strategy for the original abstract game, and the algorithm
-returns a failure.  Otherwise, the partial strategy for the refined game is
-\emph{projected} on the original abstract game by removing the leaves
-introduced by refinements. The resulting partial strategy becomes a candidate
-strategy to be verified at the next iteration of the loop. In the worst case
-the loop terminates after all actions in the game are refined into the abstract
-game.
-
-The CEGAR loop depends on the ability to guess candidate partial strategies in
-\textsc{findCandidate}. For this purpose we use the heuristic that a partial
-strategy may be winning if each \textsc{outcome} of the strategy can be
-extended to a run of the game that is winning for the current player.  Clearly,
-if such a partial strategy does not exist then no winning partial strategy can
-exist for the abstract game tree. We can formulate this heuristic as a SAT
-query, which is constructed recursively by $\textsc{treeFormula}$ (for the
-controller) or $\textsc{\textoverline{treeFormula}}$ (for the environment) in
-Algorithm~\ref{alg:treeFormula}.
-
-The tree is first extended to the maximum bound with edges that are labeled
-with arbitrary opponent actions (Algorithm~\ref{alg:bounded}, line 14).  For
-each node in the tree, new SAT variables are introduced corresponding to the
-state ($X_T$) and action ($U_T$ or $C_T$) variables of that node. Additional
-variables for the opponent actions in the edges of $T$ are introduced ($U_e$ or
-$C_e$) and set to $\textsc{action}(e)$.  The state and action variables of node
-$n$ are connected to successor nodes $\textsc{succ}(n)$ by an encoding of the
-transition relation and constrained to the winning condition of the player.
+The tree is first extended to the maximum bound with edges that are labeled with arbitrary opponent actions (Algorithm~\ref{alg:bounded}, line 14).  For each node in the tree, new SAT variables are introduced corresponding to the state ($X_T$) and action ($U_T$ or $C_T$) variables of that node. Additional variables for the opponent actions in the edges of $T$ are introduced ($U_e$ or $C_e$) and set to $\textsc{action}(e)$.  The state and action variables of node $n$ are connected to successor nodes $\textsc{succ}(n)$ by an encoding of the transition relation and constrained to the winning condition of the player.  
 
 %%%Then copies of state and action variables are introduced for each node in the
 %%%tree and opponent action variables for each edge $e$ are set to
@@ -618,7 +413,7 @@ transition relation and constrained to the winning condition of the player.
 %%%and OS to provide the interface between the two.
 
 \begin{algorithm}
-    \caption{Tree formulas for Controller and Environment respectively}
+    \caption{Tree formulas for Controller and Environment}
     \label{alg:treeFormula}
     \begin{algorithmic}[1]
         \Function{treeFormula}{$k, T$}
@@ -839,3 +634,177 @@ This example is the $n=2$ instance of the more general problem of an arbiter of 
     the bounded game is winning for the controller.
 
 \end{exmpI}
+
+\tikzset{every node/.style={solid}}
+\tikzstyle{fixed}=[solid]
+\begin{figure}
+    \centering
+    \captionsetup[subfigure]{width=\textwidth,justification=raggedleft}
+    \begin{subfigure}[t]{.4\textwidth}
+        \centering
+        \begin{minipage}[t][3.8cm][t]{\textwidth}
+        \begin{tikzpicture}[level distance = 5mm,baseline]
+            \node [circle,draw,inner sep=1pt] (root){}
+                child {node [circle,draw,inner sep=1pt] {}
+                    child {node [circle,draw,inner sep=1pt] {}
+                        child {node [circle,draw,inner sep=1pt] {}
+                            child {node [circle,draw,inner sep=1pt] {}
+                                child {node [circle,draw,inner sep=1pt] {}
+                                    node [left=4pt] {\texttt{gr0=0 gr1=0}}
+                                }
+                                node [left=4pt] {\texttt{req=1}}
+                            }
+                            node [left=4pt] {\texttt{gr0=0 gr1=0}}
+                        }
+                        node [left=4pt] {\texttt{req=1}}
+                    }
+                node [left=4pt] {\texttt{gr0=1 gr1=0}}
+                }
+                node [left=4pt] {\texttt{req=1}}
+                node [above=4pt] {$\langle s, 3 \rangle$};
+        \end{tikzpicture}
+    \end{minipage}
+        \caption{Controller winning trace}
+        \label{fig:trace}
+    \end{subfigure}
+    \begin{subfigure}[t]{.4\textwidth}
+        \centering
+        \begin{minipage}[t][3.8cm][t]{\textwidth}
+        \begin{tikzpicture}[dash pattern = on 2pt off 2pt, level distance = 10mm,baseline]
+            \node [circle,draw] (root){}
+                child {node [circle,draw] {}
+                    edge from parent [fixed] node [left] {\texttt{gr0=1 gr1=0}}
+                }
+                node [left=4pt] {}
+                node [above=4pt] {$\langle s, 3 \rangle$};
+        \end{tikzpicture}
+        \end{minipage}
+        \caption{AGT}
+        \label{fig:agt}
+    \end{subfigure}
+
+    \begin{subfigure}[t]{.4\textwidth}
+        \centering
+        \begin{minipage}[t][3.8cm][t]{\textwidth}
+        \begin{tikzpicture}[level distance = 5mm,baseline]
+            \node [circle,draw,inner sep=1pt] (root){}
+                child {node [circle,draw,inner sep=1pt] {}
+                    child {node [circle,draw,inner sep=1pt] {}
+                        child {node [circle,draw,inner sep=1pt] {}
+                            child {node [circle,draw,inner sep=1pt] {}
+                                child {node [circle,draw,inner sep=1pt] {}
+                                    node [left=4pt] {\texttt{gr0=0 gr1=0}}
+                                }
+                                node [left=4pt] {\texttt{req=1}}
+                            }
+                            node [left=4pt] {\texttt{gr0=0 gr1=0}}
+                        }
+                        node [left=4pt] {\texttt{req=1}}
+                    }
+                node [left=4pt] {\texttt{gr0=1 gr1=0}}
+                }
+                node [left=4pt] {\texttt{req=2}}
+                node [above=4pt] {$\langle s, 3 \rangle$};
+        \end{tikzpicture}
+        \end{minipage}
+        \caption{Environment winning trace}
+        \label{fig:trace2}
+    \end{subfigure}
+    \begin{subfigure}[t]{.4\textwidth}
+        \centering
+        \begin{minipage}[t][3.8cm][t]{\textwidth}
+        \begin{tikzpicture}[dash pattern = on 2pt off 2pt, level distance = 10mm,baseline]
+            \node [circle,draw] (root){}
+                child {node [circle,draw] {}
+                    edge from parent [fixed] node [left] {\texttt{gr0=1 gr1=0}}
+                }
+                node [left=4pt] {\texttt{req=2}}
+                node [above=4pt] {$\langle s, 3 \rangle$};
+        \end{tikzpicture}
+        \end{minipage}
+        \caption{Partial Strategy}
+        \label{fig:strategy}
+    \end{subfigure}
+    \caption{Abstract game trees.}
+    \label{fig:alltrees}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \begin{subfigure}[t]{.2\textwidth}
+        \centering
+        \begin{minipage}[t][3.8cm][t]{\textwidth}
+        \begin{tikzpicture}[level distance = 5mm,baseline]
+            \node [circle,draw,inner sep=1pt] (root){}
+                child {node [circle,draw,inner sep=1pt] {}
+                    child {node [circle,draw,inner sep=1pt] {}
+                        child {node [circle,draw,inner sep=1pt] {}
+                            child {node [circle,draw,inner sep=1pt] {}
+                                child {node [circle,draw,inner sep=1pt] {}
+                                    node [left=4pt] {\texttt{gr0=0 gr1=0}}
+                                }
+                                node [left=4pt] {\texttt{req=1}}
+                            }
+                            node [left=4pt] {\texttt{gr0=1 gr1=1}}
+                        }
+                        node [left=4pt] {\texttt{req=1}}
+                    }
+                node [left=4pt] {\texttt{gr0=1 gr1=0}}
+                }
+                node [left=4pt] {\texttt{req=2}}
+                node [above=4pt] {$\langle s, 3 \rangle$};
+        \end{tikzpicture}
+        \end{minipage}
+        \caption{Controller winning trace}
+        \label{fig:trace3}
+    \end{subfigure}
+    \begin{subfigure}[t]{.3\textwidth}
+        \centering
+        \begin{minipage}[t][3.8cm][t]{\textwidth}
+        \hspace*{0.8cm}
+        \begin{tikzpicture}[dash pattern = on 2pt off 2pt, level distance = 10mm,baseline]
+            \node [circle,draw] (root){}
+                child {node [circle,draw] {}
+                    child {node [circle,draw] {}
+                        edge from parent [fixed] node [left] {\texttt{gr0=1 gr1=1}}
+                    }
+                    edge from parent [fixed] node [left] {\texttt{gr0=1 gr1=0}}
+                }
+                node [above=4pt] {$\langle s, 3 \rangle$};
+        \end{tikzpicture}
+        \end{minipage}
+        \caption{First refined AGT}
+        \label{fig:refined1}
+    \end{subfigure}
+    \begin{subfigure}[t]{.4\textwidth}
+        \centering
+        \begin{minipage}[t][3.8cm][t]{\textwidth}
+        \begin{tikzpicture}[dash pattern = on 2pt off 2pt, level distance = 10mm,baseline]
+            \node [circle,draw] (root){}
+                child {node [circle,draw] {}
+                    child {node [circle,draw] {}
+                        child {node [circle,draw] {}
+                            edge from parent [fixed] node [left] {\texttt{gr0=1 gr1=1}}
+                        }
+                        edge from parent [fixed] node [left] {\texttt{gr0=1 gr1=1}}
+                    }
+                    edge from parent [fixed] node [left] {\texttt{gr0=1 gr1=0}}
+                }
+                child {node [circle,draw] {}
+                    child {node [circle,draw] {}
+                        child {node [circle,draw] {}
+                            edge from parent [fixed] node [right] {\texttt{gr0=1 gr1=1}}
+                        }
+                        edge from parent [fixed] node [right] {\texttt{gr0=1 gr1=1}}
+                    }
+                    edge from parent [fixed] node [right] {\texttt{gr0=1 gr1=1}}
+                }
+                node [above=4pt] {$\langle s, 3 \rangle$};
+        \end{tikzpicture}
+        \end{minipage}
+        \caption{Final Refined AGT}
+        \label{fig:refined2}
+    \end{subfigure}
+    \caption{Refined abstract game trees.}
+    \label{fig:refinedtrees}
+\end{figure}
