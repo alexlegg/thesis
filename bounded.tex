@@ -35,6 +35,7 @@ The formula is constructed by unrolling the transition relationship for every ga
 It is possible to solve the QBF na\"ively but we can do better by taking into account structural information in the realisability problem that is lost in the translation to prenex normal form. In particular, awareness that the formula is constructed of a repeated transition relation enables more effective learning. A na\"ive solver may learn sets of actions in order to prune the search tree. Instead we learn sets of states and, where possible, we transmit learned information between game rounds. For example, if we discover that the environment can force a visit to an error state from some set of states $s$ in $n$ rounds we also know that the environment can win from $s$ in $n+m$ rounds for all $m > 1$. Knowledge of how to construct the formula also enables the solver to efficiently produce a smaller expanded formula when necessary by simply copying only the parts of the formula corresponding to game rounds after the action of the expanded quantifier.
 
 \subsection{Example}
+\label{sec:boundedexample}
 
 We introduce an example to assist an intuitive explanation of the algorithm. Consider a simple model of an ethernet device driver. The operating system makes requests of the driver to write or read data to or from the device. It is the role of the driver to grant these requests while ensuring that a \texttt{read} never occurs when a \texttt{write} was requests and vice versa.
 
@@ -556,7 +557,171 @@ Algorithms that avoid BDDs in favour of SAT solving have been proposed for safet
 
 \subsection{Limitations}
 
+The performance of bounded realisability is influenced primarily on the branching factor of the game tree. The worst case scenario occurs when each environment action must be matched with a different controller action and no state learning is possible. For example, consider a modified version of the example given in Section~\ref{sec:boundedexample} in which the environment requests are not latched into a state variable.
 
+\begin{itemize}
+    \item $S = \{ \texttt{error} \} $. The only state is whether or not an error has occurred. 
+    \item $\mathcal{U} = \{ \texttt{os\_request} \} $. 
+    \item $\mathcal{C} = \{ \texttt{dev\_cmd} \}$.
+    \item The transition relation $\delta$ is now: $$ \texttt{err'} \gets \texttt{os\_request} \neq \texttt{dev\_cmd} $$
+    \item $s_0 = \{ \texttt{err = 0} \}$. 
+\end{itemize}
+
+Without a state variable to learn the algorithm is forced to explore all possible actions to determine realisability. If the example is modified again to allow for more types of requests by increasing the size of the action variables then it is easy to see the potential blow up. In Figure~\ref{fig:limitationexample} the final AGT for this example with a bound of $3$ and action variables of size $3$ is shown. The figure shows the values of \texttt{os\_request} in all possible paths through the game. It is clear that this algorithm cannot scale with these kinds of specifications. It should be noted that it is trivial to solve this example with a BDD solver, which can immediately prove that \texttt{err = 0} is a winning region for the controller. The extension to unbounded realisability in Chapter~\ref{ch:unbounded} will also be able to handle this example by constructing the winning region.
+
+\begin{figure}
+    \centering
+    \begin{tikzpicture}[
+        align at top,
+        level distance = 10mm,
+        level 1/.style={sibling distance=45mm},
+        level 2/.style={sibling distance=15mm},
+        level 3/.style={sibling distance=5mm}]
+        \node [circle,draw] (root){}
+            child {node [circle,draw] {}
+                child {node [circle,draw] {}
+                    child {node [circle,draw] {}
+                        edge from parent node [left] {\texttt{0}}
+                    }
+                    child {node [circle,draw] {}
+                        edge from parent node [right=-1.5mm] {\texttt{1}}
+                    }
+                    child {node [circle,draw] {}
+                        edge from parent node [right] {\texttt{2}}
+                    }
+                    edge from parent node [left=2mm] {\texttt{0}}
+                }
+                child {node [circle,draw] {}
+                    child {node [circle,draw] {}
+                        edge from parent node [left] {\texttt{0}}
+                    }
+                    child {node [circle,draw] {}
+                        edge from parent node [right=-1.5mm] {\texttt{1}}
+                    }
+                    child {node [circle,draw] {}
+                        edge from parent node [right] {\texttt{2}}
+                    }
+                    edge from parent node [right] {\texttt{1}}
+                }
+                child {node [circle,draw] {}
+                    child {node [circle,draw] {}
+                        edge from parent node [left] {\texttt{0}}
+                    }
+                    child {node [circle,draw] {}
+                        edge from parent node [right=-1.5mm] {\texttt{1}}
+                    }
+                    child {node [circle,draw] {}
+                        edge from parent node [right] {\texttt{2}}
+                    }
+                    edge from parent node [right=2mm] {\texttt{2}}
+                }
+                edge from parent node [above left] {\texttt{0}}
+            }
+            child {node [circle,draw] {}
+                child {node [circle,draw] {}
+                    child {node [circle,draw] {}
+                        edge from parent node [left] {\texttt{0}}
+                    }
+                    child {node [circle,draw] {}
+                        edge from parent node [right=-1.5mm] {\texttt{1}}
+                    }
+                    child {node [circle,draw] {}
+                        edge from parent node [right] {\texttt{2}}
+                    }
+                    edge from parent node [left=2mm] {\texttt{0}}
+                }
+                child {node [circle,draw] {}
+                    child {node [circle,draw] {}
+                        edge from parent node [left] {\texttt{0}}
+                    }
+                    child {node [circle,draw] {}
+                        edge from parent node [right=-1.5mm] {\texttt{1}}
+                    }
+                    child {node [circle,draw] {}
+                        edge from parent node [right] {\texttt{2}}
+                    }
+                    edge from parent node [right] {\texttt{1}}
+                }
+                child {node [circle,draw] {}
+                    child {node [circle,draw] {}
+                        edge from parent node [left] {\texttt{0}}
+                    }
+                    child {node [circle,draw] {}
+                        edge from parent node [right=-1.5mm] {\texttt{1}}
+                    }
+                    child {node [circle,draw] {}
+                        edge from parent node [right] {\texttt{2}}
+                    }
+                    edge from parent node [right=2mm] {\texttt{2}}
+                }
+                edge from parent node [right] {\texttt{1}}
+            }
+            child {node [circle,draw] {}
+                child {node [circle,draw] {}
+                    child {node [circle,draw] {}
+                        edge from parent node [left] {\texttt{0}}
+                    }
+                    child {node [circle,draw] {}
+                        edge from parent node [right=-1.5mm] {\texttt{1}}
+                    }
+                    child {node [circle,draw] {}
+                        edge from parent node [right] {\texttt{2}}
+                    }
+                    edge from parent node [left=2mm] {\texttt{0}}
+                }
+                child {node [circle,draw] {}
+                    child {node [circle,draw] {}
+                        edge from parent node [left] {\texttt{0}}
+                    }
+                    child {node [circle,draw] {}
+                        edge from parent node [right=-1.5mm] {\texttt{1}}
+                    }
+                    child {node [circle,draw] {}
+                        edge from parent node [right] {\texttt{2}}
+                    }
+                    edge from parent node [right] {\texttt{1}}
+                }
+                child {node [circle,draw] {}
+                    child {node [circle,draw] {}
+                        edge from parent node [left] {\texttt{0}}
+                    }
+                    child {node [circle,draw] {}
+                        edge from parent node [right=-1.5mm] {\texttt{1}}
+                    }
+                    child {node [circle,draw] {}
+                        edge from parent node [right] {\texttt{2}}
+                    }
+                    edge from parent node [right=2mm] {\texttt{2}}
+                }
+                edge from parent node [above right] {\texttt{2}}
+            }
+            node [left=4pt] {}
+            node [above=4pt] {$\langle 0, 3 \rangle$};
+    \end{tikzpicture}
+    \caption{AGT with large branching factor}
+    \label{fig:limitationexample}
+\end{figure}
+
+\subsection{Strengths}
+
+Bounded realisability is most useful in the case where the winning region of a game has a large BDD but the winning strategy for the game is compact. It is not fair to compare the incomplete bounded algorithm to a complete winning region computation but we may consider the ability for each technique to find counterexamples. Take a simple controller that can send commands to a device with a circular buffer. Let's assume that the designer forgot to add the ability to reset to the beginning of the buffer to the specification.
+
+\begin{itemize}
+    \item $S = \{ \texttt{error, head, tail, cmd0, cmd1, done0, done1, fair} \} $.
+    \item $\mathcal{U} = \{ \texttt{status} \} $. 
+    \item $\mathcal{C} = \{ \texttt{dev\_cmd} \}$.
+    \item The transition relation $\delta$ is now: 
+        $$ \texttt{err'} \gets (\texttt{head = 0} \land \texttt{done0 = 0}) \lor (\texttt{head = 1} \land \texttt{done1 = 0})$$
+        $$ \texttt{cmd0'} \gets (\texttt{head = 0}) \to \texttt{dev\_cmd} $$
+        $$ \texttt{cmd1'} \gets (\texttt{head = 1}) \to \texttt{dev\_cmd} $$
+        $$ \texttt{done0'} \gets (\texttt{tail = 0}) \to \texttt{status} $$
+        $$ \texttt{done1'} \gets (\texttt{tail = 1}) \to \texttt{status} $$
+        $$ \texttt{head} \gets (\texttt{head = 0}) \to \texttt{1} $$
+        $$ \texttt{fair} \gets (\texttt{fair = 1}) \land (\texttt{status = 1}) $$
+    \item $s_0 = \{ \texttt{error = 0, head = 1, tail = 0} \}$. 
+\end{itemize}
+
+Note to self: Might be simpler if it's just $error \gets head = tail$...
 
 \section{Summary}
 
