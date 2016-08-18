@@ -704,24 +704,60 @@ Without a state variable to learn the algorithm is forced to explore all possibl
 
 \subsection{Strengths}
 
-Bounded realisability is most useful in the case where the winning region of a game has a large BDD but the winning strategy for the game is compact. It is not fair to compare the incomplete bounded algorithm to a complete winning region computation but we may consider the ability for each technique to find counterexamples. Take a simple controller that can send commands to a device with a circular buffer. Let's assume that the designer forgot to add the ability to reset to the beginning of the buffer to the specification.
+Bounded realisability is most useful in the case where the winning region of a game has a large BDD but the winning strategy for the game is compact. It is not fair to compare the incomplete bounded algorithm to a complete winning region computation but we may consider the ability for each technique to find counterexamples. 
+
+To demonstrate the usefulness of the algorithm we introduce a simple warehouse robot controller. In this example the warehouse consists of four loading bays and the robot is tasked with shipping items placed in the bays in a timely fashion. We model the problem with a \texttt{timer} variable that begins at one, ticks down to zero, and then resets back to one. At the beginning of the cycle the environment may items in any two bays. The robot then may ship all items in one bay per timer tick and must clear all bays before the timer resets. The example is trivial but it could be scaled on the number of bays, number of items that the environment can load, and the length of the timer to produce complex specifications. In this example we use integer values for \texttt{timer}, \texttt{ship}, \texttt{load0} and \texttt{load1} to make the description more concise.
 
 \begin{itemize}
-    \item $S = \{ \texttt{error, head, tail, cmd0, cmd1, done0, done1, fair} \} $.
-    \item $\mathcal{U} = \{ \texttt{status} \} $. 
-    \item $\mathcal{C} = \{ \texttt{dev\_cmd} \}$.
+    \item $S = \{ \texttt{error, bay0, bay1, bay2, bay3, timer} \} $.
+    \item $\mathcal{U} = \{ \texttt{load0, load1} \} $. 
+    \item $\mathcal{C} = \{ \texttt{ship} \}$.
     \item The transition relation $\delta$ is now: 
-        $$ \texttt{err'} \gets (\texttt{head = 0} \land \texttt{done0 = 0}) \lor (\texttt{head = 1} \land \texttt{done1 = 0})$$
-        $$ \texttt{cmd0'} \gets (\texttt{head = 0}) \to \texttt{dev\_cmd} $$
-        $$ \texttt{cmd1'} \gets (\texttt{head = 1}) \to \texttt{dev\_cmd} $$
-        $$ \texttt{done0'} \gets (\texttt{tail = 0}) \to \texttt{status} $$
-        $$ \texttt{done1'} \gets (\texttt{tail = 1}) \to \texttt{status} $$
-        $$ \texttt{head} \gets (\texttt{head = 0}) \to \texttt{1} $$
-        $$ \texttt{fair} \gets (\texttt{fair = 1}) \land (\texttt{status = 1}) $$
-    \item $s_0 = \{ \texttt{error = 0, head = 1, tail = 0} \}$. 
+        \begin{align*}
+            \texttt{error'} \gets&\ \texttt{timer=1}\ \land (\texttt{bay0=1} \lor \texttt{bay1=1} \lor \texttt{bay2=1} \lor \texttt{bay3=1} ) \\
+            \texttt{bay0'} \gets&\ (\texttt{timer=1} \land (\texttt{load0=0} \lor \texttt{load1=0})) \lor (\texttt{timer}\neq\texttt{1} \land \texttt{ship=0}) \\
+            \texttt{bay1'} \gets&\ (\texttt{timer=1} \land (\texttt{load0=1} \lor \texttt{load1=1})) \lor (\texttt{timer}\neq\texttt{1} \land \texttt{ship=1}) \\
+            \texttt{bay2'} \gets&\ (\texttt{timer=1} \land (\texttt{load0=2} \lor \texttt{load1=2})) \lor (\texttt{timer}\neq\texttt{1} \land \texttt{ship=2}) \\
+            \texttt{bay3'} \gets&\ (\texttt{timer=1} \land (\texttt{load0=3} \lor \texttt{load1=3})) \lor (\texttt{timer}\neq\texttt{1} \land \texttt{ship=3}) \\
+            \texttt{timer'} \gets&\ (\texttt{timer=0})\ \texttt{?}\ \texttt{1}\ \texttt{:}\ (\texttt{timer - 1})
+        \end{align*}
+    \item $\begin{aligned}[t]
+            s_0 = \{& \texttt{error = 0, bay0 = 0, bay1 = 0, bay2 = 0,} \\
+                    &\texttt{bay3 = 0, timer = 1} \}
+        \end{aligned}$
 \end{itemize}
 
-Note to self: Might be simpler if it's just $error \gets head = tail$...
+The specification is clearly unrealisable given that in every cycle the environment can load items into two bays and the controller can only remove items from one bay. A realisability solver that uses BDDs might attempt to compute a winning region for the environment. The entire environment winning region for this game contains all possible configurations in which the environment loads two distinct bays. As shown in Figure~\ref{fig:strengthsexamplebdd}, BDDs are not succinct on are in this enumeration of cubes style. If this problem was to scale the BDD would quickly consume a large amount of space.
+
+\begin{figure}
+    \centering
+    \begin{tikzpicture}[level distance = 20mm,baseline]
+        \node [circle,draw] (bay0){\texttt{bay0}}
+            child {node [circle,draw] (bay1a) {\texttt{bay1}}
+                child {node [circle,draw] (bay2a) {\texttt{bay2}}
+                    child {node [circle,draw] (bay3a) {\texttt{bay3}}
+                        child {node [draw] (T) {\texttt{T}}}
+                    }
+                }
+                child {node [circle,draw] (bay2a) {\texttt{bay2}}
+                }
+            }
+            child {node [circle,draw] (bay1b) {\texttt{bay1}}
+                child {node [circle,draw,right] (bay2b) {\texttt{bay2}}
+                    child {node [circle,draw] (bay3b) {\texttt{bay3}}
+                        child {node [draw] (F) {\texttt{F}}}
+                    }
+                }
+            }
+        ;
+        \draw [->] (bay3a) -- (F);
+        \draw [->] (bay3b) -- (T);
+    \end{tikzpicture}
+    \caption{Environment winning region as a BDD}
+    \label{fig:strengthsexamplebdd}
+\end{figure}
+
+By instead using a SAT solver to check for the existence of a spoiling strategy to the environment filling two bays, the bounded realisability algorithm avoids computing the set of all environment winning states. The difference between the two methodologies is similar to the difference between breadth first search and depth first search. The BDD driven approach explores the game tree level by level similar to BFS and builds a compact set of winning states. The SAT based algorithm present here finds single paths through the tree that may be winning and checks them. Both approaches are efficient on different classes of specifications.
 
 \section{Summary}
 
