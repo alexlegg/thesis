@@ -729,31 +729,51 @@ To demonstrate the usefulness of the algorithm we introduce a simple warehouse r
 
 The specification is clearly unrealisable given that in every cycle the environment can load items into two bays and the controller can only remove items from one bay. A realisability solver that uses BDDs might attempt to compute a winning region for the environment. The entire environment winning region for this game contains all possible configurations in which the environment loads two distinct bays. As shown in Figure~\ref{fig:strengthsexamplebdd}, BDDs are not succinct on are in this enumeration of cubes style. If this problem was to scale the BDD would quickly consume a large amount of space.
 
+\tikzset{>={Latex[width=2.2mm,length=2.5mm]}}
+\tikzstyle{one}=[->,solid]
+\tikzstyle{zero}=[->,dash pattern = on 2pt off 2pt]
 \begin{figure}
     \centering
+    \captionsetup{justification=centering}
     \begin{tikzpicture}[level distance = 20mm,baseline]
         \node [circle,draw] (bay0){\texttt{bay0}}
             child {node [circle,draw] (bay1a) {\texttt{bay1}}
                 child {node [circle,draw] (bay2a) {\texttt{bay2}}
                     child {node [circle,draw] (bay3a) {\texttt{bay3}}
-                        child {node [draw] (T) {\texttt{T}}}
+                        child {node [draw] (T) {\texttt{T}}
+                            edge from parent [zero]
+                        }
+                        edge from parent [zero]
                     }
+                    edge from parent [one]
                 }
-                child {node [circle,draw] (bay2a) {\texttt{bay2}}
+                child {node [circle,draw] (bay2b) {\texttt{bay2}}
+                    edge from parent [zero]
                 }
+                edge from parent [one]
             }
             child {node [circle,draw] (bay1b) {\texttt{bay1}}
-                child {node [circle,draw,right] (bay2b) {\texttt{bay2}}
+                child {node [circle,draw,right] (bay2c) {\texttt{bay2}}
                     child {node [circle,draw] (bay3b) {\texttt{bay3}}
-                        child {node [draw] (F) {\texttt{F}}}
+                        child {node [draw] (F) {\texttt{F}}
+                            edge from parent [zero]
+                        }
+                        edge from parent [one]
                     }
+                    edge from parent [zero]
                 }
+                edge from parent [zero]
             }
         ;
-        \draw [->] (bay3a) -- (F);
-        \draw [->] (bay3b) -- (T);
+        \draw [one,->] (bay3a) to (F);
+        \draw [one,->] (bay3b) to (T);
+        \draw [one,->] (bay2b) to (bay3a);
+        \draw [zero,->] (bay2b) to (bay3b);
+        \draw [one,->] (bay1b) to (bay2b);
+        \draw [one,->] (bay2a) to (F);
+        \draw [zero,->,out=320,in=40] (bay2c) to (F);
     \end{tikzpicture}
-    \caption{Environment winning region as a BDD}
+    \caption[Environment winning region as a BDD]{Environment winning region as a BDD.\\Solid transitions are $1$, dashed transitions are $0$.}
     \label{fig:strengthsexamplebdd}
 \end{figure}
 
