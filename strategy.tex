@@ -22,17 +22,18 @@
 
 In the previous chapter I introduced an algorithm for solving realisability for bounded safety games. In most applications of synthesis it is desirable to construct a controller strategy rather than merely prove its existence. In this chapter I will introduce a strategy extraction procedure that complements the bounded reachability algorithm. This process takes abstract game trees generated during reachability analysis and, using Craig interpolation, extracts mappings of states to player actions. By using interpolation this step can be done efficiently.
 
+The problem solved in this chapter is related to the extraction of a Skolem function for a QBF. Recall from Chapter~\ref{ch:background} that a Skolem function $f$ provides a mapping from a prefix of universal variables $\hat{y}_0, \hat{y_1}, ..., \hat{y_i}$ to existential variables $\hat{x}$ such that when substituting $\hat{x}$ for $f(\hat{y}_0, \hat{y_1}, ..., \hat{y_i})$ the QBF is equisatisfiable. A Skolem function for a bounded realisability QBF gives a mapping from a prefix of past environment actions to a controller action, i.e. a strategy for that game round. A strategy for the entire game consists of a Skolem function for every round. In this chapter, we construct a strategy by replacing the prefix of previous environment actions with a game state and current environment action pair. This allows us to solve a simpler problem than Skolemisation of the entire QBF by once again taking advantage of the structure of the bounded realisability QBF.
+
 \section{Algorithm}
 
 In this chapter we will assume that the safety game is winning for the controller. However, the technique is also easily applied to the environment to extract a spoiling strategy. In computing realisability of a safety game the algorithm constructs a \emph{certificate tree}, which is an abstract game tree $T$ such that for a set of states $s$ and game bound $\kappa$, $s \land \textsc{\textoverline{treeFormula}}(\kappa, \textsc{extend}(T))$ is false. In other words it is a game abstraction for which the environment has no candidate strategy.
 
 We use the certificate tree computed by the game solver as a starting point for strategy generation.  We know that the controller can win the game in $\kappa$ rounds by picking actions from the tree; however we do not yet know exactly which actions should be picked in every state.
 
-\begin{example}
 
-    Figure~\ref{fig:stratExample} introduces the running example for this chapter. It shows a state machine for a game $(S, \mathcal{U}, \mathcal{C}, \delta, s_0)$ where $S$ consists of two one bit variables \texttt{p} and \texttt{e}, $\mathcal{U}$ and $\mathcal{C}$ each consist of a single one bit variable \texttt{u} and \texttt{c} respectively. The diagram shows $\delta$ as a deterministic finite state automaton with edges labelled by a tuple (\texttt{u}, \texttt{c}). We use \texttt{*} as a wildcard value to simplify the presentation. The game is simple, \texttt{p} is set to the previous value of \texttt{u} and \texttt{e} is set to \texttt{1} when $\texttt{c} \neq \texttt{p}$. The initial state, $s_0$, is $\texttt{p} = 0 \land \texttt{e} = 0$ and the error set is $\texttt{e} = 1$. In other words, the controller must simply match the previous action of the environment to avoid the error set.
+\subsection{Example}
 
-\end{example}
+Figure~\ref{fig:stratExample} introduces the running example for this chapter. It shows a state machine for a game $(S, \mathcal{U}, \mathcal{C}, \delta, s_0)$ where $S$ consists of two one bit variables \texttt{p} and \texttt{e}, $\mathcal{U}$ and $\mathcal{C}$ each consist of a single one bit variable \texttt{u} and \texttt{c} respectively. The diagram shows $\delta$ as a deterministic finite state automaton with edges labelled by a tuple (\texttt{u}, \texttt{c}). We use \texttt{*} as a wildcard value to simplify the presentation. The game is simple, \texttt{p} is set to the previous value of \texttt{u} and \texttt{e} is set to \texttt{1} when $\texttt{c} \neq \texttt{p}$. The initial state, $s_0$, is $\texttt{p} = 0 \land \texttt{e} = 0$ and the error set is $\texttt{e} = 1$. In other words, the controller must simply match the previous action of the environment to avoid the error set.
 
 \tikzset{
     pil/.style={
@@ -71,16 +72,108 @@ We use the certificate tree computed by the game solver as a starting point for 
     \label{fig:stratExample}
 \end{figure}
 
-The strategy generation algorithm takes an initial set $s$ and its certificate tree $T$, computed by the game solver, and generates a winning controller strategy starting from $s$.  To this end, it first partitions $s$ into subsets $s_i$, one for each outgoing branch of $T$ (Figure~\ref{fig:partition}), such that the controller can win from $s_i$ by picking action $a_i$ along the $i$th branch of the tree.  This partitioning defines the local winning strategy in the root node of $T$.  Next, for each partition $s_i$, the algorithm computes the set of $a_i$-successor states of $s_i$, obtaining the set $s_i'$ of states winning in the child subtree $T_i'$ of $T_i$ (Figure~\ref{f:partition}).  The algorithm is then invoked recursively for each subtree $T_i'$.
+The strategy generation algorithm takes an initial set $s$ and its certificate tree $T$, computed by the game solver, and generates a winning controller strategy starting from $s$.  To this end, it first partitions $s$ into subsets $s_i$, one for each outgoing branch of $T$ (Figure~\ref{fig:partition}), such that the controller can win from $s_i$ by picking action $c_i$ along the $i$th branch of the tree.  This partitioning defines the local winning strategy in the root node of $T$.  Next, for each partition $s_i$, the algorithm computes the set of $c_i$-successor states of $s_i$, obtaining the set $s_i'$ of states winning in the child subtree $T_i'$ of $T_i$ (Figure~\ref{fig:partition}).  The algorithm is then invoked recursively for each subtree $T_i'$.
 
-\begin{example}
-Figure~\ref{fig:algex} illustrates operation of the algorithm on the winning abstract game tree returned by the game solver for our running example (Figure~\ref{fig:stratExample}).  The algorithm starts at the root of the tree and the initial set $I=\{x_0\}$.  The game tree only defines one winning action in the root node, hence this action is winning in all states of $I$ and no partitioning is required.  We compute the successor set reachable by playing action $i$ in $I$: $I' = succ(I, i) = \{s_1, s_2\}$.
+\begin{figure}[b]
+    \centering
+    \captionsetup[subfigure]{width=\textwidth,justification=raggedleft}
+    \hspace*{\fill}%
+    \begin{subfigure}[t]{.4\textwidth}
+        \centering
+        \begin{minipage}[t][3cm][t]{\textwidth}
+        \begin{tikzpicture}[level distance = 10mm,baseline]
+            \node [circle,draw] (root){}
+                child {node [circle,draw] (left0){}
+                    child {node (left1){}
+                        edge from parent [draw=none]
+                    }
+                    child {node (left2){}
+                        edge from parent [draw=none]
+                    }
+                    edge from parent node [above left] {$c_0$}
+                }
+                child {node [circle] {}
+                    edge from parent [draw=none] node [] {$...$}
+                }
+                child {node [circle,draw] (right0){}
+                    child {node (right1){}
+                        edge from parent [draw=none]
+                    }
+                    child {node (right2){}
+                        edge from parent [draw=none]
+                    }
+                    edge from parent node [above right] {$c_n$}
+                }
+                node [left=4pt] {}
+                node [above=4pt] {$\langle s, \kappa \rangle$};
+
+            \draw (left1.center) -- (left2.center);
+            \draw (left0) -- (left1.center);
+            \draw (left0) -- (left2.center);
+            \draw (right1.center) -- (right2.center);
+            \draw (right0) -- (right1.center);
+            \draw (right0) -- (right2.center);
+        \end{tikzpicture}
+        \end{minipage}
+        \caption{Before}
+    \end{subfigure}\hfill%
+    \begin{subfigure}[t]{.3\textwidth}
+        \centering
+        \begin{minipage}[t][3cm][t]{\textwidth}
+        \begin{tikzpicture}[level distance = 10mm,baseline]
+            \node [circle,draw] (root){}
+                child {node [circle,draw] (left0){}
+                    child {node (left1){}
+                        edge from parent [draw=none]
+                    }
+                    child {node (left2){}
+                        edge from parent [draw=none]
+                    }
+                    edge from parent node [left] {$c_0$}
+                }
+                node [above=4pt] {$\langle s_0, \kappa \rangle$};
+
+            \node [draw=none,below right=25pt and 22pt] {$...$};
+
+            \begin{scope}[xshift=60pt]
+            \node [circle,draw] (root2){}
+                child {node [circle,draw] (right0){}
+                    child {node (right1){}
+                        edge from parent [draw=none]
+                    }
+                    child {node (right2){}
+                        edge from parent [draw=none]
+                    }
+                    edge from parent node [right] {$c_n$}
+                }
+                node [left=4pt] {}
+                node [above=4pt] {$\langle s_n, \kappa \rangle$};
+            \end{scope}
+
+            \node [below=5pt of left0] {$T_0$};
+            \node [below=5pt of right0] {$T_n$};
+            \draw (left1.center) -- (left2.center);
+            \draw (left0) -- (left1.center);
+            \draw (left0) -- (left2.center);
+            \draw (right1.center) -- (right2.center);
+            \draw (right0) -- (right1.center);
+            \draw (right0) -- (right2.center);
+        \end{tikzpicture}
+        \end{minipage}
+        \caption{After}
+    \end{subfigure}%
+    \hspace*{\fill}
+    \caption{Partitioning}
+    \label{fig:partition}
+\end{figure}
+
+Figure~\ref{fig:algex} illustrates operation of the algorithm on the winning abstract game tree returned by the game solver for our running example (Figure~\ref{fig:stratExample}).  The algorithm starts at the root of the tree and the initial set $I=\{s_0\}$.  The game tree only defines one winning action in the root node, hence this action is winning in all states of $I$ and no partitioning is required.  We compute the successor set reachable by playing action $0$ in $I$: $I' = \textsc{succ}(I, i) = \{s_1, s_2\}$.
 
 %%%(see the game automaton in Figure~\ref{f:exm:delta}(a)).
 
 \tikzset{every node/.style={solid}}
 \tikzstyle{fixed}=[solid]
-\begin{figure}
+\begin{figure}[b]
     \centering
     \captionsetup[subfigure]{width=\textwidth,justification=raggedleft}
     \begin{subfigure}[t]{.4\textwidth}
@@ -114,7 +207,7 @@ Figure~\ref{fig:algex} illustrates operation of the algorithm on the winning abs
         \end{tikzpicture}
         \end{minipage}
         \caption{AGT}
-        \label{fig:agt}
+        \label{fig:algexa}
     \end{subfigure}
     \begin{subfigure}[t]{.4\textwidth}
         \centering
@@ -138,7 +231,7 @@ Figure~\ref{fig:algex} illustrates operation of the algorithm on the winning abs
         \end{tikzpicture}
         \end{minipage}
         \caption{AGT}
-        \label{fig:agt}
+        \label{fig:algexb}
     \end{subfigure}
 
     \begin{subfigure}[t]{.4\textwidth}
@@ -165,7 +258,7 @@ Figure~\ref{fig:algex} illustrates operation of the algorithm on the winning abs
         \end{tikzpicture}
         \end{minipage}
         \caption{AGT}
-        \label{fig:agt}
+        \label{fig:algexc}
     \end{subfigure}
     \begin{subfigure}[t]{.4\textwidth}
         \centering
@@ -198,98 +291,6 @@ Figure~\ref{fig:algex} illustrates operation of the algorithm on the winning abs
     \label{fig:algex}
 \end{figure}
 
-\begin{figure}
-    \centering
-    \captionsetup[subfigure]{width=\textwidth,justification=raggedleft}
-    \hspace*{\fill}%
-    \begin{subfigure}[t]{.4\textwidth}
-        \centering
-        \begin{minipage}[t][3cm][t]{\textwidth}
-        \begin{tikzpicture}[dash pattern = on 2pt off 2pt, level distance = 10mm,baseline]
-            \node [circle,draw] (root){}
-                child {node [circle,draw] (left0){}
-                    child {node (left1){}
-                        edge from parent [draw=none]
-                    }
-                    child {node (left2){}
-                        edge from parent [draw=none]
-                    }
-                    edge from parent [fixed] node [left] {$a_0$}
-                }
-                child {node [circle] {}
-                    edge from parent [draw=none] node [] {$...$}
-                }
-                child {node [circle,draw] (right0){}
-                    child {node (right1){}
-                        edge from parent [draw=none]
-                    }
-                    child {node (right2){}
-                        edge from parent [draw=none]
-                    }
-                    edge from parent [fixed] node [right] {$a_n$}
-                }
-                node [left=4pt] {}
-                node [above=4pt] {$\langle s, \kappa \rangle$};
-
-            \draw [fixed] (left1.center) -- (left2.center);
-            \draw [fixed] (left0) -- (left1.center);
-            \draw [fixed] (left0) -- (left2.center);
-            \draw [fixed] (right1.center) -- (right2.center);
-            \draw [fixed] (right0) -- (right1.center);
-            \draw [fixed] (right0) -- (right2.center);
-        \end{tikzpicture}
-        \end{minipage}
-        \caption{Before}
-    \end{subfigure}\hfill%
-    \begin{subfigure}[t]{.3\textwidth}
-        \centering
-        \begin{minipage}[t][3cm][t]{\textwidth}
-        \begin{tikzpicture}[dash pattern = on 2pt off 2pt, level distance = 10mm,baseline]
-            \node [circle,draw] (root){}
-                child {node [circle,draw] (left0){}
-                    child {node (left1){}
-                        edge from parent [draw=none]
-                    }
-                    child {node (left2){}
-                        edge from parent [draw=none]
-                    }
-                    edge from parent [fixed] node [left] {$a_0$}
-                }
-                node [above=4pt] {$\langle s_0, \kappa \rangle$};
-
-            \node [draw=none,below right=25pt and 22pt] {$...$};
-
-            \begin{scope}[xshift=60pt]
-            \node [circle,draw] (root2){}
-                child {node [circle,draw] (right0){}
-                    child {node (right1){}
-                        edge from parent [draw=none]
-                    }
-                    child {node (right2){}
-                        edge from parent [draw=none]
-                    }
-                    edge from parent [fixed] node [right] {$a_n$}
-                }
-                node [left=4pt] {}
-                node [above=4pt] {$\langle s_n, \kappa \rangle$};
-            \end{scope}
-
-            \node [below=5pt of left0] {$T_0$};
-            \node [below=5pt of right0] {$T_n$};
-            \draw [fixed] (left1.center) -- (left2.center);
-            \draw [fixed] (left0) -- (left1.center);
-            \draw [fixed] (left0) -- (left2.center);
-            \draw [fixed] (right1.center) -- (right2.center);
-            \draw [fixed] (right0) -- (right1.center);
-            \draw [fixed] (right0) -- (right2.center);
-        \end{tikzpicture}
-        \end{minipage}
-        \caption{After}
-    \end{subfigure}%
-    \hspace*{\fill}
-    \caption{Partitioning}
-    \label{fig:partition}
-\end{figure}
 
 %%%\begin{figure}[t]
 %%%    \centering
@@ -299,48 +300,17 @@ Figure~\ref{fig:algex} illustrates operation of the algorithm on the winning abs
 %%%    running example.}\label{f:algex}
 %%%\end{figure}
 
-Next, we descend down the $i$ branch of the tree and consider subtree $T'$ and its initial set $I'$ (Figure~\ref{fig:algex}(b)).  We partition $I'$ into subsets $I'_1=\{s_1\}$ and $I'_2=\{s_2\}$ that are winning for the left and right subtrees of $T'$ respectively, i.e., the controller must play action $a$ in state $s_1$ and $b$ in $s_2$.  Consider the resulting subtrees $T'_1$ and $T'_2$ with initial sets $I'_1$ and $I'_2$ (Figure~\ref{fig:algex}(c)).  We have $I''_1 = succ(I'_1, a) = \{s_4\}$, $I''_2 = succ(I'_2, b) = \{s_3\}$.  Finally, we obtain two subtrees $T''_1$ and $T''_2$ with initial sets $I''_1$ and $I''_2$ (Figure~\ref{fig:algex}(d)).  Both subtrees have one branch; hence corresponding actions $i$ and $c$ are winning in $I''_1$ and $I''_2$ respectively.
+Next, we descend down the $i$ branch of the tree and consider subtree $T'$ and its initial set $I'$ (Figure~\ref{fig:algexb}).  We partition $I'$ into subsets $I'_1=\{s_1\}$ and $I'_2=\{s_2\}$ that are winning for the left and right subtrees of $T'$ respectively, i.e., the controller must play action $0$ in state $s_1$ and $1$ in $s_2$.  Consider the resulting subtrees $T'_1$ and $T'_2$ with initial sets $I'_1$ and $I'_2$ (Figure~\ref{fig:algexc}).  We have $I''_1 = \textsc{succ}(I'_1, a) = \{s_4\}$, $I''_2 = \textsc{succ}(I'_2, b) = \{s_3\}$.  Finally, we obtain two subtrees $T''_1$ and $T''_2$ with initial sets $I''_1$ and $I''_2$ (Figure~\ref{fig:algexd}).  Both subtrees have one branch; hence corresponding actions $i$ and $c$ are winning in $I''_1$ and $I''_2$ respectively.
 
-Putting together fragments of the winning strategy computed above, 
-we obtain the following strategy for this example: $\pi(s_0)=i$, 
-$\pi(s_1)=a$, $\pi(s_2)=b$, $\pi(s_3)=c$, $\pi(s_4)=i$.
-\end{example}
+Putting together fragments of the winning strategy computed above, we obtain the following strategy for this example: $\pi(s_0)=i$, $\pi(s_1)=a$, $\pi(s_2)=b$, $\pi(s_3)=c$, $\pi(s_4)=i$.
 
-The above algorithm involves two potentially costly 
-operations: winning set partitioning and successor set 
-computation.  If implemented na\"ively, these operations can lead 
-to unacceptable performance.  The key insight behind our solution 
-is that both operations can be efficiently approximated from the 
-proof of unsatisfiability of the formula $E_T(I)$, with the help 
-of interpolation, as described below.  The resulting 
-approximations are sound, i.e., preserve the correctness of the 
-resulting strategy.
+The above algorithm involves two potentially costly operations: winning set partitioning and successor set computation.  If implemented na\"ively, these operations can lead to unacceptable performance.  The key insight behind our solution is that both operations can be efficiently approximated from the proof of unsatisfiability of the formula $E_T(I)$, with the help of interpolation, as described below.  The resulting approximations are sound, i.e., preserve the correctness of the resulting strategy.
 
-Algorithm~\ref{alg:strat} shows the pseudocode of the 
-strategy generation algorithm.  The algorithm proceeds in two 
-phases: the first phase (\textsc{GenLocalStrats}) computes local 
-strategies in nodes of $T$; the second phase 
-(\textsc{CompileStrat}) compiles all local strategies into a 
-winning strategy function.
+\subsection{Local Strategies}
 
-The \textsc{GenLocalStrats} function recursively traverses the
-certificate tree $T$, starting from the root, computing local
-strategies in each node.
-%It also takes initial set $I$.  The function is recursive and it
-%preserves the following invariant: $T$ is a certificate tree for
-%$I$i.
-The main operation of the algorithm, called \textsc{Partition},
-%takes a set $I$ and its certificate tree $T$ and produces $j$
-splits $(T,I)$ into $j$ pairs $(T_i, I_i)$, as shown in
-Figure~\ref{f:partition}.  Each tree $T_i$ is a copy of a single
-branch of $T$.  The partitioning is constructed in such a way that
-the action $a_i$ that labels the root edge of $T_i$ is a winning
-controller action in $I_i$.
+Algorithm~\ref{alg:strat} shows the pseudocode of the strategy generation algorithm.  The algorithm proceeds in two phases: the first phase (\textsc{GenLocalStrats}) computes local strategies in nodes of $T$; the second phase (\textsc{CompileStrat}) compiles all local strategies into a winning strategy function.
 
-%$I = \bigvee I_i$, $I_i \land I_j = \bot,
-%i\neq j$ that are used to build a local winning strategy that maps
-%$I_i$ to a controller move $a_i \in \{a_1,\ldots,a_j\}$ (see
-%Figure~\ref{f:partition}).
+The \textsc{GenLocalStrats} function recursively traverses the certificate tree $T$, starting from the root, computing local strategies in each node.  The main operation of the algorithm, called \textsc{Partition}, splits $(T,I)$ into $j$ pairs $(T_i, I_i)$, as shown in Figure~\ref{f:partition}.  Each tree $T_i$ is a copy of a single branch of $T$.  The partitioning is constructed in such a way that the action $c_i$ that labels the root edge of $T_i$ is a winning controller action in $I_i$.
 
 %%%\begin{figure}[t]
 %%%    \centering
@@ -355,10 +325,10 @@ Next we consider each pair $(T_i, I_i)$
 down the tree and compute the controller strategy in the child
 subtree $T_i'$ of $T_i$ (right-hand side of Figure~\ref{f:partition}).
 %By construction, the root of $T_i$ has exactly one outgoing edge
-%labeled with the move $a_i$.
-To do so, we first compute the set of $a_i$-successors of $I_i$:
+%labeled with the move $c_i$.
+To do so, we first compute the set of $c_i$-successors of $I_i$:
 More precisely, we compute an overapproximation $I_i'\supseteq
-succ(I_i, a_i)$, such that $T_i'$ is a certificate
+succ(I_i, c_i)$, such that $T_i'$ is a certificate
 tree for $I_i'$.  Such an overapproximation is returned by the
 \textsc{Next} function in line~\ref{alg:strat:next}.  We can now
 recursively invoke the strategy generation function to compute a
@@ -367,7 +337,7 @@ winning strategy for the pair $(T_i', I_i')$
 
 %\textsc{Next} computes $I_i'$ which is an invariant preserving
 %overapproximation of states reachable from  $I_i$ if the
-%controller plays $a_i$.  We will show that \textsc{Next} preserves
+%controller plays $c_i$.  We will show that \textsc{Next} preserves
 %the invariant: $T_i'$ is a certificate tree for $E(I_i')$.  We can
 %now recursively invoke the strategy generation function to compute
 %a winning strategy for the pair $(T_i', I_i')$
@@ -399,10 +369,10 @@ winning strategy for the pair $(T_i', I_i')$
         \Statex
 
         \Function{GenLocalStrats}{$T$, $I$}
-            \State $v \gets root(T)$
-            \State $[(e_1, a_1, v_1),\ldots,(e_j,a_j,v_j)] \gets edges(v)$
+            \State $v \gets \Call{root}{T}$
+            \State $[(e_1, a_1, v_1),\ldots,(e_j,a_j,v_j)] \gets \Call{edges}{v}$
             \State $[(T_1,I_1),\ldots,(T_j, I_j)] \gets \partition(T, I \land \neg O)$
-            \State $Strat \gets \{(I_i, a_i, height(T)) \mid i \in[1,j]\}$\label{alg:strat:strati}
+            \State $Strat \gets \{(I_i, c_i, \Call{height}{T}) \mid i \in[1,j]\}$\label{alg:strat:strati}
             \For{$i = 1$ to $j$}\label{alg:strat:for}
                 \State $(T_i', I_i') \gets \nextf(T_i, I_i)$\label{alg:strat:next}
                 \State $Strat_i \gets \Call{GenLocalStrats}{T_i', I_i'}$\label{alg:strat:rec}
@@ -413,11 +383,11 @@ winning strategy for the pair $(T_i', I_i')$
     \end{algorithmic}
 \end{algorithm}
 %
-%Since each tree $T_i$ only allows a single controller action $a_i$
+%Since each tree $T_i$ only allows a single controller action $c_i$
 %in the root node and because $T_i$ is a certificate for $I_i$, we
-%know that the controller can win the game by choosing action $a_i$
+%know that the controller can win the game by choosing action $c_i$
 %in any state in $I_i$.  Thus, we obtain a winning strategy in $I$,
-%which consists of playing action $a_i$ in each subset $I_i$.
+%which consists of playing action $c_i$ in each subset $I_i$.
 %Line~\ref{alg:strat:strati} of Algorithm~\ref{} compiles this
 %strategy into a symbolic form.  We represent the strategy as a
 %pair of relations.  The first component of the pair is a partial
@@ -429,12 +399,12 @@ winning strategy for the pair $(T_i', I_i')$
 %(lines~\ref{alg:strat:for}-\ref{alg:strat:endfor}). We descend
 %down the tree and compute the controller strategy in the child
 %subtree $T_i'$ of $T_i$ (Figure~\ref{}).  To do so, we first
-%compute the set of $a_i$-successors of $I_i$:
+%compute the set of $c_i$-successors of $I_i$:
 %\begin{equation}\label{eq:succ}
-%    succ(I_i, a_i) = \{\ss' \mid \exists \ss\in I_i,\uu\in L_u. \ss' = \delta(\ss, a_i, \uu)\}
+%    succ(I_i, c_i) = \{\ss' \mid \exists \ss\in I_i,\uu\in L_u. \ss' = \delta(\ss, c_i, \uu)\}
 %\end{equation}
 %More precisely, we compute an overapproximation
-%$I_i'\supseteq succ(I_i, a_i)$, such that $T_i'$ is a certificate
+%$I_i'\supseteq succ(I_i, c_i)$, such that $T_i'$ is a certificate
 %tree for $I_i'$.  Such an overapproximation is returned by the
 %\textsc{Next} function in line~\ref{alg:strat:next}.  We can now
 %recursively invoke the strategy generation function to compute a
@@ -457,14 +427,14 @@ bottom of the tree (i.e., distance to the goal).
 %successor set.  Below we describe how we implement both operations
 %efficiently using interpolation.
 
-\subsection{\textsc{Partition}}
+\subsection{Partitioning game trees}
 
 The \textsc{Partition} function
 (Algorithm~\ref{alg:strat:partition}) computes a local strategy in
 the root of an abstract game tree.  It takes a pair $(T,I)$, such
 that $T$ is a certificate tree for set $I$ and partitions $I$ into
 subsets $I_i$ such that the controller can win by choosing action
-$a_i$ in $I_i$.
+$c_i$ in $I_i$.
 
 \begin{algorithm}[t]
    \caption{Partitioning winning states}\label{alg:strat:partition}
@@ -519,7 +489,7 @@ Both $A$ and $B$ can be satisfiable individually, but their conjunction
 is unsatisfiable.
 
 The interpolant $\mathcal{I}$ of $A$ and $B$
-implies $\neg B$, i.e., for any state in $\mathcal{I}$, $a_i$ is a winning move.
+implies $\neg B$, i.e., for any state in $\mathcal{I}$, $c_i$ is a winning move.
 $\mathcal{I}$ is also implied by $A$, i.e., it contains all states in $I$ where
 the controller cannot win by picking moves from $\tilde{T}$ as a subset.
 Equivalently, for any state in $I_i \land \neg \mathcal{I}$, the controller \emph{can}
@@ -601,7 +571,7 @@ maintained.\qed
     \qed
 \end{proof}
 
-\subsection{\textsc{Next}}
+\subsection{Determine an action}
 
 The \textsc{Next} function (Algorithm~\ref{alg:next}) takes a set $I$ and its certificate tree $T$, such
 that there is exactly one outgoing edge, labelled $a$, from the root node of $T$.
@@ -734,3 +704,6 @@ $(I', a', k-1)\in Strat$, $s'\in I'$; hence $rank(s')\leq k-1 < k
 \qed
 \end{proof}
 
+\section{Related work}
+
+\section{Conclusion}
