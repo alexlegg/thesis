@@ -26,14 +26,16 @@ The problem solved in this chapter is related to the extraction of a Skolem func
 
 \section{Algorithm}
 
+Recall that a safety game is a tuple $(S, \mathcal{U}, \mathcal{C}, \delta, s_0)$ where $S$ is a set of states, $\mathcal{U}$ a set of environment action variables, $\mathcal{C}$ a set of controller action variables, $\delta$ defines a transition relation, and $s_0$ is an initial state. A winning strategy for controller is a function $\pi^c : 2^{\mathcal{S}} \times 2^{\mathcal{U}} \to 2^{\mathcal{C}}$. A controller strategy is then a mapping from state environment-action pairs to controller actions.
+
 In this chapter we will assume that the safety game is winning for the controller. However, the technique is also easily applied to the environment to extract a spoiling strategy. In computing realisability of a safety game the algorithm constructs a \emph{certificate tree}, which is an abstract game tree $T$ such that for a set of states $s$ and game bound $\kappa$, $s \land \textsc{\textoverline{treeFormula}}(\kappa, \textsc{extend}(T))$ is false. In other words it is a game abstraction for which the environment has no candidate strategy.
 
-We use the certificate tree computed by the game solver as a starting point for strategy generation.  We know that the controller can win the game in $\kappa$ rounds by picking actions from the tree; however we do not yet know exactly which actions should be picked in every state.
+We use the certificate tree computed by the game solver as a starting point for strategy generation.  We know that the controller can win the game in $\kappa$ rounds by picking actions from the tree; however we do not yet know which action to choose in which situation.
 
 
 \subsection{Example}
 
-Figure~\ref{fig:stratExample} introduces the running example for this chapter. It shows a state machine for a game $(S, \mathcal{U}, \mathcal{C}, \delta, s_0)$ where $S$ consists of two one bit variables \texttt{p} and \texttt{e}, $\mathcal{U}$ and $\mathcal{C}$ each consist of a single one bit variable \texttt{u} and \texttt{c} respectively. The diagram shows $\delta$ as a deterministic finite state automaton with edges labelled by a tuple (\texttt{u}, \texttt{c}). We use \texttt{*} as a wildcard value to simplify the presentation. The game is simple, \texttt{p} is set to the previous value of \texttt{u} and \texttt{e} is set to \texttt{1} when $\texttt{c} \neq \texttt{p}$. The initial state, $s_0$, is $\texttt{p} = 0 \land \texttt{e} = 0$ and the error set is $\texttt{e} = 1$. In other words, the controller must simply match the previous action of the environment to avoid the error set.
+Figure~\ref{fig:stratExample} introduces the running example for this chapter. It shows a state machine for a game $(\mathcal{S}, \mathcal{U}, \mathcal{C}, \delta, s_0)$ that describes the operation of a simpled clocked flip-flop. For the example we model the clock as part of the game state and assume that it oscillates in every game round. So $\mathcal{S} = \{ c, q, e \}$ is the state space of the game and contains the clock, the previous value of the flip-flop, and an error bit respectively. The environment has a single data bit variable: $\mathcal{U} = \{ d \}$ and the controller has the next value of the flip-flop: $\mathcal{C} = \{ q_n \}$. The diagram shows $\delta$ as a deterministic finite state automaton with edges labelled by a tuple $(d, q_n)$. We use $*$ as a wildcard value to simplify the presentation. The circuit described by the specification allows the environment to save a data bit $d$ into the flip-flop when the clock has a falling edge ($c$ transitions from $1$ to $0$). The controller must correctly set $q_n$ so that $q$ always contains the correct data. The initial state, $s_0$, is $c = 0 \land q = 0 \land e = 0$ and the error set is $e = 1$.
 
 \tikzset{
     pil/.style={
@@ -52,27 +54,33 @@ Figure~\ref{fig:stratExample} introduces the running example for this chapter. I
     \centering
     \begin{tikzpicture}
         \node [snode]
-            (s0){\texttt{p=0} \\ \texttt{e=0}};
-        \node [draw=none,left=of s0] (i){};
-        \node [snode,right=1.5cm of s0]
-            (s1){\texttt{p=1} \\ \texttt{e=0}};
-        \node [snode,accepting,below=1cm of s0]
-            (err){\texttt{p=*} \\ \texttt{e=1}};
+            (s1){$c = 0$ \\ $q = 0$ \\ $e = 0$};
+        \node [draw=none,left=of s1] (i){};
+        \node [snode,below=1.5cm of s1]
+            (s0){$c = 1$ \\ $q = *$ \\ $e = 0$};
+        \node [snode,right=2.5cm of s0]
+            (s3){$c = 0$ \\ $q = 1$ \\ $e = 0$};
+        \node [snode,accepting,right=2.5cm of s1]
+            (err){$c = *$ \\ $q = *$ \\ $e = 1$};
 
-        \draw [pil] (i) edge (s0);
-        \draw [pil] (s0) edge [bend left] node [above] {$(1, 0)$} (s1);
-        \draw [pil] (s0) edge node [left] {$(*, 1)$} (err);
-        \draw [pil] (s0) edge [loop above] node [above] {$(0, 0)$} (s0);
-        \draw [pil] (s1) edge node [below right] {$(*, 0)$} (err);
-        \draw [pil] (s1) edge [loop above] node [above] {$(1, 1)$} (s1);
-        \draw [pil] (s1) edge [bend left] node [above] {$(0, 1)$} (s0);
-        \draw [pil] (err) edge [loop left] node [below right=10pt and -3pt] {$(*, *)$} (err);
+        \draw [pil] (i) edge (s1);
+
+        \draw [pil] (s0) edge [bend left] node [left] {$(0, 0)$} (s1);
+        \draw [pil] (s1) edge [bend left] node [left] {$(*, 0)$} (s0);
+
+        \draw [pil] (s0) edge [bend left] node [below] {$(1, 1)$} (s3);
+        \draw [pil] (s3) edge [bend left] node [below] {$(*, 1)$} (s0);
+
+        \draw [pil] (s1) edge node [above] {$(*, 1)$} (err);
+        \draw [pil] (s3) edge node [right] {$(*, 0)$} (err);
+        \draw [pil] (s0) edge node [above left=0mm and -3mm] {$(*, \lnot d)$} (err);
+%%%        \draw [pil] (s1) edge node [below right] {$(*, 0)$} (err);
     \end{tikzpicture}
     \caption{Transition relation of the running example}
     \label{fig:stratExample}
 \end{figure}
 
-The strategy generation algorithm takes an initial set $s$ and its certificate tree $T$, computed by the game solver, and generates a winning controller strategy starting from $s$.  To this end, it first partitions $s$ into subsets $s_i$, one for each outgoing branch of $T$ (Figure~\ref{fig:partition}), such that the controller can win from $s_i$ by picking action $c_i$ along the $i$th branch of the tree.  This partitioning defines the local winning strategy in the root node of $T$.  Next, for each partition $s_i$, the algorithm computes the set of $c_i$-successor states of $s_i$, obtaining the set $s_i'$ of states winning in the child subtree $T_i'$ of $T_i$ (Figure~\ref{fig:partition}).  The algorithm is then invoked recursively for each subtree $T_i'$.
+The strategy generation algorithm takes an initial set $s_0$ and its certificate tree $T$, computed by the game solver, and generates a winning controller strategy starting from $s_0$. We will use $\mathcal{X}$ to denote the union of state and environment action variables $\mathcal{S} \cup \mathcal{U}$. The generated strategy must define a controller action $c \in 2^{\mathcal{C}}$ to every $x \in 2^{\mathcal{X}}$. The algorithm first constructs a set $x$ from $s_0$, which it then partitions into subsets $x_i$, one for each outgoing branch of $T$ (Figure~\ref{fig:partition}), such that the controller can win from $x_i$ by picking action $c_i$ along the $i$th branch of the tree. This partitioning defines the local winning strategy in the root node of $T$.  Next, for each partition $x_i$, the algorithm computes the set of $c_i$-successor states of $x_i$, obtaining the set $x_i'$ of state-action pairs winning in the child subtree $T_i'$ of $T_i$ (Figure~\ref{fig:partition}).  The algorithm is then invoked recursively for each subtree $T_i'$.
 
 \begin{figure}[b]
     \centering
@@ -105,7 +113,7 @@ The strategy generation algorithm takes an initial set $s$ and its certificate t
                     edge from parent node [above right] {$c_n$}
                 }
                 node [left=4pt] {}
-                node [above=4pt] {$\langle s, \kappa \rangle$};
+                node [above=4pt] {$\langle x, \kappa \rangle$};
 
             \draw (left1.center) -- (left2.center);
             \draw (left0) -- (left1.center);
@@ -131,7 +139,7 @@ The strategy generation algorithm takes an initial set $s$ and its certificate t
                     }
                     edge from parent node [left] {$c_0$}
                 }
-                node [above=4pt] {$\langle s_0, \kappa \rangle$};
+                node [above=4pt] {$\langle x_0, \kappa \rangle$};
 
             \node [draw=none,below right=25pt and 22pt] {$...$};
 
@@ -147,7 +155,7 @@ The strategy generation algorithm takes an initial set $s$ and its certificate t
                     edge from parent node [right] {$c_n$}
                 }
                 node [left=4pt] {}
-                node [above=4pt] {$\langle s_n, \kappa \rangle$};
+                node [above=4pt] {$\langle x_n, \kappa \rangle$};
             \end{scope}
 
             \node [below=5pt of left0] {$T_0$};
@@ -167,142 +175,124 @@ The strategy generation algorithm takes an initial set $s$ and its certificate t
     \label{fig:partition}
 \end{figure}
 
-Figure~\ref{fig:algex} illustrates operation of the algorithm on the winning abstract game tree returned by the game solver for our running example (Figure~\ref{fig:stratExample}).  The algorithm starts at the root of the tree and the initial set $I=\{s_0\}$.  The game tree only defines one winning action in the root node, hence this action is winning in all states of $I$ and no partitioning is required.  We compute the successor set reachable by playing action $0$ in $I$: $I' = \textsc{succ}(I, i) = \{s_1, s_2\}$.
-
-%%%(see the game automaton in Figure~\ref{f:exm:delta}(a)).
+Figure~\ref{fig:algex} illustrates operation of the algorithm on the winning abstract game tree returned by the game solver for our running example.  Figure~\ref{fig:algexa} displays $T$, the certificate tree for the game. The algorithm starts at the root of the tree and the initial set $x = (c = 0 \land q = 0 \land e = 0)$.  The game tree defines only one winning action in the root node, hence this action is winning in all states of $I$ and no partitioning is required.  We compute the successor set reachable by playing action $q_n = 0$ in $x$: $x' = \textsc{succ}(x, q_n = 0) = (c = 1 \land e = 0) $.
 
 \tikzset{every node/.style={solid}}
-\tikzstyle{fixed}=[solid]
 \begin{figure}[b]
     \centering
-    \captionsetup[subfigure]{width=\textwidth,justification=raggedleft}
+    \captionsetup[subfigure]{width=\textwidth,justification=centering}
     \begin{subfigure}[t]{.4\textwidth}
         \centering
         \begin{minipage}[t][4cm][t]{\textwidth}
-        \begin{tikzpicture}[dash pattern = on 2pt off 2pt, level distance = 10mm,baseline]
+        \centering
+        \begin{tikzpicture}[level distance = 10mm,baseline]
             \node [circle,draw] (root){}
                 child {node [circle,draw] {}
                     child {node [circle,draw] {}
-                        child {node [circle,draw,right=5pt] {}
-                            edge from parent [fixed] node [left] {\texttt{0}}
+                        child {node [circle,draw] {}
+                            edge from parent node [left] {\texttt{0}}
                         }
-                        child {node [circle,draw,left=5pt] {}
-                            edge from parent [fixed] node [right] {\texttt{1}}
-                        }
-                        edge from parent [fixed] node [left] {\texttt{0}}
+                        edge from parent node [left] {\texttt{0}}
                     }
                     child {node [circle,draw] {}
-                        child {node [circle,draw,right=5pt] {}
-                            edge from parent [fixed] node [left] {\texttt{0}}
+                        child {node [circle,draw] {}
+                            edge from parent node [right] {\texttt{1}}
                         }
-                        child {node [circle,draw,left=5pt] {}
-                            edge from parent [fixed] node [right] {\texttt{1}}
-                        }
-                        edge from parent [fixed] node [right] {\texttt{1}}
+                        edge from parent node [right] {\texttt{1}}
                     }
-                    edge from parent [fixed] node [left] {\texttt{0}}
+                    edge from parent node [left] {\texttt{0}}
                 }
-                node [left=4pt] {}
-                node [above=4pt] {$\langle s, 3 \rangle$};
+                node [above=4pt] {$\langle s_0, 3 \rangle$};
         \end{tikzpicture}
         \end{minipage}
-        \caption{AGT}
+        \caption{$T$}
         \label{fig:algexa}
     \end{subfigure}
     \begin{subfigure}[t]{.4\textwidth}
         \centering
         \begin{minipage}[t][4cm][t]{\textwidth}
-        \begin{tikzpicture}[dash pattern = on 2pt off 2pt, level distance = 10mm,baseline]
-            \node [circle,draw] (root){}
-                child {node [circle,draw] {}
-                    child {node [circle,draw] {}
-                        edge from parent [fixed] node [left] {\texttt{i}}
-                    }
-                    edge from parent [fixed] node [left] {\texttt{a}}
-                }
-                child {node [circle,draw] {}
-                    child {node [circle,draw] {}
-                        edge from parent [fixed] node [right] {\texttt{c}}
-                    }
-                    edge from parent [fixed] node [right] {\texttt{b}}
-                }
-                node [left=4pt] {}
-                node [above=4pt] {$\langle s, 2 \rangle$};
-        \end{tikzpicture}
-        \end{minipage}
-        \caption{AGT}
-        \label{fig:algexb}
-    \end{subfigure}
-
-    \begin{subfigure}[t]{.4\textwidth}
         \centering
-        \begin{minipage}[t][4cm][t]{\textwidth}
-        \begin{tikzpicture}[dash pattern = on 2pt off 2pt, level distance = 10mm,baseline]
+        \begin{tikzpicture}[level distance = 10mm,baseline]
             \node [circle,draw] (root){}
                 child {node [circle,draw] {}
                     child {node [circle,draw] {}
-                        edge from parent [fixed] node [left] {\texttt{i}}
+                        edge from parent node [left] {\texttt{0}}
                     }
-                    edge from parent [fixed] node [left] {\texttt{a}}
+                    edge from parent node [left] {\texttt{0}}
                 }
-                node [above=4pt] {$\langle s, 2 \rangle$};
-
-            \node [circle,draw,right=2cm] (root){}
                 child {node [circle,draw] {}
                     child {node [circle,draw] {}
-                        edge from parent [fixed] node [right] {\texttt{c}}
+                        edge from parent node [right] {\texttt{1}}
                     }
-                    edge from parent [fixed] node [right] {\texttt{b}}
+                    edge from parent node [right] {\texttt{1}}
                 }
-                node [right=2.2cm,above=4pt] {$\langle s, 2 \rangle$};
+                node [above=4pt] {$\langle s_1, 2 \rangle$};
         \end{tikzpicture}
         \end{minipage}
-        \caption{AGT}
-        \label{fig:algexc}
+        \caption{$T'$}
+        \label{fig:algexb}
     \end{subfigure}
     \begin{subfigure}[t]{.4\textwidth}
         \centering
         \begin{minipage}[t][3cm][t]{\textwidth}
+        \centering
         \begin{tikzpicture}[level distance = 10mm,baseline]
-            \node [circle] (root){}
+            \node [circle,draw] (root1){}
                 child {node [circle,draw] {}
                     child {node [circle,draw] {}
-                        edge from parent [fixed] node [left] {\texttt{i}}
+                        edge from parent node [left] {\texttt{0}}
                     }
-                    node [above=4pt] {$\langle s, 2 \rangle$}
-                    edge from parent [draw=none]
+                    edge from parent node [left] {\texttt{0}}
                 };
+            \node [above=4pt of root1] {$\langle s_1, 2 \rangle$};
 
-            \node [circle,right=2cm] (root){}
+            \node [circle,draw,right=2cm] (root2){}
                 child {node [circle,draw] {}
                     child {node [circle,draw] {}
-                        edge from parent [fixed] node [right] {\texttt{c}}
+                        edge from parent node [right] {\texttt{1}}
                     }
-                    node [above=4pt] {$\langle s, 2 \rangle$}
-                    edge from parent [draw=none]
+                    edge from parent node [right] {\texttt{1}}
                 };
+            \node [above=4pt of root2] {$\langle s_1, 2 \rangle$};
         \end{tikzpicture}
         \end{minipage}
         \caption{AGT}
+        \label{fig:algexc}
+    \end{subfigure}%
+    \begin{subfigure}[t]{.4\textwidth}
+        \centering
+        \begin{minipage}[t][3cm][t]{\textwidth}
+        \centering
+        \begin{tikzpicture}[level distance = 10mm,baseline]
+            \node [circle,draw] (root1){}
+                child {node [circle,draw] {}
+                    edge from parent node [left] {\texttt{0}}
+                };
+            \node [above=4pt of root1] {$\langle s_2, 1 \rangle$};
+
+            \node [circle,draw,right=2cm] (root2){}
+                child {node [circle,draw] {}
+                    edge from parent node [right] {\texttt{1}}
+                };
+            \node [above=4pt of root2] {$\langle s_3, 1 \rangle$};
+        \end{tikzpicture}
+        \end{minipage}
+        \caption{$T''$}
         \label{fig:algexd}
     \end{subfigure}
-
     \caption{Operation of the strategy extraction algorithm on the example}
     \label{fig:algex}
 \end{figure}
 
+Next, we descend down the tree and consider subtree $T'$ and its initial set $x'$ (Figure~\ref{fig:algexb}).  We partition $x'$ into subsets $x_0' = (d = 0 \land c = 1 \land e = 0)$ and $x_1' = (d = 1 \land c = 1 \land e = 0)$ that are winning for the left and right subtrees of $T'$ respectively, i.e., from $(c = 1 \land e = 0)$ the controller must play action $q_n = 0$ when the environment plays $d = 0$ and $q_n = 1$ for $d = 1$.  Consider the resulting subtrees $T'_1$ and $T'_2$ with initial sets $x'_1$ and $x'_2$ (Figure~\ref{fig:algexc}).  We have $x''_1 = \textsc{succ}(x'_1, q_n = 0) = (c = 1 \land q = 0 \land e = 0)$, $x''_2 = \textsc{succ}(x'_2, q_n = 1) = (c = 1 \land q = 1 \land e = 0)$.  Finally, we obtain two subtrees $T''_1$ and $T''_2$ with initial sets $x''_1$ and $x''_2$ (Figure~\ref{fig:algexd}).  Both subtrees have one branch; hence corresponding actions $q_n = 0$ and $q_n = 1$ are winning in $x''_1$ and $x''_2$ respectively.
 
-%%%\begin{figure}[t]
-%%%    \centering
-%%%    \includegraphics[width=.8\linewidth]{example_abs_new_clones_cropped.pdf}
-%%%    \vspace{-3mm}
-%%%    \caption{Operation of the strategy extraction algorithm on the 
-%%%    running example.}\label{f:algex}
-%%%\end{figure}
-
-Next, we descend down the $i$ branch of the tree and consider subtree $T'$ and its initial set $I'$ (Figure~\ref{fig:algexb}).  We partition $I'$ into subsets $I'_1=\{s_1\}$ and $I'_2=\{s_2\}$ that are winning for the left and right subtrees of $T'$ respectively, i.e., the controller must play action $0$ in state $s_1$ and $1$ in $s_2$.  Consider the resulting subtrees $T'_1$ and $T'_2$ with initial sets $I'_1$ and $I'_2$ (Figure~\ref{fig:algexc}).  We have $I''_1 = \textsc{succ}(I'_1, a) = \{s_4\}$, $I''_2 = \textsc{succ}(I'_2, b) = \{s_3\}$.  Finally, we obtain two subtrees $T''_1$ and $T''_2$ with initial sets $I''_1$ and $I''_2$ (Figure~\ref{fig:algexd}).  Both subtrees have one branch; hence corresponding actions $i$ and $c$ are winning in $I''_1$ and $I''_2$ respectively.
-
-Putting together fragments of the winning strategy computed above, we obtain the following strategy for this example: $\pi(s_0)=i$, $\pi(s_1)=a$, $\pi(s_2)=b$, $\pi(s_3)=c$, $\pi(s_4)=i$.
+Putting together fragments of the winning strategy computed above, we obtain the following strategy for this example:
+\begin{align*}
+    \pi(c = 0 \land q = 0 \land e = 0) &= (q_n = 0) \\
+    \pi(d = 0 \land c = 1 \land e = 0) &= (q_n = 0) \\
+    \pi(d = 1 \land c = 1 \land e = 0) &= (q_n = 1) \\
+    \pi(c = 0 \land q = 1 \land e = 0) &= (q_n = 1)
+\end{align*}
 
 The above algorithm involves two potentially costly operations: winning set partitioning and successor set computation.  If implemented na\"ively, these operations can lead to unacceptable performance.  The key insight behind our solution is that both operations can be efficiently approximated from the proof of unsatisfiability of the formula $E_T(I)$, with the help of interpolation, as described below.  The resulting approximations are sound, i.e., preserve the correctness of the resulting strategy.
 
