@@ -12,6 +12,8 @@
 \newcommand{\apgametree}[0]{\mbox{\sc AbsSolvedGT}}
 \newcommand{\opgametree}[0]{\mbox{\sc Spoiling}}
 
+\newcommand{\opptf}[0]{\textsc{\textoverline{treeFormula}}}
+
 \renewcommand{\ss}[0]{\mathbf{s}}
 \newcommand{\cc}[0]{\mathbf{c}}
 \newcommand{\uu}[0]{\mathbf{u}}
@@ -26,9 +28,9 @@ The problem solved in this chapter is related to the extraction of a Skolem func
 
 \section{Algorithm}
 
-Recall that a safety game is a tuple $(S, \mathcal{U}, \mathcal{C}, \delta, s_0)$ where $S$ is a set of states, $\mathcal{U}$ a set of environment action variables, $\mathcal{C}$ a set of controller action variables, $\delta$ defines a transition relation, and $s_0$ is an initial state. A winning strategy for controller is a function $\pi^c : 2^{\mathcal{S}} \times 2^{\mathcal{U}} \to 2^{\mathcal{C}}$. A controller strategy is then a mapping from state environment-action pairs to controller actions.
+Recall that a safety game is a tuple $(S, \mathcal{U}, \mathcal{C}, \delta, s_0)$ where $S$ is a set of states, $\mathcal{U}$ a set of environment action variables, $\mathcal{C}$ a set of controller action variables, $\delta$ defines a transition relation, and $s_0$ is an initial state. A set of states $E$ provides the winning condition, the controller must avoid error states and the environment must reach one. A winning strategy for controller is a function $\pi^c : 2^{\mathcal{S}} \times 2^{\mathcal{U}} \to 2^{\mathcal{C}}$ that avoids error states for the duration of the game. A controller strategy is then a mapping from state environment-action pairs to controller actions.
 
-In this chapter we will assume that the safety game is winning for the controller. However, the technique is also easily applied to the environment to extract a spoiling strategy. In computing realisability of a safety game the algorithm constructs a \emph{certificate tree}, which is an abstract game tree $T$ such that for a set of states $s$ and game bound $\kappa$, $s \land \textsc{\textoverline{treeFormula}}(\kappa, \textsc{extend}(T))$ is false. In other words it is a game abstraction for which the environment has no candidate strategy.
+In this chapter we will assume that the safety game is winning for the controller. However, the technique is also easily applied to the environment to extract a spoiling strategy. In computing realisability of a safety game the algorithm constructs a \emph{certificate tree}, which is an abstract game tree $T$ such that for a set of states $s$ and game bound $\kappa$, $s \land \opptf(\kappa, \textsc{extend}(T))$ is false. In other words it is a game abstraction for which the environment has no candidate strategy.
 
 We use the certificate tree computed by the game solver as a starting point for strategy generation.  We know that the controller can win the game in $\kappa$ rounds by picking actions from the tree; however we do not yet know which action to choose in which situation.
 
@@ -80,7 +82,7 @@ Figure~\ref{fig:stratExample} introduces the running example for this chapter. I
     \label{fig:stratExample}
 \end{figure}
 
-The strategy generation algorithm takes an initial set $s_0$ and its certificate tree $T$, computed by the game solver, and generates a winning controller strategy starting from $s_0$. We will use $\mathcal{X}$ to denote the union of state and environment action variables $\mathcal{S} \cup \mathcal{U}$. The generated strategy must define a controller action $c \in 2^{\mathcal{C}}$ to every $x \in 2^{\mathcal{X}}$. The algorithm first constructs a set $x$ from $s_0$, which it then partitions into subsets $x_i$, one for each outgoing branch of $T$ (Figure~\ref{fig:partition}), such that the controller can win from $x_i$ by picking action $c_i$ along the $i$th branch of the tree. This partitioning defines the local winning strategy in the root node of $T$.  Next, for each partition $x_i$, the algorithm computes the set of $c_i$-successor states of $x_i$, obtaining the set $x_i'$ of state-action pairs winning in the child subtree $T_i'$ of $T_i$ (Figure~\ref{fig:partition}).  The algorithm is then invoked recursively for each subtree $T_i'$.
+The strategy generation algorithm takes an initial set $s_0$ and its certificate tree $T$, computed by the game solver, and generates a winning controller strategy starting from $s_0$. The generated strategy must define a controller action $c \in 2^{\mathcal{C}}$ to every $\{ (s, u) \mid s \in 2^{\mathcal{S}}, u \in 2^{\mathcal{U}} \}$. The algorithm begins with $(s_0, \top)$, which it then partitions in pairs of subsets $(s_i, u_i)$, one for each outgoing branch of $T$ (Figure~\ref{fig:partition}), such that the controller can win from $s_i$ when the controller plays $u_i$ by picking action $c_i$ along the $i$th branch of the tree.  This partitioning defines the local winning strategy in the root node of $T$.  Next, for each partition $(s_i, u_i)$, the algorithm computes the set of $c_i$-successor states of $s_i$, obtaining the set $s_i'$ of states winning in the child subtree $T_i'$ of $T_i$ (Figure~\ref{fig:partition}).  The algorithm is then invoked recursively for each subtree $T_i'$.
 
 \begin{figure}[b]
     \centering
@@ -98,7 +100,7 @@ The strategy generation algorithm takes an initial set $s_0$ and its certificate
                     child {node (left2){}
                         edge from parent [draw=none]
                     }
-                    edge from parent node [above left] {$c_0$}
+                    edge from parent node [above left] {$c_1$}
                 }
                 child {node [circle] {}
                     edge from parent [draw=none] node [] {$...$}
@@ -113,7 +115,7 @@ The strategy generation algorithm takes an initial set $s_0$ and its certificate
                     edge from parent node [above right] {$c_n$}
                 }
                 node [left=4pt] {}
-                node [above=4pt] {$\langle x, \kappa \rangle$};
+                node [above=4pt] {$\langle s, \kappa \rangle$};
 
             \draw (left1.center) -- (left2.center);
             \draw (left0) -- (left1.center);
@@ -137,9 +139,9 @@ The strategy generation algorithm takes an initial set $s_0$ and its certificate
                     child {node (left2){}
                         edge from parent [draw=none]
                     }
-                    edge from parent node [left] {$c_0$}
+                    edge from parent node [left] {$c_1$}
                 }
-                node [above=4pt] {$\langle x_0, \kappa \rangle$};
+                node [above=4pt] {$\langle s_1, \kappa \rangle$};
 
             \node [draw=none,below right=25pt and 22pt] {$...$};
 
@@ -155,10 +157,10 @@ The strategy generation algorithm takes an initial set $s_0$ and its certificate
                     edge from parent node [right] {$c_n$}
                 }
                 node [left=4pt] {}
-                node [above=4pt] {$\langle x_n, \kappa \rangle$};
+                node [above=4pt] {$\langle s_n, \kappa \rangle$};
             \end{scope}
 
-            \node [below=5pt of left0] {$T_0$};
+            \node [below=5pt of left0] {$T_1$};
             \node [below=5pt of right0] {$T_n$};
             \draw (left1.center) -- (left2.center);
             \draw (left0) -- (left1.center);
@@ -175,7 +177,7 @@ The strategy generation algorithm takes an initial set $s_0$ and its certificate
     \label{fig:partition}
 \end{figure}
 
-Figure~\ref{fig:algex} illustrates operation of the algorithm on the winning abstract game tree returned by the game solver for our running example.  Figure~\ref{fig:algexa} displays $T$, the certificate tree for the game. The algorithm starts at the root of the tree and the initial set $x = (c = 0 \land q = 0 \land e = 0)$.  The game tree defines only one winning action in the root node, hence this action is winning in all states of $I$ and no partitioning is required.  We compute the successor set reachable by playing action $q_n = 0$ in $x$: $x' = \textsc{succ}(x, q_n = 0) = (c = 1 \land e = 0) $.
+Figure~\ref{fig:algex} illustrates operation of the algorithm on the winning abstract game tree returned by the game solver for our running example.  Figure~\ref{fig:algexa} displays $T$, the certificate tree for the game. The algorithm starts at the root of the tree and the initial set $s = (c = 0 \land q = 0 \land e = 0)$.  The game tree defines only one winning action in the root node, hence this action is winning in all states of $s$ and no partitioning is required.  We compute the successor set reachable by playing action $q_n = 0$ in $s$: $\{ s' \mid \delta(s, \top, q_n = 0, s') \} = (c = 1 \land e = 0) $.
 
 \tikzset{every node/.style={solid}}
 \begin{figure}[b]
@@ -202,7 +204,7 @@ Figure~\ref{fig:algex} illustrates operation of the algorithm on the winning abs
                     }
                     edge from parent node [left] {\texttt{0}}
                 }
-                node [above=4pt] {$\langle s_0, 3 \rangle$};
+                node [above=4pt] {$\langle s, 3 \rangle$};
         \end{tikzpicture}
         \end{minipage}
         \caption{$T$}
@@ -226,7 +228,7 @@ Figure~\ref{fig:algex} illustrates operation of the algorithm on the winning abs
                     }
                     edge from parent node [right] {\texttt{1}}
                 }
-                node [above=4pt] {$\langle s_1, 2 \rangle$};
+                node [above=4pt] {$\langle s', 2 \rangle$};
         \end{tikzpicture}
         \end{minipage}
         \caption{$T'$}
@@ -244,7 +246,7 @@ Figure~\ref{fig:algex} illustrates operation of the algorithm on the winning abs
                     }
                     edge from parent node [left] {\texttt{0}}
                 };
-            \node [above=4pt of root1] {$\langle s_1, 2 \rangle$};
+            \node [above=4pt of root1] {$\langle s_1', 2 \rangle$};
 
             \node [circle,draw,right=2cm] (root2){}
                 child {node [circle,draw] {}
@@ -253,7 +255,7 @@ Figure~\ref{fig:algex} illustrates operation of the algorithm on the winning abs
                     }
                     edge from parent node [right] {\texttt{1}}
                 };
-            \node [above=4pt of root2] {$\langle s_1, 2 \rangle$};
+            \node [above=4pt of root2] {$\langle s_1', 2 \rangle$};
         \end{tikzpicture}
         \end{minipage}
         \caption{AGT}
@@ -268,13 +270,13 @@ Figure~\ref{fig:algex} illustrates operation of the algorithm on the winning abs
                 child {node [circle,draw] {}
                     edge from parent node [left] {\texttt{0}}
                 };
-            \node [above=4pt of root1] {$\langle s_2, 1 \rangle$};
+            \node [above=4pt of root1] {$\langle s_1'', 1 \rangle$};
 
             \node [circle,draw,right=2cm] (root2){}
                 child {node [circle,draw] {}
                     edge from parent node [right] {\texttt{1}}
                 };
-            \node [above=4pt of root2] {$\langle s_3, 1 \rangle$};
+            \node [above=4pt of root2] {$\langle s_2'', 1 \rangle$};
         \end{tikzpicture}
         \end{minipage}
         \caption{$T''$}
@@ -284,41 +286,41 @@ Figure~\ref{fig:algex} illustrates operation of the algorithm on the winning abs
     \label{fig:algex}
 \end{figure}
 
-Next, we descend down the tree and consider subtree $T'$ and its initial set $x'$ (Figure~\ref{fig:algexb}).  We partition $x'$ into subsets $x_0' = (d = 0 \land c = 1 \land e = 0)$ and $x_1' = (d = 1 \land c = 1 \land e = 0)$ that are winning for the left and right subtrees of $T'$ respectively, i.e., from $(c = 1 \land e = 0)$ the controller must play action $q_n = 0$ when the environment plays $d = 0$ and $q_n = 1$ for $d = 1$.  Consider the resulting subtrees $T'_1$ and $T'_2$ with initial sets $x'_1$ and $x'_2$ (Figure~\ref{fig:algexc}).  We have $x''_1 = \textsc{succ}(x'_1, q_n = 0) = (c = 1 \land q = 0 \land e = 0)$, $x''_2 = \textsc{succ}(x'_2, q_n = 1) = (c = 1 \land q = 1 \land e = 0)$.  Finally, we obtain two subtrees $T''_1$ and $T''_2$ with initial sets $x''_1$ and $x''_2$ (Figure~\ref{fig:algexd}).  Both subtrees have one branch; hence corresponding actions $q_n = 0$ and $q_n = 1$ are winning in $x''_1$ and $x''_2$ respectively.
+Next, we descend down the tree and consider subtree $T'$ and its initial set $s'$ (Figure~\ref{fig:algexb}).  We partition $(s', \top)$ into subsets $(s_1', u_1') \gets (c = 1 \land e = 0, d = 0)$ and $(s_1', u_1') \gets (c = 1 \land e = 0, d = 1)$ that are winning for the left and right subtrees of $T'$ respectively, i.e., from $(c = 1 \land e = 0)$ the controller must play action $q_n = 0$ when the environment plays $d = 0$, and $q_n = 1$ for $d = 1$.  Consider the resulting subtrees $T'_1$ and $T'_2$ with initial sets $s'_1$ and $s'_2$ (Figure~\ref{fig:algexc}).  We have $\{ s''_1 \mid \delta(s'_1, u'_1, q_n = 0, s''_1) \} = (c = 1 \land q = 0 \land e = 0)$, $\{ s''_2 \mid \delta(s'_2, u'_1, q_n = 1, s''_2) \} = (c = 1 \land q = 1 \land e = 0)$.  Finally, we obtain two subtrees $T''_1$ and $T''_2$ with initial sets $s''_1$ and $s''_2$ (Figure~\ref{fig:algexd}).  Both subtrees have one branch; hence corresponding actions $q_n = 0$ and $q_n = 1$ are winning for $(s''_1, \top)$ and $(s''_2, \top)$ respectively.
 
 Putting together fragments of the winning strategy computed above, we obtain the following strategy for this example:
 \begin{align*}
-    \pi(c = 0 \land q = 0 \land e = 0) &= (q_n = 0) \\
-    \pi(d = 0 \land c = 1 \land e = 0) &= (q_n = 0) \\
-    \pi(d = 1 \land c = 1 \land e = 0) &= (q_n = 1) \\
-    \pi(c = 0 \land q = 1 \land e = 0) &= (q_n = 1)
+    \pi(c = 0 \land q = 0 \land e = 0, \top) &= (q_n = 0) \\
+    \pi(c = 1 \land e = 0, d = 0) &= (q_n = 0) \\
+    \pi(c = 1 \land e = 0, d = 1) &= (q_n = 1) \\
+    \pi(c = 0 \land q = 1 \land e = 0, \top) &= (q_n = 1)
 \end{align*}
 
-The above algorithm involves two potentially costly operations: winning set partitioning and successor set computation.  If implemented na\"ively, these operations can lead to unacceptable performance.  The key insight behind our solution is that both operations can be efficiently approximated from the proof of unsatisfiability of the formula $s_0 \land \texttt{treeFormula}(T)$, with the help of interpolation, as described below.  The resulting approximations are sound, i.e., preserve the correctness of the resulting strategy.
+The above algorithm involves two potentially costly operations: winning set partitioning and successor set computation.  If implemented na\"ively, these operations can lead to unacceptable performance.  The key insight behind our solution is that both operations can be efficiently approximated from the proof of unsatisfiability of the formula $s \land \opptf(T)$, with the help of interpolation, as described below.  The resulting approximations are sound, i.e., preserve the correctness of the resulting strategy.
 
 \subsection{Local Strategies}
 
 Algorithm~\ref{alg:strat} shows the pseudocode of the strategy generation algorithm.  The algorithm proceeds in two phases: the first phase (\textsc{genLocalStrats}) computes local strategies in nodes of $T$; the second phase (\textsc{compileStrat}) compiles all local strategies into a winning strategy function.
 
-The \textsc{genLocalStrats} function recursively traverses the certificate tree $T$, starting from the root, computing local strategies in each node.  The main operation of the algorithm, called \textsc{partition}, splits $(T,x)$ into $j$ pairs $(T_i, x_i)$, as shown in Figure~\ref{fig:partition}.  Each tree $T_i$ is a copy of a single branch of $T$.  The partitioning is constructed in such a way that the action $c_i$ that labels the root edge of $T_i$ is a winning controller action in $x_i$.
+The \textsc{genLocalStrats} function recursively traverses the certificate tree $T$, starting from the root, computing local strategies in each node.  The main operation of the algorithm, called \textsc{partition}, splits $(T, s, \top)$ into $j$ tuples $(T_i, s_i, u_i)$, as shown in Figure~\ref{fig:partition}.  Each tree $T_i$ is a copy of a single branch of $T$.  The partitioning is constructed in such a way that the action $c_i$ that labels the root edge of $T_i$ is a winning controller action in $s_i$ against environment action $u_i$.
 
-Next we consider each pair $(T_i, x_i)$ (lines~\ref{alg:strat:for}-\ref{alg:strat:endfor}). We descend down the tree and compute the controller strategy in the child subtree $T_i'$ of $T_i$ (right-hand side of Figure~\ref{fig:partition}).  To do so, we first compute the set of $c_i$-successors of $x_i$: More precisely, we compute an overapproximation $x_i' \supseteq succ(x_i, c_i)$, such that $T_i'$ is a certificate tree for $x_i'$.  Such an overapproximation is returned by the \textsc{next} function in line~\ref{alg:strat:next}.  We can now recursively invoke the strategy generation function to compute a winning strategy for the pair $(T_i', x_i')$ (line~\ref{alg:strat:rec}).
+Next we consider each tuple $(T_i, s_i, u_i)$ (lines~\ref{alg:strat:for}-\ref{alg:strat:endfor}). We descend down the tree and compute the controller strategy in the child subtree $T_i'$ of $T_i$ (right-hand side of Figure~\ref{fig:partition}).  To do so, we first compute the set of $c_i$-successors of $(s_i, u_i)$: More precisely, we compute an overapproximation $\mathcal{I} \supseteq \{ s_i' \mid \delta(s_i, u_i, c_i, s_i') \}$, such that $T_i'$ is a certificate tree for $\mathcal{I}$.  Such an overapproximation is returned by the \textsc{next} function in line~\ref{alg:strat:next}.  We can now recursively invoke the strategy generation function to compute a winning strategy for the subtree $T_i'$ from $\mathcal{I}$ (line~\ref{alg:strat:rec}).
 
 \begin{algorithm}
    \caption{Computing a winning strategy}\label{alg:strat}
    \begin{algorithmic}[1]
-        \Function{GenStrategy}{$T$, $x$}
-            \State $Strat \gets \Call{GenLocalStrats}{T,x}$
+        \Function{GenStrategy}{$T$, $s$}
+            \State $Strat \gets \Call{GenLocalStrats}{T,s}$
             \State \Return{$\Call{CompileStrat}{Strat}$}
         \EndFunction
         \Statex
 
-        \Function{GenLocalStrats}{$T$, $x$}
+        \Function{GenLocalStrats}{$T$, $s$}
             \State $[(e_1, n_1),\ldots,(e_j, n_j)] \gets \Call{succ}{T}$
-            \State $[(T_1,x_1),\ldots,(T_j, x_j)] \gets \partition(T, x \land \neg E(\mathcal{S}_T))$
-            \State $Strat \gets \{(x_i, \Call{action}{e_i}, \Call{height}{T}) \mid i \in[1,..,j]\}$\label{alg:strat:strati}
+            \State $[(T_1,s_1,u_1),\ldots,(T_j, s_j, u_j)] \gets \partition(T, s \land \neg E(\mathcal{S}_T))$
+            \State $Strat \gets \{(s_i, u_i, \Call{action}{e_i}, \Call{height}{T}) \mid i \in[1,..,j]\}$\label{alg:strat:strati}
             \For{$i = 1$ to $j$}\label{alg:strat:for}
-                \State $(T_i', x_i') \gets \nextf(T_i, x_i)$\label{alg:strat:next}
+                \State $(T_i', s_i') \gets \nextf(T_i, s_i, u_i)$\label{alg:strat:next}
                 \State $Strat_i \gets \Call{GenLocalStrats}{T_i', x_i'}$\label{alg:strat:rec}
                 \State $Strat \gets Strat \cup Strat_i$
             \EndFor\label{alg:strat:endfor}
@@ -327,32 +329,35 @@ Next we consider each pair $(T_i, x_i)$ (lines~\ref{alg:strat:for}-\ref{alg:stra
     \end{algorithmic}
 \end{algorithm}
 
-The algorithm returns the set of tuples $(W, c, k)$.  Each tuple represents a fragment of the strategy in some tree node, where $W$ is the winning set in this node, $c$ is the controller action to play in this set, and $k$ is the distance from the node to the bottom of the tree.
+The algorithm returns the set of tuples $(W, c, k)$.  Each tuple represents a fragment of the strategy in some tree node, where $W \in 2^{\mathcal{S}} \cup 2^{\mathcal{U}}$ is the winning set in this node, $c$ is the controller action to play in this set, and $k$ is the distance from the node to the bottom of the tree.
 
 \subsection{Partitioning game trees}
 
-The \textsc{partition} function (Algorithm~\ref{alg:strat:partition}) computes a local strategy in the root of an abstract game tree.  It takes a pair $(T, x)$, such that $T$ is a certificate tree for set $x$ and partitions $x$ into subsets $x_i$ such that the controller can win by choosing action $c_i$ in $x_i$.
+The \textsc{partition} function (Algorithm~\ref{alg:strat:partition}) computes a local strategy in the root of an abstract game tree.  It takes a pair $(T, s)$, such that $T$ is a certificate tree for set $s$ and partitions $s$ into subsets $(s_i, u_i)$ such that the controller can win in $s_i$ when the opponent plays $u_i$ by choosing action $c_i$.
 
 \begin{algorithm}[t]
    \caption{Partitioning winning states}\label{alg:strat:partition}
    \begin{algorithmic}[1]
-        \Function{$\partition$}{$T$, $x$}
-        \State $\hat{x} \gets x$
+        \Function{$\partition$}{$T$, $s$}
+        \State $\hat{s} \gets s$
+        \State $\hat{u} \gets \top$
         \State $\hat{T} \gets T$
         \For{$i = 1$ to $j$}
         \State $(T_i, \tilde{T}) \gets \Call{split}{\hat{T}}$\label{alg:partition:split}
-            \State $A \gets \hat{x} \land \Call{treeFormula}{\tilde{T}} $ \label{alg:strat:partition:Bi}
-            \State $B \gets \Call{treeFormula}{T_i} $ \label{alg:strat:partition:Ai}
-            \State $\mathcal{I}(s_v) \gets \Call{interpolate}{A, B}$\label{alg:partition:I}
-            \State $x_i \gets \mathcal{I}(s) \land \hat{x}$\label{alg:partition:Ii}
-            \State $\hat{x} \gets \hat{x} \land \neg\mathcal{I}(s)$,~~$\hat{T} \gets \tilde{T}$\label{alg:partition:upd}
+            \State $A \gets \hat{s} \land \hat{u} \land \Call{\opptf}{\tilde{T}} $ \label{alg:strat:partition:Bi}
+            \State $B \gets \Call{\opptf}{T_i} $ \label{alg:strat:partition:Ai}
+            \State $\mathcal{I} \gets \Call{interpolate}{A, B}$\label{alg:partition:I}
+            \State $(s_i, u_i) \gets (\mathcal{I}(\mathcal{S}_T) \land \hat{s}, \mathcal{I}(\mathcal{U}_T) \land \hat{u})$\label{alg:partition:Ii}
+            \State $\hat{s} \gets \hat{s} \land \neg s_i$
+            \State $\hat{u} \gets \hat{u} \land \neg u_i$
+            \State $\hat{T} \gets \tilde{T}$\label{alg:partition:upd}
         \EndFor
-        \State \Return{$[(T_1, x_1),\ldots, (T_j, x_j)]$} \label{alg:strat:partition:return}
+        \State \Return{$[(T_1, s_1, u_1),\ldots, (T_j, s_j, u_j)]$} \label{alg:strat:partition:return}
         \EndFunction
     \end{algorithmic}
 \end{algorithm}
 
-At every iteration, the algorithm splits the tree into the leftmost branch $T_i$ and the remaining tree (Figure~\ref{fig:split}).  It then computes the set $x_i$ where the controller wins by following the branch $T_i$ and removes $x_i$ from the initial set $x$.  At the next iteration it considers the leftover tree $\tilde{T}$ and the shrunk initial set $\hat{x}$.
+At every iteration, the algorithm splits the tree into the leftmost branch $T_i$ and the remaining tree (Figure~\ref{fig:split}).  It then computes the pair $(s_i, u_i)$ where the controller wins by following the branch $T_i$, removes $s_i$ from the initial set $s$, and $u_i$ from the set of opponent moves $u$.  At the next iteration it considers the leftover tree $\tilde{T}$ and shrunk initial sets $\hat{s}$ and $\hat{u}$.
 
 \begin{figure}
     \centering
@@ -417,51 +422,51 @@ At every iteration, the algorithm splits the tree into the leftmost branch $T_i$
     \caption{Splitting of $T$ in the \textsc{Partition} function.\label{fig:split}}
 \end{figure}
 
-The algorithm maintains the invariant that $\hat{T}$ is a certificate tree for $\hat{x}$ and hence $\lnot \hat{x} \land \textsc{treeFormula}(\hat{T})$ is unsatisfiable.  We decompose this formula into two conjuncts $A \land B$ such that $A$ and $B$ only share state and action variables $\mathcal{S}_T \cup \mathcal{U}_T$ in the root node of $T$ and that the interpolant $\mathcal{I}$ of $A$ and $B$ consists of states and environment actions for which the controller can win by following the $T_i$ subtree.  Hence $\mathcal{I}\land \hat{x}$ gives us the desired set $x_i$.  
+The algorithm maintains the invariant that $\hat{T}$ is a certificate tree for $\hat{s}$ if the environment chooses from $\hat{u}$, and hence $\hat{s} \land \hat{u} \land \opptf(\hat{T})$ is unsatisfiable.  We decompose this formula into two conjuncts $A \land B$ such that $A$ and $B$ only share state and action variables $\mathcal{S}_T \cup \mathcal{U}_T$ in the root node of $T$ and that the interpolant $\mathcal{I}$ of $A$ and $B$ consists of states and environment actions for which the controller can win by following the $T_i$ subtree.  Hence $(\mathcal{I}(\mathcal{S}_T) \land \hat{s}, \mathcal{I}(\mathcal{U}_T) \land \hat{u})$ gives us the desired pair $(s_i, u_i)$.  
 
-Informally, $A$ is a partial expansion of the game formula induced by $\tilde{T}$.  It is satisfiable iff there exists a spoiling environment strategy from $\hat{x}$ against abstract game tree $\tilde{T}$.  $B$ is a partial expansion of the game induced by $T_i$.  It is satisfiable iff there exists a spoiling environment strategy against $T_i$.  Both $A$ and $B$ can be satisfiable individually, but their conjunction is unsatisfiable.
+Informally, $A$ is a partial expansion of the game formula induced by $\tilde{T}$.  It is satisfiable iff there exists a spoiling environment strategy from $\hat{s}$ and allowable by $\hat{u}$ against abstract game tree $\tilde{T}$.  $B$ is a partial expansion of the game induced by $T_i$.  It is satisfiable iff there exists a spoiling environment strategy against $T_i$.  Both $A$ and $B$ can be satisfiable individually, but because $T$ is a certificate tree their conjunction is unsatisfiable.
 
-The interpolant $\mathcal{I}$ of $A$ and $B$ implies $\neg B$, i.e., for any state and environment action in $\mathcal{x}$, $c_i$ is a winning move.  $\mathcal{I}$ is also implied by $A$, i.e., it contains all states and environment actions in $x$ where the controller cannot win by picking moves from $\tilde{T}$ as a subset.  Equivalently, for any state and action in $x_i \land \neg \mathcal{I}$, the controller \emph{can} win by following $\tilde{T}$, i.e., $\tilde{T}$ is a certificate tree for $x_i \land \neg \mathcal{I}$, and we can apply the decomposition again to $\tilde{T}$ and $x_i \land \neg \mathcal{I}$ at the next iteration.
+The interpolant $\mathcal{I}$ of $A$ and $B$ implies $\neg B$, i.e., for any state and environment action in $\mathcal{I}$, $c_i$ is a winning move.  $\mathcal{I}$ is also implied by $A$, i.e., it contains all states in $s$ and all environment actions for which the controller cannot win by picking moves from $\tilde{T}$ as a subset.  Equivalently, for any state in $\hat{s} \land \neg \mathcal{I}(\mathcal{S}_T)$ and environment action in $\hat{u} \land \neg \mathcal{I}(\mathcal{U}_T)$, the controller \emph{can} win by following $\tilde{T}$, i.e., $\tilde{T}$ is a certificate tree for ($\hat{s} \land \neg \mathcal{I}(\mathcal{S}_T), \hat{u} \land \neg \mathcal{I}(\mathcal{U}_T))$, and we can apply the decomposition again to $\tilde{T}$ at the next iteration.
 
 
-We prove useful properties of the $\partition$ function. We begin with the proposition that $A$ and $B$ form a conjunctive decomposition of $\hat{x} \land \textsc{treeFormula}(\hat{T})$. 
+\makeatletter
+\newcommand{\pushright}[1]{\ifmeasuring@#1\else\omit\hfill$\displaystyle#1$\fi\ignorespaces}
+\makeatother
+
+We prove useful properties of the $\partition$ function. We begin with the proposition that $A$ and $B$ imply a decomposition of $\hat{s} \land \hat{u} \land \opptf(\hat{T})$. 
 \begin{proposition}\label{prop:aandb}
-    $A\land B = \hat{x} \land \textsc{treeFormula}(\hat{T})$.
+    $A\land B \implies \hat{s} \land \hat{u} \land \opptf(\hat{T})$.
 \end{proposition}
 \begin{proof}
     \begin{align*}
-        A \land B &= \hat{x} \land \textsc{treeFormula}(\tilde{T}) \land \textsc{treeFormula}(T_i) \\
-                  &= \hat{x} \land \textsc{treeFormula}(\hat{T})\ \text{(by the definition of \textsc{treeFormula})}
+        A \land B ={}& (\hat{s} \land \hat{u} \land \opptf(\tilde{T})) \land \opptf(T_i) \\
+        A \land B ={}& \hat{s} \land \hat{u} \land \bigg( E(\mathcal{X}_{\tilde{T}}) \lor \bigvee_{\langle e, n \rangle \in \textsc{succ}(\tilde{T})} \delta(\mathcal{X}_{\tilde{T}}, \mathcal{U}_{\tilde{T}}, \textsc{action}(e), \mathcal{S}_n) \land \opptf(n) \bigg) \\
+                     & \pushright{\land \bigg( E(\mathcal{X}_{T_i}) \lor (\delta(\mathcal{X}_{T_i}, \mathcal{U}_{T_i}, \textsc{action}(e_i), \mathcal{S}_{n_i}) \land \opptf(n_i)) \bigg)} \\
+        \implies{}& \hat{s} \land \hat{u} \land \bigg( E(\mathcal{X}_{\hat{T}}) \lor \bigvee_{\langle e, n \rangle \in \textsc{succ}(\hat{T})} \delta(\mathcal{X}_{\hat{T}}, \mathcal{U}_{\hat{T}}, \textsc{action}(e), \mathcal{S}_n) \land \opptf(n) \bigg) \\
+        ={}& \hat{s} \land \hat{u} \land \opptf(\hat{T})
     \end{align*}
 \end{proof}
 
 \begin{proposition}
-    The following invariant is maintained throughout the execution of
-    \textsc{partition}: $\hat{T}$ is a certificate tree for $\hat{x}$.
+    The following invariant is maintained throughout the execution of \textsc{partition}: $\hat{T}$ is a certificate tree for $\hat{s}$ when the environment may choose actions from $\hat{u}$.
 \end{proposition}
 \begin{proof}
-We prove by induction.  The invariant holds for the initial
-assignments of $\hat{T}$ and $\hat{x}$. By Proposition~\ref{prop:aandb} and induction hypothesis, $A\land B = \hat{x} \land \textsc{treeFormula}{\hat{T}}$ is unsatisfiable.  Hence the interpolation operation in line~\ref{alg:partition:I} is well defined.  By the properties of interpolants, $(A \implies \mathcal{I}(\mathcal{X}_T))$, hence $(\neg \mathcal{I}(\mathcal{X}_T) \implies \neg A)$ or equivalently $(\neg\mathcal{I}(\mathcal{X}_T) \implies \neg (\hat{x} \land \textsc{treeFormula}(\tilde{T}))$.
+    We prove by induction. It is a precondition of the function that $T$ is a certificate tree for $s$, thus the invariant holds for the initial values of $\hat{T} = T$, $\hat{s} = s$, and $\hat{u} = \top$.  By the induction hypothesis $(\hat{s} \land \hat{u} \land \opptf(\hat{T}))$ is unsatisfiable, so by Proposition~\ref{prop:aandb} $(A \land B)$ must also be unsatisfiable.  Hence the interpolation operation in line~\ref{alg:partition:I} is well defined.  By the properties of interpolants, $(A \implies \mathcal{I})$, hence $(\neg \mathcal{I} \implies \neg A)$ or equivalently $(\neg\mathcal{I} \implies \neg (\hat{s} \land \hat{u} \land \opptf(\tilde{T}))$.
 
-After $\hat{T}$ and $\hat{x}$ are updated in line~\ref{alg:partition:upd}, their new values $\hat{T}'$ and $\hat{x}'$ satisfy the following equalities: \begin{align*}
-    \hat{x}' \land \textsc{treeFormula}(\hat{T}') =& \hat{x} \land \textsc{treeFormula}(\tilde{T}) \land \neg\mathcal{I}(\mathcal{X}) \\
-=& \neg\mathcal{I}(\mathcal{X}_v) \land \hat{x} \land \textsc{treeFormula}(\tilde{T}) \\
-    \implies& \neg (\hat{x} \land \textsc{treeFormula}(\tilde{T})) \land \hat{x} \land \textsc{treeFormula}(\tilde{T}) \\
-    =& \bot
+    After $\hat{T}$, $\hat{s}$, and $\hat{u}$ are updated in line~\ref{alg:partition:upd}, their new values $\hat{T}'$, $\hat{s}'$, and $\hat{u}'$ satisfy the following equalities: \begin{align*}
+        \hat{s}' \land \hat{u}' \land \opptf(\hat{T}') ={}& \hat{s} \land \hat{u} \land \opptf(\tilde{T}) \land \neg\mathcal{I} \\
+        ={}& \neg\mathcal{I} \land \hat{s} \land \hat{u} \land \opptf(\tilde{T}) \\
+        \implies{}& \neg (\hat{s} \land \hat{u} \land \opptf(\tilde{T})) \land \hat{s} \land \hat{u} \land \opptf(\tilde{T}) \\
+        ={}& \bot
 \end{align*} and hence the invariant is maintained.
 \end{proof}
 
 \begin{proposition}\label{prop:partition}
-    Let $T$ be a certificate tree for $I$ and let $I\land O =\bot$.  Then
-    $[(T_1,I_1),\ldots,(T_j, I_j)] = \textsc{partition}(T, I)$
-    is a local winning strategy in the root of $T$, i.e., the
-    following properties hold:
+    Let $T$ be a certificate tree for $s$ and let $s \land \lnot E(\mathcal{S}_T) = \bot$. Then $[(T_1, s_1, u_1),\ldots,(T_j, s_j, u_j)] = \textsc{partition}(T, s)$ is a local winning strategy in the root of $T$, i.e., the following properties hold:
     \begin{enumerate}
-        \item Sets $I_1,\ldots,I_j$ comprise a partitioning of
-            $I$: $I=\bigvee I_i$ and $\forall i, k. (i\neq k)
-            \implies I_i\land I_k=\bot$
-        \item $T_i$ is a certificate tree for $I_i$, for all
-            $i\in[1,j]$
+        \item Sets $(s_1,u_1) ,\ldots, (s_j,u_j)$ comprise a partitioning of
+            $(s, \top)$: $s = \bigvee s_i$, $\top = \bigvee u_i$ and $\forall i, k. (i\neq k) \implies (s_i \land u_i) \land (s_k \land u_k) = \bot$
+        \item $T_i$ is a certificate tree for $s_i$ under environment actions $u_i$, for all $i\in[1,j]$
     \end{enumerate}
 \end{proposition}
 \begin{proof}
@@ -494,7 +499,7 @@ $T$ has a sole child subtree $T'$ with root node $v'$.
 The function computes an overapproximation $I'$ of the $a$-successor of $I$,
 such that $I'$ is winning for the controller and $T'$ is a certificate tree for $I'$.
 
-\begin{algorithm}[t]
+\begin{algorithm}
    \caption{Successor set}\label{alg:next}
    \begin{algorithmic}[1]
         \Function{$\nextf$}{$T, I$}
