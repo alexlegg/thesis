@@ -86,7 +86,7 @@ The strategy generation algorithm takes an initial set $s_0$ and its certificate
 
 \begin{figure}[b]
     \centering
-    \captionsetup[subfigure]{width=\textwidth,justification=raggedleft}
+    \captionsetup[subfigure]{width=\textwidth,justification=centering}
     \hspace*{\fill}%
     \begin{subfigure}[t]{.4\textwidth}
         \centering
@@ -440,9 +440,11 @@ We prove useful properties of the $\partition$ function. We begin with the propo
 \begin{proof}
     \begin{align*}
         A \land B ={}& (\hat{s} \land \hat{u} \land \opptf(\tilde{T})) \land \opptf(T_i) \\
-        A \land B ={}& \hat{s} \land \hat{u} \land \bigg( E(\mathcal{X}_{\tilde{T}}) \lor \bigvee_{\langle e, n \rangle \in \textsc{succ}(\tilde{T})} \delta(\mathcal{X}_{\tilde{T}}, \mathcal{U}_{\tilde{T}}, \textsc{action}(e), \mathcal{S}_n) \land \opptf(n) \bigg) \\
-                     & \pushright{\land \bigg( E(\mathcal{X}_{T_i}) \lor (\delta(\mathcal{X}_{T_i}, \mathcal{U}_{T_i}, \textsc{action}(e_i), \mathcal{S}_{n_i}) \land \opptf(n_i)) \bigg)} \\
-        \implies{}& \hat{s} \land \hat{u} \land \bigg( E(\mathcal{X}_{\hat{T}}) \lor \bigvee_{\langle e, n \rangle \in \textsc{succ}(\hat{T})} \delta(\mathcal{X}_{\hat{T}}, \mathcal{U}_{\hat{T}}, \textsc{action}(e), \mathcal{S}_n) \land \opptf(n) \bigg) \\
+        A \land B ={}& \hat{s} \land \hat{u} \land \bigg( E(\mathcal{S}_{\tilde{T}}) \lor \\
+                     & \pushright{ \bigvee_{\langle e, n \rangle \in \textsc{succ}(\tilde{T})} \delta(\mathcal{S}_{\tilde{T}}, \mathcal{U}_{\tilde{T}}, \mathcal{C}_{\tilde{T}}, \mathcal{S}_n) \land \textsc{action}(e) \land \opptf(n) \bigg)} \\
+                     & \pushright{\land \bigg( E(\mathcal{S}_{T_i}) \lor (\delta(\mathcal{S}_{T_i}, \mathcal{U}_{T_i}, \mathcal{C}_{T_i}, \mathcal{S}_{n_i}) \land \textsc{action}(e_i) \land \opptf(n_i)) \bigg)} \\
+        \implies{}& \hat{s} \land \hat{u} \land \bigg( E(\mathcal{S}_{\hat{T}}) \lor \\
+                  & \pushright{  \bigvee_{\langle e, n \rangle \in \textsc{succ}(\hat{T})} \delta(\mathcal{S}_{\hat{T}}, \mathcal{U}_{\hat{T}}, \mathcal{C}_{\hat{T}}, \mathcal{S}_n) \land \textsc{action}(e) \land \opptf(n) \bigg)} \\
         ={}& \hat{s} \land \hat{u} \land \opptf(\hat{T})
     \end{align*}
 \end{proof}
@@ -456,7 +458,8 @@ We prove useful properties of the $\partition$ function. We begin with the propo
     After $\hat{T}$, $\hat{s}$, and $\hat{u}$ are updated in line~\ref{alg:partition:upd}, their new values $\hat{T}'$, $\hat{s}'$, and $\hat{u}'$ satisfy the following equalities: \begin{align*}
         \hat{s}' \land \hat{u}' \land \opptf(\hat{T}') ={}& \hat{s} \land \hat{u} \land \opptf(\tilde{T}) \land \neg\mathcal{I} \\
         ={}& \neg\mathcal{I} \land \hat{s} \land \hat{u} \land \opptf(\tilde{T}) \\
-        \implies{}& \neg (\hat{s} \land \hat{u} \land \opptf(\tilde{T})) \land \hat{s} \land \hat{u} \land \opptf(\tilde{T}) \\
+        \implies{}& \neg (\hat{s} \land \hat{u} \land \opptf(\tilde{T})) \\
+                  & \pushright{\land \hat{s} \land \hat{u} \land \opptf(\tilde{T})} \\
         ={}& \bot
 \end{align*} and hence the invariant is maintained.
 \end{proof}
@@ -470,160 +473,104 @@ We prove useful properties of the $\partition$ function. We begin with the propo
     \end{enumerate}
 \end{proposition}
 \begin{proof}
-    At every iteration of the algorithm, we partition $\hat{I}$
-    into $I_i = \mathcal{I} \land\hat{I}$ and
-    $\hat{I} \land \neg\mathcal{I}$; hence different sets $I_i$ do
-    not overlap by construction.
+    At every iteration of the algorithm, we partition $\hat{s}$ into $s_i = \mathcal{I}(\mathcal{S}_T) \land \hat{s}$ and $\hat{s} \land \neg\mathcal{I}(\mathcal{S}_T)$. We do the same for $\hat{u}$: $u_i = \mathcal{I}(\mathcal{U}_T) \land \hat{u}$ and $\hat{u} \land \neg\mathcal{I}(\mathcal{U}_T)$. Hence the different sets in each $s_i$ and $u_i$ do not overlap by construction.
 
-    At the final iteration of the algorithm, the tree $\tilde{T}$
-    consists of a single root node without outgoing branches.
-    Hence, $A = E_{\tilde{T}}(\hat{I}) = \hat{I}(s_v) \land \neg O(s_v) =
-    \hat{I}(s_v)$.  Since $(A\implies \mathcal{I}(s_v))$, we get $(\hat{I} \implies \mathcal{I}(s))$
-    and therefore $\mathcal{I}(s) \land \hat{I} = \hat{I}$, i.e., all
-    states in $\hat{I}$ are included in the final set $I_j$ and hence
-    the partitioning completely covers set $I$: $I=\bigvee I_i$.
+    At the final iteration of the algorithm, the tree $\tilde{T}$ consists of a single root node without outgoing branches.  Hence, $A = \hat{s} \land \hat{u} \land \opptf(\tilde{T}) = \hat{s} \land \hat{u} \land \neg E(\mathcal{S}_{\tilde{T}}) = \hat{s} \land \hat{u}$.  Since $(A \implies \mathcal{I})$, we get $((\hat{s} \land \hat{u}) \implies \mathcal{I})$ and therefore $\mathcal{I} \land \hat{u} \land \hat{s} = \hat{s} \land \hat{u}$, i.e., all states in $\hat{s}$ and $\hat{u}$ are included in the final pair $(s_j, u_j)$ and hence the partitioning completely covers sets $(s, \top)$: $s=\bigvee s_i$ and $\top = \bigvee u_i$.
 
-    We prove the second statement of the proposition.  The set $I_i$ is computed as
-    $\mathcal{I}(s) \land \hat{I}$ (line~\ref{alg:partition:Ii}) at the $i$th iteration of the algorithm.
-    Thus, $E_{T_i}(I_i) = E_{T_i}(\mathcal{I}(s) \land \hat{I}) = \mathcal{I}(s) \land \hat{I} \land E_{T_i}(\top)$.
-    By the properties of interpolants, $\mathcal{I}(s) \land B = \mathcal{I}(s) \land E_{T_i}(\top) = \bot$.
-    Hence $E_{T_i}(I_i) = \bot$, i.e., $T_i$ is a certificate tree for $I_i$.
-    \qed
+    We prove the second statement of the proposition.  The sets $s_i$ and $u_i$ are computed as
+    $\mathcal{I}(\mathcal{S}_T) \land \hat{s}$ and $\mathcal{I}(\mathcal{U}_T) \land \hat{u}$ at the $i$th iteration of the algorithm (line~\ref{alg:partition:Ii}).
+    Thus, 
+    \begin{align*}
+        s_i \land u_i \land \opptf(T_i) ={}& \mathcal{I}(\mathcal{S}_T) \land \hat{s} \land \mathcal{I}(\mathcal{U}_T) \land \hat{u} \land \opptf(T_i) \\
+        ={}& \mathcal{I} \land \hat{s} \land \hat{u} \land \opptf(T_i)
+    \end{align*}
+    By the properties of interpolants, $\mathcal{I} \land B = \mathcal{I} \land \opptf(T_i) = \bot$.
+    Hence $s_i \land u_i \land \opptf(T_i) = \bot$, i.e., $T_i$ is a certificate tree for $s_i$ under opponent actions $u_i$.
 \end{proof}
 
 \subsection{Determine an action}
 
-The \textsc{next} function (Algorithm~\ref{alg:next}) takes a set $I$ and its certificate tree $T$, such
-that there is exactly one outgoing edge, labelled $a$, from the root node of $T$.
-$T$ has a sole child subtree $T'$ with root node $v'$.
-The function computes an overapproximation $I'$ of the $a$-successor of $I$,
-such that $I'$ is winning for the controller and $T'$ is a certificate tree for $I'$.
+The \textsc{next} function (Algorithm~\ref{alg:next}) takes a set $s$, a set $u$, and its certificate tree $T$, such that there is exactly one outgoing edge, labelled $c$, from the root node of $T$.  $T$ has a sole child subtree $T'$ with root node $n$.  The function computes an overapproximation $s'$ of the $c$-successor of ($s$, $u$), such that $s'$ is winning for the controller and $T'$ is a certificate tree for $s'$.
 
 \begin{algorithm}
    \caption{Successor set}\label{alg:next}
    \begin{algorithmic}[1]
-        \Function{$\nextf$}{$T, I$}
-            \State $T' \gets subtree(T, 1)$
-            \State $v \gets root(T)$
-            \State $[(e,a,v')] \gets edges(v)$
-            \State $A \gets I(s_v) \land  \Delta(s_v, c_e, u_e, s_{v'}) \land c_e = a$\label{alg:strat:partition:Ai}
-            \State $B \gets E_{T'}(\top)$\label{alg:strat:partition:Bi}
-            \State $\mathcal{I}(s_{v'}) \gets Interpolant(A, B)$\label{alg:strat:partition:I}
-            \State \Return{$(T', \mathcal{I}(s))$} \label{alg:strat:partition:return}
+        \Function{$\nextf$}{$T, s, u$}
+        \State $[(e, n)] \gets \Call{succ}{T}$ \Comment{$T$ has a single successor}
+            \State $A \gets s \land u \land \delta(\mathcal{S}_T, \mathcal{U}_T, \mathcal{C}_T, \mathcal{S}_{n}) \land \Call{action}{e}$\label{alg:strat:partition:Ai}
+            \State $B \gets \opptf(n) $\label{alg:strat:partition:Bi}
+            \State $\mathcal{I} \gets \Call{interpolate}{A, B}$ \label{alg:strat:partition:I}
+            \State \Return{$(n, \mathcal{I}(\mathcal{S}_{n}))$} \label{alg:strat:partition:return}
         \EndFunction
     \end{algorithmic}
 \end{algorithm}
 
-Once again, we decompose the unsatisfiable formula $E_T(I)$ into
-two conjuncts $A$ and $B$.  $A$ encodes one round of the game
-from the set $I$, where the controller plays action $a$.
-$B = E_{T'}(\top)$ is a partial $\forall$-expansion of the game induced by $T'$.
-$A$ and $B$ only share state variables $s_{v'}$ and their interpolant
-gives the approximation we are looking for.
+Once again, we decompose the unsatisfiable formula $s \land u \land \opptf(T)$ into two conjuncts $A$ and $B$.  $A$ encodes one round of the game from the set $s$ under $u$, where the controller plays action $c$.  $B = \opptf(T')$ is a partial $\forall$-expansion of the game induced by $T'$.  $A$ and $B$ only share state variables $\mathcal{S}_{n}$ (where $n$ is the root node of $T'$ and single successor node of $T$) and their interpolant gives the approximation we are looking for.
 
 \begin{proposition}\label{prop:next}
-    Let $T$ be a certificate tree for $I$ with a single outgoing
-    edge, labelled $a$ in its root node, and let $(T',\mathcal{I})
-    = \textsc{next}(T,I)$.
+    Let $T$ be a certificate tree for $s$ under opponent actions $u$ with a single outgoing edge, labelled $c$ in its root node, and let $(T',\mathcal{I})
+    = \textsc{next}(T,s,u)$.
     Then:
     \begin{enumerate}
-        \item $\mathcal{I}$ is an overapproximation of the
-            $a$-successor of $I$, i.e., $\mathcal{I} \supseteq
-            succ(I, a)$
-        \item $T'$ is a certificate tree for $I'$
+        \item $\mathcal{I}$ is an overapproximation of the $c$-successor of $s$ under $u$, i.e., $$\mathcal{I} \supseteq \{ s' \mid \delta(s, u, c, s') \}$$
+        \item $T'$ is a certificate tree for $s'$
     \end{enumerate}
 \end{proposition}
 \begin{proof}
-We rewrite formula~(\ref{eq:succ}) in the symbolic form:
-$succ(I, a) = \exists s_v,u_e. I(s_v) \land
-\Delta(s_v,c_e,u_e,s_{v'}) \land c_e = a$.  The matrix of
-this formula is exactly formula $A$.  Hence $succ(I,a) =
-\exists s_v,u_e. A$.  Since $(A\implies
-\mathcal{I}(s_{v'}))$, $succ(I,a) \implies \exists s,u.
-\mathcal{I}(s_{v'})$.  Since $\mathcal{I}$ is defined over
-state variables only, the quantifiers can be removed:
-$succ(I,a) \implies \mathcal{I}(s_{v'})$ or, in the
-relational form, $\mathcal{I} \supseteq succ(I, a)$.
-We prove the second property:
-$E_{T'}(\mathcal{I}) = \mathcal{I}(s_{v'}) \land
-E_{T'}(\top) = \mathcal{I}(s_{v'}) \land B = \bot$.
-    \qed
+    The $c$-successor set $s'$ of $s$ under environment actions $u$ is defined by $\exists s_T, u_T (s \land u \land \delta(s_T, u_T, c_T, s') \land c_T = c)$. The matrix of this formula is exactly formula $A$.  Hence the successor set is given by $s' = \exists s_T,u_T (A)$.  Since $(A \implies \mathcal{I})$, $s' \implies \exists s,u.  \mathcal{I}$.  Since $\mathcal{I}$ is defined over state variables in the root of $T'$ only, the quantifiers can be removed: $s' \implies \mathcal{I}$ or, in the relational form, $\mathcal{I} \supseteq s'$.
+    
+    We prove the second property by the construction of the interpolant: $(\mathcal{I} \land \opptf(T')) = (\mathcal{I} \land B) = \bot$.
 \end{proof}
 
 \subsection{Compiling the strategy}
 
-Finally, we describe how local strategies computed by
-\textsc{genLocalStrats} are combined into a winning strategy for
-the game.  This requires some care, as individual partial
-strategies can be defined over overlapping sets of states.  We
-want the resulting strategy function to be deterministic;
-therefore for each partial strategy we only add new states not yet
-covered by the computed combined strategy.  Function
-\textsc{compileStrats} (Algorithm~\ref{alg:compile}) achieves this by keeping track of all
-states $W$ already added to the strategy.  For every new tuple $(I, a,
-k)$, it restricts the set $I$ to $\neg W$, which guarantees that no
-state can be added to the strategy twice.  Furthermore, by
-considering tuples with smaller values of $k$ first, we resolve the
-nondeterminism in a way that guarantees progress towards the goal
-at every round of the game.
+Finally, we describe how local strategies computed by \textsc{genLocalStrats} are combined into a winning strategy for the game.  This requires some care, as individual partial strategies can be defined over overlapping sets of states.  We want the resulting strategy function to be deterministic; therefore for each partial strategy we only add new states not yet covered by the computed combined strategy.  Function \textsc{compileStrats} (Algorithm~\ref{alg:compile}) achieves this by keeping track of all states $W$ already added to the strategy.  For every new tuple $(w, a, k)$, it restricts the set $w$ to $\neg W$, which guarantees that no state action pair can be added to the strategy twice.  
+
+%%%Furthermore, by considering tuples with smaller values of $k$ first, we resolve the nondeterminism.
 
 \begin{algorithm}[t]
    \caption{Compiling the  winning strategy}\label{alg:compile}
    \begin{algorithmic}[1]
         \Function{CompileStrat}{$Strat$}
             \State $\pi \gets \bot,~~W \gets \bot$
-            \For{$(I, a, k) \in Strat$} \Comment{Sorted by ascending $k$}
-                \State $\pi \gets \pi \lor (I \land \neg W \land (c=a))$
-                \State $W \gets W \lor I$
+            \For{$(w, c, k) \in Strat$} %\Comment{Sorted by ascending $k$}
+            \State $\pi \gets \pi \lor (w \land \neg W \land (\mathcal{C}=c))$
+                \State $W \gets W \lor w$
             \EndFor
             \State \Return $\pi$
         \EndFunction
     \end{algorithmic}
 \end{algorithm}
 
-Let $rank(s), s\in S$, be the smallest $k$ such that there exists
-$(I,a,k) \in Strat$, $s \in I$, or $\infty$ if there is no such
-$k$.
+%%%Let $\textsc{rank}(s, u), s \in \mathcal{S}, u \in \mathcal{U}$, be the smallest $k$ such that there exists $(w,c,k) \in Strat$, $s \land u \in w$, or $\infty$ if there is no such $k$.
 
-\begin{proposition}\label{prop:rank}
-    Let $\pi=\textsc{compileStrat}(Strat)$. For any pair $(s,a)
-    \in \pi$, there exists $(I, a, k) \in Strat$ such that $s\in
-    I$ and $k=rank(s)$.
-\end{proposition}
+%%%\begin{proposition}\label{prop:rank}
+%%%    Let $\pi=\textsc{compileStrat}(Strat)$. For any triple $(s, u, c) \in \pi$, there exists $(w, c, k) \in Strat$ such that $s \land u \in w$ and $k=\textsc{rank}(s, u)$.
+%%%\end{proposition}
 
-%We state the main correctness theorem.  The theorem states that
-%the algorithm computes a correct winning strategy for the
-%controller.
+%%%\begin{theorem}[Correctness of the algorithm]
+%%%Let abstract game tree $T$ of height $\kappa$ be a certificate tree for the set $s$, let $\pi$ be a partial function returned by the strategy generation algorithm, $\pi=\textsc{genStrategy}(T,s)$, and let $\pi'$ be an arbitrary extension of $\pi$ to a complete function.  Then $\pi'$ is a winning controller strategy of length $\kappa$ from $s$.
+%%%\end{theorem}
+%%%\begin{proof}
+%%%    Every tuple $(s, u, c)$ in $\pi$ is generated by the \textsc{partition} function and, according to Proposition~\ref{prop:partition}, $c$ is a winning controller move in $s$ under environment action $u$. By Proposition~\ref{prop:next}, all possible $c$-successors of $(s, u)$ are covered by $\pi$.  Hence, by following the strategy $\pi$ from $I$, the controller is guaranteed to stay within the safe region of the game until reaching the bound.
 
-\begin{theorem}[Correctness of the algorithm]
-Let abstract game tree $T$ of height $n$ be a certificate tree for
-the set $I$, let $\pi$ be a partial function returned by the
-strategy generation algorithm, $\pi=\textsc{genStrategy}(T,I)$,
-and let $\pi'$ be an arbitrary extension of $\pi$ to a complete
-function.  Then $\pi'$ is a winning controller strategy of length
-$n$ from $I$.
-\end{theorem}
-\begin{proof}
-Every state-action pair $(s, a)$ in $\pi$ is generated by the
-\textsc{partition} function and, according to
-Proposition~\ref{prop:partition}, $a$ is a winning controller move
-in $s$. By Proposition~\ref{prop:next}, all possible
-$a$-successors of $s$ are either goal states or are covered by
-$\pi$.  Hence, by following the strategy $\pi$ from $I$, the
-controller is guaranteed to stay within the winning region of the
-game until reaching the goal.
-
-Next, we show that ranks of states visited by following the
-strategy $\pi$ decrease monotonically and hence the strategy
-reaches the goal in at most $n$ steps. According to
-Proposition~\ref{prop:rank}, for every pair $(s,a) \in \pi$, there
-exists $(I, a, k)\in Strat$, such that $k=rank(s)$.  Therefore,
-for any $s'\in succ(s,a)$, such that $s'\not\in O$, there exists
-$(I', a', k-1)\in Strat$, $s'\in I'$; hence $rank(s')\leq k-1 < k
-= rank(s)$.
-\qed
-\end{proof}
+%%%Next, we show that ranks of states visited by following the
+%%%strategy $\pi$ decrease monotonically and hence the strategy
+%%%reaches the goal in at most $n$ steps. According to
+%%%Proposition~\ref{prop:rank}, for every pair $(s,a) \in \pi$, there
+%%%exists $(I, a, k)\in Strat$, such that $k=rank(s)$.  Therefore,
+%%%for any $s'\in succ(s,a)$, such that $s'\not\in O$, there exists
+%%%$(I', a', k-1)\in Strat$, $s'\in I'$; hence $rank(s')\leq k-1 < k
+%%%= rank(s)$.
+%%%\qed
+%%%\end{proof}
 
 \section{Related work}
 
-\section{Conclusion}
+All existing strategy extraction algorithms for games were developed for use with game solvers based on winning set compilation~\cite{Bloem14}.  Such a solver generates a sequence of expanding state sets for which the game is safe for $1,2,\ldots$ steps.  The task of the strategy extraction algorithm is to compute a function that in every winning state chooses a single move that forces the game back into a safe state.  In contrast, our strategy generation algorithm does not require the game solver to compile winning regions, but instead uses abstract game trees.
+
+Another line of related work is strategy extraction algorithms for QBF used in QBF certification. QBF strategy extraction methods are specific to the underlying proof system used by the QBF search algorithm~\cite{Lonsing10,Egly13,Goultiaeva11}.  A strategy in a QBF is an oracle that, given the history of moves played in the game, outputs the next move for the winning player.  An additional procedure is required to convert this oracle into a memory-free strategy function that maps a state to a controller move.  Our work can been seen as such a procedure for $\forall Exp+Res$ proof system based solvers~\cite{Janota13}.
+
+\section{Summary}
+
+I have presented a strategy extraction algorithm to extended bounded realisability to bounded synthesis. The algorithm assigns controller actions to pairs of states and environment actions by a lightweight recursive application of interpolation to the certificate tree generated by the game solver. The performance overhead of this approach will be evaluated in Chapter~\ref{ch:evaluation}.
