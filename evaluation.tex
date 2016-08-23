@@ -1,2 +1,140 @@
 \chapter{Evaluation}
 \label{ch:evaluation}
+
+\section{Unbounded realisability}
+
+We evaluate our approach on the benchmarks of the 2015 synthesis competition
+(SYNTCOMP'15). Each benchmark comprises of controllable and uncontrollable
+inputs to a circuit that assigns values to latches. One latch is configured as
+the error bit that determines the winner of the safety game. The benchmark
+suite is a collection of both real-world and toy specifications including
+generalised buffers, AMBA bus controllers, device drivers, and converted LTL
+formulas.  Descriptions of many of the benchmark families used can be found in
+the 2014 competition report~\cite{jacobs2015}. 
+
+The implementation of our algorithm uses \textsc{Glucose}~\cite{audemard2014}
+for SAT solving and \textsc{Periplo}~\cite{rollini2013} for interpolant
+generation. We intend to open source the tool for SYNTCOMP'16. The benchmarks
+were run on a cluster of Intel Quad Core Xeon E5405 2GHz CPUs with 16GB of
+memory.  The solvers were allowed exclusive access to a node for one hour to
+solve an instance. 
+
+The results of our benchmarking are shown, along with the synthesis competition
+results~\cite{syntcompedacc}, in Table~\ref{tab:syntcomp}. The competition was
+run on Intel Quad Core 3.2Ghz CPUs with 32GB of memory, also on isolated nodes
+for one hour per instance. The competition results differ significantly from
+our own benchmarks due to this more powerful hardware.  For our benchmarks we
+report only the results for solvers we were able to run on our cluster. The
+unique column lists the number of instances that only that tool could solve in
+the competition (excluding our solver). In brackets is the number of instances
+that only that tool could solve, including our solver.
+
+\begin{table}
+    \centering
+    \setlength{\tabcolsep}{8pt}
+    \begin{tabular}{l | r | r | r }
+        \textbf{Solver} & \textbf{Solved} & \textbf{Solved} & \textbf{Unique} \\
+                        & \textbf{(Competition)} & \textbf{(Benchmarks)} & \\
+        \hline
+        Simple BDD Solver (2) & 195 & 189 & 10 \textit{(6)} \\
+        AbsSynthe (seq2) & 187 & 139 & 2 \\
+        Simple BDD Solver (1) & 185 & 175 & \\
+        AbsSynthe (seq3) & 179 & 134 & \\
+        Realizer (sequential) & 179 & & \\
+        AbsSynthe (seq1) & 173 & 139 & 1 \\
+        Demiurge (D1real) & 139 & 136 & 5 \textit{(2)} \\
+        Aisy & 98 & \\
+        \textit{Unbounded Synthesis} & & \textit{103} & \textit{12} \\
+    \end{tabular}
+    \caption{Synthesis Competition 2015 Results}
+    \label{tab:syntcomp}
+\end{table}
+
+Our implementation was able to solve 103 out of the 250 specification in the
+alloted time, including 12 instances that were not solved by any other solver
+in the sequential track of the competition. The unique instances we solved are
+listed in Table~\ref{tab:unique}.
+
+\begin{table}[h]
+    \centering
+    \setlength{\tabcolsep}{16pt}
+    \begin{tabular}{l l}
+        1. \texttt{6s216rb0\_c0to31} & 7. \texttt{driver\_c10n} \\
+        2. \texttt{cnt30y} &  8. \texttt{stay18y} \\
+        3. \texttt{driver\_a10n} & 9. \texttt{stay20n} \\
+        4. \texttt{driver\_a8n} & 10. \texttt{stay20y} \\
+        5. \texttt{driver\_b10y} & 11. \texttt{stay22n} \\
+        6. \texttt{driver\_b8y} & 12. \texttt{stay22y} \\
+    \end{tabular}
+    \caption{Instances uniquely solved by our approach}
+    \label{tab:unique}
+\end{table}
+
+Five of the instances unique to our solver are device driver instances and
+another five are from the \texttt{stay} family. This supports the hypothesis
+that different game solving methodologies perform better on certain classes of
+specifications.
+
+We also present a cactus plot of the number of instances solved over time
+(Figure~\ref{fig:cactus}). We have plotted the best configuration of each
+solver we benchmarked. The solvers shown are
+\textsc{Demiurge}~\cite{bloem2014}, the only SAT-based tool in the competition,
+the winner of the sequential realisability track \textsc{Simple BDD Solver
+2}~\cite{walker2014}, and AbsSynthe (seq3) \cite{brenguier2014}.
+
+\begin{figure}[h]
+    \centering
+    \begin{tikzpicture}[y=0.03cm, x=0.15cm]
+        %axis
+        \draw (0,0) -- coordinate (x axis mid) (60,0);
+            \draw (0,0) -- coordinate (y axis mid) (0,200);
+            %ticks
+            \foreach \x in {0,10,...,60}
+                \draw (\x,1pt) -- (\x,-3pt)
+                node[anchor=north] {\x};
+            \foreach \y in {0,25,...,200}
+                \draw (1pt,\y) -- (-3pt,\y) 
+                    node[anchor=east] {\y}; 
+        %labels      
+        \node[below=0.8cm] at (x axis mid) {Time (minutes)};
+        \node[rotate=90, above left=1cm and 0.7cm] at (y axis mid) {Instances solved};
+        
+        %Plots
+        \draw plot[mark=o, mark size=1pt, mark options={fill=white,color=red}] file {bench_termite.dat};
+        \draw plot[mark=+, mark options={fill=white,color=blue}] file {bench_demiurge.dat};
+        \draw plot[mark=triangle, mark options={fill=white}] file {bench_simple2.dat};
+        \draw plot[mark=x, mark options={fill=white,color=green}] file {bench_abs1.dat};
+%%%        \draw plot[mark=x, mark options={fill=white,color=green}] file {bench_abs2.dat};
+%%%        \draw plot[mark=x, mark options={fill=white,color=green}] file {bench_abs3.dat};
+
+        \begin{scope}[shift={(30,20)}] 
+            \draw (0,0) -- 
+                plot[mark=o, mark size=1pt, mark options={fill=white,color=red}] (0.25,0) -- (0.5,0) 
+                node[right]{Unbounded synthesis};
+            \draw[yshift=\baselineskip] (0,0) -- 
+                plot[mark=x, mark options={fill=white,color=green}] (0.25,0) -- (0.5,0)
+                node[right]{AbsSynthe (seq2)};
+            \draw[yshift=2\baselineskip] (0,0) -- 
+                plot[mark=+, mark options={fill=white,color=blue}] (0.25,0) -- (0.5,0)
+                node[right]{Demiurge};
+            \draw[yshift=3\baselineskip] (0,0) -- 
+                plot[mark=triangle, mark options={fill=white}] (0.25,0) -- (0.5,0)
+                node[right]{Simple BDD Solver 2};
+        \end{scope}
+
+    \end{tikzpicture}
+    \caption{Number of instances solved over time.}
+    \label{fig:cactus}
+\end{figure}
+
+Whilst our solver is unable to solve as many instances as other tools, it was
+able to solve more unique instances than any solver in the competition. This
+confirms that our methodology is able to fill gaps in a state of the art
+synthesis toolbox by more efficiently solving instances that are hard for other
+techniques. For this reason our solver would be a worthwhile addition to a
+portfolio solver. In the parallel track of the competition, \textsc{Demiurge}
+uses a suite of 3 separate but communicating solvers. The solvers
+relay unsafe states to one another, which is compatible with the set $B^M$ in
+our solver. This technique can already solve each of the unique instances
+solved by our solver but there may still be value in the addition of this work
+to the portfolio.  It remains future work to explore this possibility.
