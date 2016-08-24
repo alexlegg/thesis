@@ -10,24 +10,24 @@ The baseline solution to this problem is to set a maximum bound such that all ru
 Instead I present an approach that iteratively solves games of increasing
 bound while learning bad states from abstract games using Craig interpolation. We utilise the approximation properties of the interpolant to construct sets of states that underapproximate the total losing set for the controller. By underapproximating we avoid constructing a potentially large representation of this set that could be the cause of infeasibility in a BDD solver. Later in this chapter we will see that a careful construction of approximate sets enables a fixed point that is sufficient to prove the nonexistence of an environment-winning strategy.
 
-\section{Extending bounded realisability}
+\section{Algorithm}
 
 Recall the bounded realisability algorithm from Chapter~\ref{ch:bounded}. A safety game is solved with respect to a bound on the number of game rounds. The algorithm is a counterexample guided approach that constructs abstractions of the game in the form of game trees. An abstract game tree restricts one player to the actions that label edges in the tree. In Chapter~\ref{ch:strategy} I presented a strategy extraction procedure that utilises the abstract game tree as a certificate for the game. In this chapter I introduce a similar approach that extracts an approximation of winning states from the certificate tree.
 
-The bounded algorithm is reproduced in Algorithm~\ref{alg:unbounded} with some modifications. 
+The bounded algorithm is reproduced in Algorithm~\ref{alg:unboundedBounded} with some modifications. The algorithm solves a game $(\mathcal{S}, \mathcal{U}, \mathcal{C}, \delta, s_0)$ with state variables $\mathcal{S}$, environment variables $\mathcal{U}$, controller variables $\mathcal{C}$, transition relation $\delta$, and initial states $s_0$. The safety condition of the game is defined by a set of error states $E$ that the controller must avoid and the environment must reach. The unbounded algorithm is modified to learn states when a candidate cannot be found for an abstract game (line~\ref{alg:unboundedBounded:learn}).
 
 \begin{algorithm}
     \begin{algorithmic}[1]
         \Function{solveAbstract}{$p, s, k, T$}
-        \State $cand \gets $ \Call{findCandidate}{$p, s, k, T$} \Comment{Look for a candidate}
-        \IIf{$k = 1$} \Return $cand$ \EndIIf \Comment{Reached the bound}
+        \State $cand \gets $ \Call{findCandidate}{$p, s, k, T$} 
+        \IIf{$k = 1$} \Return $cand$ \EndIIf 
         \State $T' \gets T$
         \Loop
-            \IIf{$cand = \texttt{NULL}$} \Return $\texttt{NULL}$ \EndIIf \Comment{No candidate: return with no solution}
-            \State $\langle cex, l, u \rangle \gets $ \Call{verify}{$p, s, k, T, cand$} \Comment{Verify candidate}
-            \IIf{$cex = \False$} \Return $cand$ \EndIIf \Comment{No counterexample: return candidate}
-            \State $T' \gets $ \Call{append}{$T', l, u$} \Comment{Refine $T'$ with counterexample}
-            \State $cand \gets $ \Call{solveAbstract}{$p, s, k, T'$} \Comment{Solve refined game tree}
+            \IIf{$cand = \texttt{NULL}$} \Return $\texttt{NULL}$ \EndIIf 
+            \State $\langle cex, l, u \rangle \gets $ \Call{verify}{$p, s, k, T, cand$} 
+            \IIf{$cex = \False$} \Return $cand$ \EndIIf 
+            \State $T' \gets $ \Call{append}{$T', l, u$} 
+            \State $cand \gets $ \Call{solveAbstract}{$p, s, k, T'$} 
         \EndLoop
         \EndFunction
         \algstore{b1}
@@ -36,17 +36,15 @@ The bounded algorithm is reproduced in Algorithm~\ref{alg:unbounded} with some m
     \begin{algorithmic}
         \algrestore{b1}
         \Function{findCandidate}{$p, s, k, T$}
-        \State $\hat{T} \gets $ \Call{extend}{$T$} \Comment{Extend the tree with unfixed actions}
+        \State $\hat{T} \gets $ \Call{extend}{$T$}
             \State $f \gets $ \IfElse{$p = \texttt{cont}$}{\Call{treeFormula}{$k, \hat{T}$}}{\Call{\textoverline{treeFormula}}{$k, \hat{T}$}} \EndIfElse
             \State $sol \gets $ \Call{SAT}{$s(X_{\hat{T}}) \land f$}
             \If{$sol = \texttt{unsat}$} 
-                \If{\texttt{unbounded}} \Comment{Active only in the unbounded solver}
-                    %\State $\sigma \gets $ \Call{generalise}{$s$} \Comment{Expand $s$ to a set of states}
-                    \State \IfElse{$p = \texttt{cont}$}{\Call{learn}{$s, \hat{T}$}}{\Call{\textoverline{learn}}{$s, \hat{T}$}} \EndIfElse
-                \EndIf
-                \State \Return $\texttt{NULL}$ \Comment{No candidate exists}
+                \LineComment{Unbounded solver learns states here}
+                \State \IfElse{$p = \texttt{cont}$}{\Call{learn}{$s, \hat{T}$}}{\Call{\textoverline{learn}}{$s, \hat{T}$}}\label{alg:unboundedBounded:learn} \EndIfElse
+                \State \Return $\texttt{NULL}$
             \Else
-                \State \Return $\{ \langle n, c \rangle | n \in $ \Call{nodes}{$T$} $, c = \Call{sol}{n} \}$ \Comment{Fix candidate moves in $T$}
+                \State \Return $\{ \langle n, c \rangle | n \in $ \Call{nodes}{$T$} $, c = \Call{sol}{n} \}$
             \EndIf
         \EndFunction
         \algstore{b2}
@@ -56,17 +54,17 @@ The bounded algorithm is reproduced in Algorithm~\ref{alg:unbounded} with some m
         \algrestore{b2}
         \Function{verify}{$p, s, k, T, cand$}
             \For{$l \in leaves(gt)$}
-            \State $\langle k', s'\rangle \gets $ \Call{outcome}{$s, k, cand, l$} \Comment{Get bound and state at leaf}
+            \State $\langle k', s'\rangle \gets $ \Call{outcome}{$s, k, cand, l$}
             \State $T' \gets$ \IfElse{$p = \textsc{cont}$}{$\emptyset$}{$\{ cand(l) \}$ } \EndIfElse
-                \State $a \gets $ \Call{solveAbstract}{\Call{opponent}{$p$}, $s'$, $k'$, $T'$} \Comment{Solve for the opponent}
-                \IIf{$a \neq \texttt{NULL}$} \Return $\langle \True, l, a \rangle$ \EndIIf \Comment{Return counterexample}
+                \State $a \gets $ \Call{solveAbstract}{\Call{opponent}{$p$}, $s'$, $k'$, $T'$}
+                \IIf{$a \neq \texttt{NULL}$} \Return $\langle \True, l, a \rangle$ \EndIIf
             \EndFor
             \State \Return $\langle \False, \emptyset, \emptyset \rangle$
         \EndFunction
     \end{algorithmic}
 
     \caption{Unbounded realisability}
-    \label{alg:unbounded}
+    \label{alg:unboundedBounded}
 \end{algorithm}
 
 %%%The states in an abstract game with no controller candidate are
@@ -84,17 +82,7 @@ The bounded algorithm is reproduced in Algorithm~\ref{alg:unbounded} with some m
 %%%adjacent sets become equivalent we know that the algorithm has reached a fixed
 %%%point and the controller is winning in the unbounded game (line 6).
 
-\section{Learning States with Interpolants}
-
-We extend the bounded synthesis algorithm to learn states losing for one of the
-players from failed attempts to find candidate strategies.  The learning
-procedure kicks in whenever \textsc{findCandidate} cannot find a candidate
-strategy for an abstract game tree. We can learn additional losing states from
-the tree via interpolation.  This is achieved in lines~18--20 in
-Algorithm~\ref{alg:bounded}, enabled in the unbounded version of the algorithm,
-which invoke \textsc{learn} or \textsc{\textoverline{learn}} to learn
-controller or environment losing states respectively
-(Algorithm~\ref{alg:learn}).
+We extend the bounded synthesis algorithm to learn states losing for one of the players from failed attempts to find candidate strategies.  The learning procedure kicks in whenever \textsc{findCandidate} cannot find a candidate strategy for an abstract game tree. We can learn additional losing states from the tree via interpolation.  This is achieved in line~\ref{alg:unboundedBounded:learn} in Algorithm~\ref{alg:unboundedBounded}, enabled in the unbounded version of the algorithm, which invokes \textsc{learn} or \textsc{\textoverline{learn}} to learn controller or environment losing states respectively (Algorithm~\ref{alg:learn}).  
 
 %%%For the controller, this means the environment partial strategy represented by $T$
 %%%will always reach $E$ from $s$ no matter the assignments to $C$ variables (the
@@ -102,6 +90,51 @@ controller or environment losing states respectively
 %%%rounds no matter the assignments to $U$ variables. Hence, we have established
 %%%that $s$ is a losing state either always (for the controller) or for bound $k$
 %%%(for the environment). 
+
+
+
+\subsection{Example}
+
+Consider a simple arbiter system in which the environment makes a request for a number of resources (1 or 2), and the controller may grant access to up to two resources.  The total number of requests grows each round by the number of environment requests and shrinks by the number of resources granted by the controller in the previous round.  The controller must ensure that the number of unhandled requests does not accumulate to more than 2.  Figure~\ref{fig:example} shows the variables (\ref{fig:examplevars}), the initial state of the system (\ref{fig:exampleinit}), and the formulas for computing next-state variable assignments (\ref{fig:exampletrans}) for this example. We use primed identifiers to denote next-state variables and curly braces to define the domain of a variable.
+
+
+\begin{figure}
+    \begin{subfigure}[t]{\textwidth}
+        \centering
+        \begin{tabular}{l | l | l}
+            \textbf{Uncontrollable} & \textbf{Controllable} & \textbf{State} \\
+            \hline
+            \texttt{request = \{1,2\}} & \texttt{grant0 = \{0,1\}} & \texttt{resource0 = \{0,1\}} \\
+            & \texttt{grant1 = \{0,1\}} & \texttt{resource1 = \{0,1\}} \\
+            & & \texttt{nrequests = \{0,1,2,3\}} \\
+        \end{tabular}
+        \caption{Variables}
+        \label{fig:examplevars}
+    \end{subfigure}
+
+    \vspace{5mm}
+    \begin{subfigure}[t]{\textwidth}
+        \centering
+        \texttt{resource0 = 0; resource1 = 0; nrequests = 0;}
+        \caption{Initial State}
+        \label{fig:exampleinit}
+    \end{subfigure}
+
+    \begin{subfigure}[t]{\textwidth}
+        \begin {align*}
+            \texttt{resource0'} & \texttt{ = grant0;} \\
+            \texttt{resource1'} & \texttt{ = grant1;} \\
+            \texttt{nrequests'} & \texttt{ = (nrequests + request >= resource0 + resource1)} \\ 
+                                & \texttt{ ? (nrequests + request - resource0 - resource1)}\\
+                                & \texttt{ : 0;}
+        \end{align*}
+        \caption{Transition Relation}
+        \label{fig:exampletrans}
+    \end{subfigure}
+    \caption{Example}
+    \label{fig:example}
+\end{figure}
+
 
 \begin{figure}[t]
     \centering
@@ -214,67 +247,25 @@ controller or environment losing states respectively
     \label{alg:learn}
 \end{algorithm}
 
-\begin{exmpInt}
 
-    Consider node $n$ in Figure~\ref{fig:interpolatetree}. At this node there
-    are two controller actions that prevent the environment from forcing the
-    game into an error state in one game round. We want to use this tree to
-    learn the states from which the controller can win playing one of these
-    actions.
+This example is the $n=2$ instance of the more general problem of an arbiter of $n$ resources. For large values of $n$, the set of winning states has no compact representation, which makes the problem hard for BDD solvers. One approach is to compute the uncontrollable predecessor of the set of error states, i.e. the states from which the environment can force the game into an error state. In the example, one iteration of this operation would give the set: $\texttt{nrequests} = 3 \lor (\texttt{nrequests} = 2 \land ( \texttt{resource0} = 0 \lor \texttt{resource1} = 0)) \lor (\texttt{nrequests} = 1 \land (\texttt{resource0} = 0 \land \texttt{resource1} = 0))$. We try to avoid computing the entire winning set by employing interpolation to approximate it instead. The benefit of interpolation is that an approximation can be obtained efficiently from the resolution proof of two mutually unsatisfiability formulas.
 
-    One option is using a BDD solver, working backwards from the error set, to
-    find all losing states. One iteration of this operation on our example
-    would give the set: $\texttt{nrequests} = 3 \lor (\texttt{nrequests} = 2
-    \land ( \texttt{resource0} = 0 \lor \texttt{resource1} = 0)) \lor
-    (\texttt{nrequests} = 1 \land (\texttt{resource0} = 0 \land
-    \texttt{resource1} = 0))$.  In the general case there is no compact
-    representation of the losing set, so we try to avoid computing it by
-    employing interpolation instead. The benefit of interpolation is
-    that it allows approximating the losing states efficiently by obtaining 
-    an interpolant from a SAT solver.
-\end{exmpInt}
+Consider node $n$ in Figure~\ref{fig:interpolatetree}, which shows an abstract game tree for which the environment has no winning action. At this node there are two controller actions that prevent the environment from forcing the game into an error state in one game round. We want to use this tree to learn the states from which the controller can win playing one of these actions.
 
+Given two formulas $F_1$ and $F_2$ such that $F_1 \land F_2$ is unsatisfiable, it is possible to construct a Craig interpolant $\mathcal{I}$ such that $F_1 \to \mathcal{I}$, $F_2 \land \mathcal{I}$ is unsatisfiable, and $\mathcal{I}$ refers only to the intersection of variables in $F_1$ and $F_2$. 
 
-Given two formulas $F_1$ and $F_2$ such that $F_1 \land F_2$ is unsatisfiable,
-it is possible to construct a Craig interpolant~\cite{craig1957} $\mathcal{I}$
-such that $F_1 \to \mathcal{I}$, $F_2 \land \mathcal{I}$ is unsatisfiable, and
-$\mathcal{I}$ refers only to the intersection of variables in $F_1$ and $F_2$.
-An interpolant can be constructed efficiently from a resolution proof of the
-unsatisfiability of $F_1 \land F_2$~\cite{pudlak1997}.
-
-We choose a non-leaf node $n$ of $T$ with maximal depth, i.e., a node whose
-children are leafs (Algorithm~\ref{alg:learn}, line~3). We then split the tree
-at $n$ such that both slices $T_1$ and $T_2$ contain a copy of $n$ (line~4).
-Figure~\ref{fig:treef1} shows $T_1$, which contains all of $T$ except $n$'s
-children, and $T_2$ (Figure~\ref{fig:treef2}), which contains only $n$ and its
-children.  There is no candidate strategy for $T$ so $s \land
-\textsc{\textoverline{treeFormula}}(k, T)$ is unsatisfiable.  By construction,
-$\textsc{\textoverline{treeFormula}}(k, T) \equiv
-\textsc{\textoverline{treeFormula}}(k, T_1) \land
-\textsc{\textoverline{treeFormula}}(k, T_2)$ and hence $s \land
-\textsc{\textoverline{treeFormula}}(k, T_1) \land
-\textsc{\textoverline{treeFormula}}(k, T_2)$ is also unsatisfiable.
+We choose a non-leaf node $n$ of $T$ with maximal depth, i.e., a node whose children are leafs (Algorithm~\ref{alg:learn}, line~3). We then split the tree at $n$ such that both slices $T_1$ and $T_2$ contain a copy of $n$ (line~4).  Figure~\ref{fig:treef1} shows $T_1$, which contains all of $T$ except $n$'s children, and $T_2$ (Figure~\ref{fig:treef2}), which contains only $n$ and its children.  There is no candidate strategy for $T$ so $s \land \textsc{\textoverline{treeFormula}}(k, T)$ is unsatisfiable.  By construction, $ (\textsc{\textoverline{treeFormula}}(k, T_1) \land \textsc{\textoverline{treeFormula}}(k, T_2)) \implies \textsc{\textoverline{treeFormula}}(k, T)$ and so we know that $(s \land$ $\textsc{\textoverline{treeFormula}}(k, T_1) \land \textsc{\textoverline{treeFormula}}(k, T_2))$ is also unsatisfiable.  
 
 %%%This enables the construction of an interpolant that captures losing states at
 %%%node $n$.
 
-We construct an interpolant with $F_1 = s(X_T) \land \textsc{treeFormula}(k,
-T_1)$ and $F_2 = \textsc{treeFormula}(k, T_2)$ (line~5). The only variables
-shared between $F_1$ and $F_2$ are the state variable copies belonging to node
-$n$. By the properties of the interpolant, $F_2 \land \mathcal{I}$ is
-unsatisfiable, therefore all states in $\mathcal{I}$ are losing against
-abstract game tree $T_2$ in Figure~\ref{fig:treef2}.  We also know that $F_1
-\to \mathcal{I}$, thus $\mathcal{I}$ contains all states reachable at $n$ by
-following $T_1$ and avoiding error states. 
+We construct an interpolant with $F_1 = s(X_T) \land \textsc{treeFormula}(k, T_1)$ and $F_2 = \textsc{treeFormula}(k, T_2)$ (line~5). The only variables shared between $F_1$ and $F_2$ are the state variable copies belonging to node $n$. By the properties of the interpolant, $F_2 \land \mathcal{I}$ is unsatisfiable, therefore all states in $\mathcal{I}$ are losing against abstract game tree $T_2$ in Figure~\ref{fig:treef2}.  We also know that $F_1 \to \mathcal{I}$, thus $\mathcal{I}$ contains all states reachable at $n$ by following $T_1$ and avoiding error states.  
 
-\begin {exmp}
 
-    At node $n$, the interpolant $\texttt{nrequests} = 1 \land
-    \texttt{resource1} = 1$ captures the information we need. Any action by the
-    environment followed by one of the controller actions at $n$ will be
-    winning for the controller.
-
-\end{exmp}
+At node $n$, the interpolant $(\texttt{nrequests} = 1 \land
+\texttt{resource1} = 1)$ captures the information we need. Any action by the
+environment followed by one of the controller actions at $n$ will be
+winning for the controller.
 
 We have discovered a set $\mathcal{I}$ of states losing for the environment.
 Environment-losing states are only losing for a particular bound: given that
@@ -317,14 +308,7 @@ are no longer contained in $B^m$.
     \end{algorithmic}
 \end{algorithm}
 
-Learning of states losing from the controller is similar (\textsc{learn} in
-Algorithm~\ref{alg:learn}). The main difference is that environment-losing
-states are losing for all bounds. Therefore we record these states in a single
-set $B^M$ of must-losing states (Algorithm~\ref{alg:learn}, line~6).  This set
-is initialised to the error set $E$ and grows as new losing states are
-discovered.  The modified \textsc{\textoverline{treeFormula}} function
-(Algorithm~\ref{alg:unboundedTreeFormula}) blocks must-losing states, which
-also allows for recursive learning over the entire tree.
+Learning of states losing for the controller is similar (\textsc{learn} in Algorithm~\ref{alg:learn}). The main difference is that environment-losing states are losing for all bounds. Therefore we record these states in a single set $B^M$ of must-losing states (Algorithm~\ref{alg:learn}, line~6).  This set is initialised to the error set $E$ and grows as new losing states are discovered.  The modified \textsc{\textoverline{treeFormula}} function (Algorithm~\ref{alg:unboundedTreeFormula}) blocks must-losing states, which also allows for recursive learning over the entire tree.
 
 \subsection{Main synthesis loop}
 
@@ -339,9 +323,10 @@ until the initial state is in $B^M$ (environment wins) or $B^m$ reaches a fixed 
             \State $B^M \gets E$
             \State $B^m[0] \gets E$
             \For{$k = 1 \dots$}
-                \IIf{\Call{SAT}{$I \land B^M$}}
-                    \Return \texttt{unrealisable} \Comment{Losing in the initial state}
-                \EndIIf
+                \If{\Call{SAT}{$I \land B^M$}}
+                    \LineComment{Losing in the initial state}
+                    \Return \texttt{unrealisable} 
+                \EndIf
                 \IIf{$\exists i < k . \  B^m[i] \equiv B^m[i+1]$} \Comment{Reached fixed point}
                     \State \hspace{\algorithmicindent} \Return \texttt{realisable} 
                 \EndIIf
@@ -501,7 +486,10 @@ this optimisation is beneficial on the first few iterations of
             \State $s' \gets I$
             \For{$x \in X$}
             \State $r \gets$ \Call{solveAbstract}{$\texttt{env}, s' \setminus \{x\}, k, \emptyset$} 
-                \IIf{$r = \texttt{NULL}$} $s' \gets s' \setminus \{x\}$ \EndIIf \Comment{Removes the assignment to $x$ from $s'$}
+                \If{$r = \texttt{NULL}$}
+                    \LineComment{Remove the assignment to $x$ from $s'$}
+                    \State $s' \gets s' \setminus \{x\}$ 
+                \EndIf 
             \EndFor
             \State \Return $\texttt{NULL}$
         \EndFunction
@@ -518,51 +506,47 @@ Unbounded realisability is designed to take advantage of the strengths of bounde
 \subsection{Related work}
 
 Synthesis of safety games is a thoroughly explored area of research with most
-efforts directed toward solving games with BDDs \cite{burch1990} and abstract
-interpretation \cite{walker2014,brenguier2014}. Satisfiability solving has been used
+efforts directed toward solving games with BDDs \cite{Burch90} and abstract
+interpretation \cite{Walker14,Brenguier14}. Satisfiability solving has been used
 previously for synthesis in a suite of methods proposed by Bloem et al.
-\cite{bloem2014}. The authors propose employing competing SAT solvers to learn
+\cite{Bloem14}. The authors propose employing competing SAT solvers to learn
 clauses representing bad states, which is similar to our approach but does not
 unroll the game.  They also suggest QBF solver, template-based, and Effectively
 Propositional Logic (EPR) approaches.
 
 SAT-based bounded model checking approaches that unroll the transition relation
 have been extended to unbounded by using conflicts in the solver
-\cite{mcmillan2002}, or by interpolation \cite{mcmillan2003}. However, there
+\cite{McMillan02}, or by interpolation \cite{McMillan03}. However, there
 are no corresponding adaptations to synthesis.
 
-Incremental induction \cite{bradley2011} is another technique for unbounded
+Incremental induction \cite{Bradley11} is another technique for unbounded
 model checking that inspired several approaches to synthesis including the work
-presented here.  Morgenstern et al.~\cite{morgenstern2013} proposed an
+presented here.  Morgenstern et al.~\cite{Morgenstern13} proposed an
 technique that computes sets of states that overapproximate the losing states
 (similar to our $B^m$) and another set of winning states (similar to the
 negation of $B^M$).  Their algorithm maintains a similar invariant over the
 sets of losing states as our approach and has the same termination condition.
 It differs in how the sets are computed, which it does by inductively proving
 the number of game rounds required by the environment to win from a state.
-Chiang and Jiang~\cite{Chiang2015} recently proposed a similar approach that
+Chiang and Jiang~\cite{Chiang15} recently proposed a similar approach that
 focusses on computing the winning region for the controller forwards from the
 initial state in order to take advantage of reachability information and bad
 transition learning without needing to discard learnt clauses.
 
-There are different approaches to bounded synthesis than the one described
-here. The authors of \cite{finkbeiner2013} suggest a methodology directly
-inspired by bounded model checking and it has been adapted to symbolic
-synthesis \cite{ehlers2010}. Lazy synthesis \cite{finkbeiner2012} is a
-counterexample guided approach to bounded synthesis that refines an
-implementation for the game instead of an abstraction of it.
+There are approaches to synthesis of LTL specifications that use bounds to simplify the problem.  The authors of \cite{Finkbeiner13} suggest a methodology directly inspired by bounded model checking and it has been adapted to symbolic synthesis \cite{Ehlers12}. In contrast to the approach here the bound is placed on the implementation instead of the number of game rounds.  Lazy synthesis \cite{Finkbeiner12} similarly constructs implementations of a bounded size but does so in a counterexample guided approach. Their approach is to use an SMT solver to produce a candidate implementation and then check the implementation with a BDD based model checker. These bounded synthesis techniques are similar in idealogy to the approach described here but are used to solve a different problem.
 
-The original bounded synthesis algorithm of Narodytska et
-al.~\cite{narodytska2014} solves realisability without constructing a strategy.
-In \cite{een2015} the realisability algorithm is extended with strategy
-extraction. The technique relies on interpolation over abstract game trees to
-compute the winning strategy.  In the present work we use interpolation in a
-different way in order to learn losing states of the game. In addition, this
-method could be easily adapted to the unbounded realisability algorithm
-presented here to generate unbounded strategies.
-
+%%%The original bounded synthesis algorithm of Narodytska et
+%%%al.~\cite{narodytska14} solves realisability without constructing a strategy.
+%%%In \cite{een2015} the realisability algorithm is extended with strategy
+%%%extraction. The technique relies on interpolation over abstract game trees to
+%%%compute the winning strategy.  In the present work we use interpolation in a
+%%%different way in order to learn losing states of the game. In addition, this
+%%%method could be easily adapted to the unbounded realisability algorithm
+%%%presented here to generate unbounded strategies.
 
 \subsection{Limitations}
+
+Bounded synthesis is generally efficient for games without a high branching factor, as discussed in Chapter~\ref{ch:bounded}. Learning states from the game tree in order to extend to unbounded synthesis does not introduce significant complexity to the problem. However, since the learned states are approximations it may take many iterations of increasing the bound to converge on a fixed point.
 
 \subsection{Strengths}
 
