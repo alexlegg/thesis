@@ -546,7 +546,90 @@ There are approaches to synthesis of LTL specifications that use bounds to simpl
 
 \subsection{Limitations}
 
-Bounded synthesis is generally efficient for games without a high branching factor, as discussed in Chapter~\ref{ch:bounded}. Learning states from the game tree in order to extend to unbounded synthesis does not introduce significant complexity to the problem. However, since the learned states are approximations it may take many iterations of increasing the bound to converge on a fixed point.
+Bounded synthesis is generally efficient for games without a high branching factor, as discussed in Chapter~\ref{ch:bounded}. This limitation affects the unbounded solver as can be seen in the synthesis competition results on specifications such as the adder. In a correct adder the controller must set a variable $c$ to be equal to $a + b$ where $a$ and $b$ are environment variables. The unbounded synthesis algorithm must construct a game tree consisting of all possible values to $c$ in order to prove realisability.
+
+The unbounded solver extends the bounded solver with learning. Learning states from the game tree does not introduce significant complexity to the problem. However, there are cases in which learning can be slow to converge on a fixed point. As a result the bounded algorithm must be iterated many times with increasing bounds.
+
+\begin{figure}
+    \begin{subfigure}[t]{\textwidth}
+        \centering
+        \begin{tabular}{l | l | l}
+            \textbf{Uncontrollable} & \textbf{Controllable} & \textbf{State} \\
+            \hline
+            \texttt{stay = \{0,1\}} & \texttt{reset = \{0,1\}} & \texttt{counter = \{0,..,2\textsuperscript{n}-1\}} \\
+                                    & & \texttt{err = \{0,1\}}
+        \end{tabular}
+        \caption{Variables}
+        \label{fig:examplevars}
+    \end{subfigure}
+
+    \vspace{5mm}
+    \begin{subfigure}[t]{\textwidth}
+        \centering
+        \texttt{counter = 0; err = 0;}
+        \caption{Initial State}
+        \label{fig:exampleinit}
+    \end{subfigure}
+
+    \begin{subfigure}[t]{\textwidth}
+        \begin {align*}
+        \texttt{counter' = }{}& \texttt{if (stay)} \\
+        {}& \texttt{\ \ counter} \\
+        {}& \texttt{else if (counter == (2\textsuperscript{n-1})-1 } \land \texttt{ reset)} \\
+        {}& \texttt{\ \ 0} \\
+        {}& \texttt{else} \\
+        {}& \texttt{\ \ counter + 1} \\
+        \texttt{err' = }{}& \texttt{(counter == 2\textsuperscript{n}-1)}
+        \end{align*}
+        \caption{Transition Relation}
+        \label{fig:exampletrans}
+    \end{subfigure}
+    \caption{Parameterised counter example}
+    \label{fig:counter}
+\end{figure}
+
+In the synthesis competition benchmarks there is a simple counter specification that helps illustrate the limitations of unbounded synthesis. The specification is given a parameter $n$ that determines the number of bits in the counter. Figure~\ref{fig:counter} shows the specification. The environment has the choice to increment the counter, or not. The controller can reset the counter when it is half way to the maximum value. The controller is safe if the counter never reaches its maximum value. Clearly a safe controller resets whenever it is able to.
+
+This example can produce several different interesting behaviours in the unbounded synthesis algorithm. Let us first consider the game tree in Figure~\ref{fig:limitationAGTa}. The controller strategy shown in this tree is to not reset the counter. This strategy wins the bounded game for any counter with $n \geq 2$ because there are not enough game rounds for the counter to reach the error state. Let's now consider how the unbounded algorithm would learn from this tree when $n = 3$. At the node of height 1, the largest interpolant that could be learned is $((\texttt{err == 0}) \land (\texttt{counter < 6}))$. At the next node up the tree we might learn $((\texttt{err == 0}) \land (\texttt{counter < 5}))$. With a tree of length $k = 2^n - 2 = 6$ we could have $B^m$ with a difference of exactly one state in each successive index. For high values of $n$ it is infeasible to construct a formula in CNF for this many unrollings of the transition relation, even though there is no branching.
+
+The learned interpolants are approximations of the set of reachable states that are losing for the environment. Thus the exact interpolant constructed by the SAT solver is free to be as large as $((\texttt{err == 0}) \land (\texttt{counter < 6}))$ but it may also be as small as $((\texttt{err == 0} \land \texttt{counter < 2}))$. The latter is exactly the set of states reachable from the initial state for both possible environment actions. What is my point here?
+
+Alternatively, the SAT solver might decide to choose the candidate strategy in Figure~\ref{fig:limitationAGTb}. 
+
+\begin{figure}
+    \begin{subfigure}[t]{0.5\textwidth}
+        \centering
+        \begin{tikzpicture}[sibling distance = 18mm, level distance = 14mm]
+            \node [circle,draw] (root){}
+                child {node [circle,draw] {}
+                    child {node [circle,draw] {}
+                        edge from parent node [right] {\texttt{reset=0}}
+                    }
+                    edge from parent node [right] {\texttt{reset=0}}
+                }
+                node [above=4pt] {$\langle s_0, 2 \rangle$};
+        \end{tikzpicture}
+        \caption{No reset candidate}
+        \label{fig:limitationAGTa}
+    \end{subfigure}
+    \begin{subfigure}[t]{0.5\textwidth}
+        \centering
+        \begin{tikzpicture}[sibling distance = 18mm, level distance = 14mm]
+            \node [circle,draw] (root){}
+                child {node [circle,draw] {}
+                    child {node [circle,draw] {}
+                        edge from parent node [right] {\texttt{reset=1}}
+                    }
+                    edge from parent node [right] {\texttt{reset=1}}
+                }
+                node [above=4pt] {$\langle s_0, 2 \rangle$};
+        \end{tikzpicture}
+        \caption{Reset candidate}
+        \label{fig:limitationAGTb}
+    \end{subfigure}
+    \caption{Game trees for the counter specification}
+    \label{fig:limitationAGT}
+\end{figure}
 
 \subsection{Strengths}
 
