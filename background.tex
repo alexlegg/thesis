@@ -246,7 +246,80 @@ Model checking suffers from a similar state explosion issue and new approaches w
 
 Consider the game structure in the previous sections. Without loss of generality, we may replace the set of states $S$ with a set of boolean variables. A single state is now a valuation to those variables and a set of states may be symbolically represented by a boolean function. In order to combat state explosion a compact representation of boolean functions is required. The standard choice is an ordered binary decision diagram (BDD)~\cite{Bryant86}.
 
-BDDs represent boolean functions as directed acyclic graphs. Each node is contains a variable, each edge represents a decision (true or false) on its parent's variable. One node is designated root and each path through the graph will terminate in one of two sink nodes that represent whether the decisions on that path satisfy the boolean function or not. Isomorphic nodes (where both decisions lead to the same result) may be removed and isomorphic subgraphs may be merged in order to compress the function representation. The ordering of variables in the graph is important to this compressibility. In the worst case the representation is a tree with no removed or merged nodes, which is exponential in the number of variables. Given a boolean function and a variable ordering the corresponding BDD is canonical.
+BDDs represent boolean functions as directed acyclic graphs. Each node is contains a variable, each edge represents a decision (true or false) on its parent's variable. One node is designated root and each path through the graph will terminate in one of two sink nodes that represent whether the decisions on that path satisfy the boolean function or not. Isomorphic nodes (where both decisions lead to the same result) may be removed and isomorphic subgraphs may be merged in order to compress the function representation. The ordering of variables in the graph is important to this compressibility. In the worst case the representation is a tree with no removed or merged nodes, which is exponential in the number of variables. Given a boolean function and a variable ordering the corresponding BDD is canonical. Figure~\ref{fig:backgroundBDD} shows two example BDDs that represent the same boolean function with different variable orderings.
+
+\tikzset{>={Latex[width=2.2mm,length=2.5mm]}}
+\tikzstyle{one}=[->,blue,solid]
+\tikzstyle{zero}=[->,red,dash pattern = on 2pt off 2pt]
+\tikzstyle{every node/.style}=[solid,black]
+\begin{figure}
+    \centering
+    \captionsetup{justification=centering}
+    \begin{subfigure}[t]{0.5\textwidth}
+        \centering
+        \begin{tikzpicture}[level distance = 18mm,baseline]
+            \node [circle,draw] (a){$a$}
+                child {node [circle,draw,left] (b1) {$b$}
+                    edge from parent [one]
+                }
+                child {node [circle,draw,solid,black] (b2) {$b$}
+                    child {node [circle,draw,right,solid,black] (c1) {$c$}
+                        child {node [circle,draw,solid,black] (d1) {$d$}
+                            child {node [draw,left,black] (F) {$\bot$}
+                                edge from parent [one]
+                            }
+                            edge from parent [one]
+                        }
+                        edge from parent [one]
+                    }
+                    child {node [circle,draw,right,solid,black] (c2) {$c$}
+                        child {node [circle,draw,solid,black] (d2) {$d$}
+                            child {node [draw,left,black] (T) {$\top$}
+                                edge from parent [one]
+                            }
+                            edge from parent [one]
+                        }
+                        edge from parent [zero]
+                    }
+                    edge from parent [zero]
+                }
+            ;
+            \draw [one,->,bend right] (b1) to (F);
+            \draw [zero,->,bend right] (b1) to (T);
+            \draw [one,->] (c1) to (T);
+            \draw [zero,->] (c2) to (F);
+            \draw [zero,->] (d1) to (T);
+            \draw [zero,->] (d2) to (F);
+        \end{tikzpicture}
+    \end{subfigure}%
+    \begin{subfigure}[t]{0.5\textwidth}
+        \centering
+        \begin{tikzpicture}[level distance = 18mm,baseline]
+            \node [circle,draw] (a){$a$}
+                child {node [circle,draw,solid,black] (d) {$d$}
+                    child {node [circle,draw,solid,black] (b) {$b$}
+                        child {node [draw,solid,black] (F) {$\bot$}
+                            edge from parent [zero]
+                        }
+                        edge from parent [zero]
+                    }
+                    child {node [circle,draw,solid,black] (c) {$c$}
+                        child {node [draw,solid,black] (T) {$\top$}
+                            edge from parent [one]
+                        }
+                        edge from parent [one]
+                    }
+                    edge from parent [zero]
+                }
+            ;
+            \draw [one,->] (b) to (T);
+            \draw [zero,->] (c) to (F);
+            \draw [one,->,bend right] (a) to (b);
+        \end{tikzpicture}
+    \end{subfigure}
+    \caption[Example BDD]{BDDs for $(\lnot a \lor b) \land (a \lor c \lor  \lnot d) \land (b \lor d)$. \\Solid blue transitions are $1$, dashed red transitions are $0$.}
+    \label{fig:backgroundBDD}
+\end{figure}
 
 Conjunction and disjunction may be performed on BDDs via an algorithm with a running time of $O(n \times m)$ where $n$ and $m$ are the sizes of the two BDDs. The worst case of this algorithm is rarely reached however and in general the operation is efficient. Universal quantification may be performed by constructing the conjunction of the BDD with the quantified variable set one way and the BDD with the variable set the other way. Existential quantification works the same way with disjunction. In this way, the uncontrollable predecessor and winning sets may be efficiently computed and stored via BDDs.
 
