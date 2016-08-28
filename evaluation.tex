@@ -1,39 +1,17 @@
 \chapter{Evaluation}
 \label{ch:evaluation}
 
-\newcommand{\eva}[0]{EvaSolver}
+\newcommand{\eva}[0]{\textsc{EvaSolver}\xspace}
+
+In this chapter I present benchmarking results for the implementations of each previous chapter. Bounded realisability is implemented in a tool called \eva as joint work between Nina Narodytska and myself. \eva was built in C++ and is based on the source code of RAReQS~\cite{Janota12}. The tool calls out to Glucose~\cite{Audemard09} for SAT solving. Strategy extraction was later added to \eva using PeRIPLO~\cite{Rollini13} to construct interpolants. The implementation also uses cudd~\cite{Somenzi01} to reduce interpolants into cubes via BDDs. I implemented unbounded realisability in a separate open source tool, TermiteSAT~\cite{TermiteSAT}, which contains a reimplementation of the bounded realisability algorithm. TermiteSAT is written in Haskell and also uses Glucose for SAT solving, PeRIPLO for interpolant construction, and cudd to reduce interpolants to cubes. TermiteSAT was submitted to the 2016 synthesis competition and the results are shown below. As part of that submission I added a hybrid mode to TermiteSAT that runs the unbounded synthesis algorithm in parallel with Simple BDD Solver~\cite{Walker14b}.
 
 \section{Bounded realisability}
 
-We evaluate our algorithm on four families of benchmarks derived 
-from driver synthesis problems.  These benchmarks model the data 
-path of four I/O devices in the abstracted form.  In particular, 
-we model the transmit buffer of an Ethernet adapter, the send 
-queue of a UART serial controller, the command queue of an SPI 
-Flash controller, and the IDE hard disk DMA descriptor list.   
-Models are parameterised by the size of the 
-corresponding data structure.  {Specifications are written in a simple input language 
-based on the NuSMV syntax~\cite{nusmv}.   The 
-transition relation of the game is given in the form of variable 
-update functions $x :=f(X,Y_c,Y_u)$, one for each state variable 
-$x\in X$.}
+The algorithm is evaluated on four families of benchmarks derived from driver synthesis problems.  These benchmarks model the data path of four I/O devices in the abstracted form.  In particular, we model the transmit buffer of an Ethernet adapter, the send queue of a UART serial controller, the command queue of an SPI Flash controller, and the IDE hard disk DMA descriptor list.   Models are parameterised by the size of the corresponding data structure.  Specifications are written in a simple input language based on the NuSMV syntax~\cite{Henzinger03}.   The transition relation of the game is given in the form of variable update functions $s' := f(\mathcal{S}, \mathcal{U}, \mathcal{C})$, one for each state variable $s \in \mathcal{S}$.
 
-We compare our solver against two existing approaches to solving 
-games.  First, we encode input specifications as QBF instances and 
-solve them using two state-of-the-art QBF solvers: 
-RAReQS~\cite{Janota_KM_12} and depqbf~\cite{Lonsing_Biere_10}, 
-having first run them through the bloqqer~\cite{Biere_LS_11} 
-preprocessor.  Second, we solve our benchmarks using the 
-Termite~\cite{cav260} BDD-based solver that uses dynamic variable 
-reordering, variable grouping, transition relation partitioning, 
-and other optimisations. 
+We compare our solver against two existing approaches to solving games.  First, we encode input specifications as QBF instances and solve them using two state-of-the-art QBF solvers: RAReQS~\cite{Janota12} and depqbf~\cite{Lonsing10}, having first run them through the bloqqer~\cite{Biere11} preprocessor.  Second, we solve our benchmarks using the Termite~\cite{Walker14} BDD-based solver that uses dynamic variable reordering, variable grouping, transition relation partitioning, and other optimisations. 
 
-Our experiments, summarised in Figure~\ref{f:graphs}, show that 
-off-the-shelf QBF solvers are not well-suited for solving games.  
-Although our algorithm is inspired by RAReQS, we achieve much 
-better performance, since our solver takes into account the 
-structure of the game, rather than treating it as a generic QBF 
-problem.  
+Our experiments, summarised in \Cref{fig:uart,fig:ide,fig:spi,fig:ethernet}, show that off-the-shelf QBF solvers are not well-suited for solving games.  Although our algorithm is inspired by RAReQS, we achieve much better performance, since our solver takes into account the structure of the game, rather than treating it as a generic QBF problem.  
 
 \begin{figure}
     \centering
@@ -201,8 +179,8 @@ problem.
         \end{scope}
 
     \end{tikzpicture}
-    \caption{queue}
-    \label{fig:queue}
+    \caption{Ethernet}
+    \label{fig:ethernet}
 \end{figure}
 
 All four benchmarks have very large sets of winning states.  
@@ -224,43 +202,9 @@ small number of opponent moves in every state of the game.}
 
 \section{Strategy extraction}
 
-We implemented our strategy generation algorithm as an extension
-on top of $\eva$.  We use PeRIPLO~\cite{raey} to generate 
-interpolants in 
-Algorithms~\ref{alg:strat:partition}--\ref{alg:next}.  We use BDDs
-to compile and store winning sets $W$ in 
-Algorithm~\ref{alg:strat:partition}~\cite{cudd}.  $\eva$
-implements an important optimisation whereby it generates multiple 
-certificate trees for fragments of the original game,
-which enables computational learning of winning states.  
-Our strategy generation algorithm is invoked in an online 
-fashion, whenever $\eva$ computes a certificate tree for a 
-fragment.  This results in multiple partial strategies, where each 
-strategy is computed as described in the previous section.  We 
-introduce an additional final step to $\eva$, which combines 
-partial strategies into a global winning strategy for the original 
-game.
+%%%\eva implements an important optimisation whereby it generates multiple certificate trees for fragments of the original game, which enables computational learning of winning states.  Our strategy generation algorithm is invoked in an online fashion, whenever \eva computes a certificate tree for a fragment.  This results in multiple partial strategies, where each strategy is computed as described in the previous section.  We introduce an additional final step to \eva, which combines partial strategies into a global winning strategy for the original game.
 
-We evaluate our implementation on driver synthesis benchmarks from
-\cite{NarodytskaLBRW14}.  These benchmarks model the data path of
-four I/O devices in the abstracted form.  Each specification was
-parameterised to scale in the size of the state space and the
-winning strategy length.  The four families are UART, SPI, IDE and
-Ethernet, which model respectively the send queue of a UART serial
-device, the command queue of an SPI device, the DMA descriptor
-list of an IDE controller, and the transmit buffer of an Ethernet
-device respectively.  On two of these families, namely SPI and
-Ethernet, $\eva$ outperforms a state-of-the-art BDD-based game
-solver.
-
-Figure~\ref{f:graphs} summarises our results.
-For each family, we show strategy generation
-time as a function of the number of state variables in the
-specification for $5$ hardest instances of the family solved by
-$\eva$.  Specifically, we show the time it took the base solver to
-determine the winner (the WD line), as well as the total time
-taken to solve the game and compute the winning strategy using our
-algorithm (WD+Strategy).
+Strategy extraction is evaluated on the same set of driver synthesis benchmarks.  \Cref{fig:uart2,fig:ide2,fig:spi2,fig:ethernet2} sumarise the results.  For each family, we show strategy generation time as a function of the number of state variables in the specification for $5$ hardest instances of the family solved by \eva.  Specifically, we show the time it took the base solver to determine the winner (the realisability line), as well as the total time taken to solve the game and compute the winning strategy (the total line).
 
 Profiling showed that non-negligible overhead was introduced by
 transferring CNFs from $\eva$'s internal representation to the
@@ -273,6 +217,170 @@ effort.
 Hence, we also show the effective time spent solving the game and
 computing the strategy, excluding the formula translation time
 (the Effective Time line).
+
+\begin{figure}
+    \centering
+    \begin{tikzpicture}[y=0.002cm, x=0.2cm]
+        %axis
+        \draw (0,0) -- coordinate (x axis mid) (50,0);
+            \draw (0,0) -- coordinate (y axis mid) (0,4000);
+            %ticks
+            \foreach \x in {0,5,...,50}
+                \draw (\x,1pt) -- (\x,-3pt)
+                node[anchor=north] {\x};
+            \foreach \y in {0,500,...,4000}
+                \draw (1pt,\y) -- (-3pt,\y) 
+                    node[anchor=east] {\y}; 
+        %labels      
+        \node[below=0.8cm] at (x axis mid) {Instance size ($| \mathcal{S} |$)};
+        \node[rotate=90, above left=1cm and 1.5cm] at (y axis mid) {Time (seconds)};
+        
+        %Plots
+        \draw plot[mark=o, mark size=2pt, mark options={fill=white,color=red}] file {data/bench_strat_uart_total.dat};
+        \draw plot[mark=+, mark options={fill=white,color=blue}] file {data/bench_strat_uart_real.dat};
+
+        \begin{scope}[shift={(5,2000)}] 
+            \draw (0,0) -- 
+                plot[mark=o, mark size=2pt, mark options={fill=white,color=red}] (0.25,0)
+                node[right]{Bounded realisability};
+            \draw[yshift=\baselineskip] (0,0) -- 
+                plot[mark=x, mark options={fill=white,color=green}] (0.25,0)
+                node[right]{Rareqs};
+            \draw[yshift=2\baselineskip] (0,0) -- 
+                plot[mark=+, mark options={fill=white,color=blue}] (0.25,0)
+                node[right]{Termite};
+            \draw[yshift=3\baselineskip] (0,0) -- 
+                plot[mark=triangle, mark options={fill=white}] (0.25,0)
+                node[right]{DepQBF};
+        \end{scope}
+
+    \end{tikzpicture}
+    \caption{UART}
+    \label{fig:uart2}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \begin{tikzpicture}[y=0.002cm, x=0.2cm]
+        %axis
+        \draw (0,0) -- coordinate (x axis mid) (50,0);
+            \draw (0,0) -- coordinate (y axis mid) (0,4000);
+            %ticks
+            \foreach \x in {0,5,...,50}
+                \draw (\x,1pt) -- (\x,-3pt)
+                node[anchor=north] {\x};
+            \foreach \y in {0,500,...,4000}
+                \draw (1pt,\y) -- (-3pt,\y) 
+                    node[anchor=east] {\y}; 
+        %labels      
+        \node[below=0.8cm] at (x axis mid) {Instance size ($| \mathcal{S} |$)};
+        \node[rotate=90, above left=1cm and 1.5cm] at (y axis mid) {Time (seconds)};
+        
+        %Plots
+        \draw plot[mark=o, mark size=2pt, mark options={fill=white,color=red}] file {data/bench_strat_ide_total.dat};
+        \draw plot[mark=+, mark options={fill=white,color=blue}] file {data/bench_strat_ide_real.dat};
+
+        \begin{scope}[shift={(5,2000)}] 
+            \draw (0,0) -- 
+                plot[mark=o, mark size=2pt, mark options={fill=white,color=red}] (0.25,0)
+                node[right]{Bounded realisability};
+            \draw[yshift=\baselineskip] (0,0) -- 
+                plot[mark=x, mark options={fill=white,color=green}] (0.25,0)
+                node[right]{Rareqs};
+            \draw[yshift=2\baselineskip] (0,0) -- 
+                plot[mark=+, mark options={fill=white,color=blue}] (0.25,0)
+                node[right]{Termite};
+            \draw[yshift=3\baselineskip] (0,0) -- 
+                plot[mark=triangle, mark options={fill=white}] (0.25,0)
+                node[right]{DepQBF};
+        \end{scope}
+
+    \end{tikzpicture}
+    \caption{ide}
+    \label{fig:ide2}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \begin{tikzpicture}[y=0.002cm, x=0.2cm]
+        %axis
+        \draw (0,0) -- coordinate (x axis mid) (50,0);
+            \draw (0,0) -- coordinate (y axis mid) (0,4000);
+            %ticks
+            \foreach \x in {0,5,...,50}
+                \draw (\x,1pt) -- (\x,-3pt)
+                node[anchor=north] {\x};
+            \foreach \y in {0,500,...,4000}
+                \draw (1pt,\y) -- (-3pt,\y) 
+                    node[anchor=east] {\y}; 
+        %labels      
+        \node[below=0.8cm] at (x axis mid) {Instance size ($| \mathcal{S} |$)};
+        \node[rotate=90, above left=1cm and 1.5cm] at (y axis mid) {Time (seconds)};
+        
+        %Plots
+        \draw plot[mark=o, mark size=2pt, mark options={fill=white,color=red}] file {data/bench_strat_spi_total.dat};
+        \draw plot[mark=+, mark options={fill=white,color=blue}] file {data/bench_strat_spi_real.dat};
+
+        \begin{scope}[shift={(5,2000)}] 
+            \draw (0,0) -- 
+                plot[mark=o, mark size=2pt, mark options={fill=white,color=red}] (0.25,0)
+                node[right]{Bounded realisability};
+            \draw[yshift=\baselineskip] (0,0) -- 
+                plot[mark=x, mark options={fill=white,color=green}] (0.25,0)
+                node[right]{Rareqs};
+            \draw[yshift=2\baselineskip] (0,0) -- 
+                plot[mark=+, mark options={fill=white,color=blue}] (0.25,0)
+                node[right]{Termite};
+            \draw[yshift=3\baselineskip] (0,0) -- 
+                plot[mark=triangle, mark options={fill=white}] (0.25,0)
+                node[right]{DepQBF};
+        \end{scope}
+
+    \end{tikzpicture}
+    \caption{spi}
+    \label{fig:spi2}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \begin{tikzpicture}[y=0.002cm, x=0.2cm]
+        %axis
+        \draw (0,0) -- coordinate (x axis mid) (50,0);
+            \draw (0,0) -- coordinate (y axis mid) (0,4000);
+            %ticks
+            \foreach \x in {0,5,...,50}
+                \draw (\x,1pt) -- (\x,-3pt)
+                node[anchor=north] {\x};
+            \foreach \y in {0,500,...,4000}
+                \draw (1pt,\y) -- (-3pt,\y) 
+                    node[anchor=east] {\y}; 
+        %labels      
+        \node[below=0.8cm] at (x axis mid) {Instance size ($| \mathcal{S} |$)};
+        \node[rotate=90, above left=1cm and 1.5cm] at (y axis mid) {Time (seconds)};
+        
+        %Plots
+        \draw plot[mark=o, mark size=2pt, mark options={fill=white,color=red}] file {data/bench_strat_ethernet_total.dat};
+        \draw plot[mark=+, mark options={fill=white,color=blue}] file {data/bench_strat_ethernet_real.dat};
+
+        \begin{scope}[shift={(5,2000)}] 
+            \draw (0,0) -- 
+                plot[mark=o, mark size=2pt, mark options={fill=white,color=red}] (0.25,0)
+                node[right]{Bounded realisability};
+            \draw[yshift=\baselineskip] (0,0) -- 
+                plot[mark=x, mark options={fill=white,color=green}] (0.25,0)
+                node[right]{Rareqs};
+            \draw[yshift=2\baselineskip] (0,0) -- 
+                plot[mark=+, mark options={fill=white,color=blue}] (0.25,0)
+                node[right]{Termite};
+            \draw[yshift=3\baselineskip] (0,0) -- 
+                plot[mark=triangle, mark options={fill=white}] (0.25,0)
+                node[right]{DepQBF};
+        \end{scope}
+
+    \end{tikzpicture}
+    \caption{ethernet}
+    \label{fig:ethernet2}
+\end{figure}
 
 \begin{figure}
 \centering

@@ -1,0 +1,6 @@
+\chapter{Conclusion}
+\label{ch:conclusion}
+
+Controller synthesis may one day become the tool of choice for designers of reactive systems. As an approach to software correctness its advantages are clear but the future of synthesis is held back by computational complexity. In this thesis I presented a technique that takes one small step towards feasibility by focussing on a particular class of specifications.
+
+The basis of this methodology is a counterexample guided bounded realisability algorithm. The algorithm constructs abstractions of the safety game and existentially searches for player strategies. The approach is similar to existing QBF methodologies but is able to perform better than those by taking advantage of knowledge of the structure of the problem. I also presented an algorithm to extract the strategy from the certificate generated during bounded realisability. Additionally I presented an approach that extends the algorithm to solve unbounded games. The complete synthesis algorithm is suited to safety specifications where the winning region has no compact representation as a binary decision diagram.
