@@ -136,8 +136,7 @@ construction of a finite state, infinite word generator representing the
 program $P$, and an acceptor of the same, $\phi$, constructed from the temporal
 property to be checked. Thus the program may be checked by determining whether $P \cap \lnot \phi$ is empty.
 
-
-In Section~\ref{sec:boundedmodelchecking} another approach to model checking is discussed that searches for counterexamples to safety properties using a SAT solver.
+Bounded model checking is another approach that searches for counterexample traces of a certain length to safety properties using a SAT solver.  This form of model checking is the inspiration for the bounded approach to synthesis presented in this thesis and is covered in greater detail in Section~\ref{sec:boundedmodelchecking}.
 
 \subsection{B\"uchi Automata}
 
@@ -201,7 +200,7 @@ Reactive synthesis for a game with an LTL objective~\cite{Pnueli89} may be solve
 
 The double exponential complexity causes a \emph{state explosion}, which led to synthesis being considered infeasible for many years. However, synthesis has been applied in many real world scenarios by restricting the game objective to fragments of LTL. In this thesis we consider \emph{safety games}, or games with objectives of the form $G \phi$ where $\phi$ is a propositional formula only. Informally, a controller in a safety game has the objective to stay within a safe region or avoid error states. Safety games can be solved by drawing on $\mu$-calculus and solving a fixed point calculation~\cite{Asarin95}, which is a much less complex procedure than the above automata theoretic approach. 
 
-Whilst the LTL fragment that is solvable via a safety game is not very expressive, fixed point computations can also be used to solve the much more expressive generalised reactivity fragment of LTL. Safety synthesis can be seen as the first step on the path to more useful yet practical synthesis techniques.
+Whilst the LTL fragment that is solvable via a safety game is simple, fixed point computations can also be used to solve the much more expressive generalised reactivity fragment of LTL. Safety synthesis can be seen as the first step on the path to more useful yet practical synthesis techniques.
 
 
 \subsection{Fixed Point Computation}
