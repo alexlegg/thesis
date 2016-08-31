@@ -82,7 +82,11 @@ Figure~\ref{fig:stratExample} introduces the running example for this chapter. I
     \label{fig:stratExample}
 \end{figure}
 
-The strategy generation algorithm takes an initial set $s_0$ and its certificate tree $T$, computed by the game solver, and generates a winning controller strategy starting from $s_0$. The generated strategy must define a controller action $c \in 2^{\mathcal{C}}$ to every $\{ (s, u) \mid s \in 2^{\mathcal{S}}, u \in 2^{\mathcal{U}} \}$. The algorithm begins with $(s_0, \top)$, which it then partitions in pairs of subsets $(s_i, u_i)$, one for each outgoing branch of $T$ (Figure~\ref{fig:partition}), such that the controller can win from $s_i$ when the controller plays $u_i$ by picking action $c_i$ along the $i$th branch of the tree.  This partitioning defines the local winning strategy in the root node of $T$.  Next, for each partition $(s_i, u_i)$, the algorithm computes the set of $c_i$-successor states of $s_i$, obtaining the set $s_i'$ of states winning in the child subtree $T_i'$ of $T_i$ (Figure~\ref{fig:partition}).  The algorithm is then invoked recursively for each subtree $T_i'$.
+Algorithm~\ref{alg:strat} shows the pseudocode of the strategy generation algorithm.  The algorithm proceeds in two phases: the first phase (\textsc{genLocalStrats}) computes local strategies in nodes of $T$; the second phase (\textsc{compileStrat}) compiles all local strategies into a winning strategy function.
+
+The \textsc{genLocalStrats} function recursively traverses the certificate tree $T$, starting from the root, computing local strategies in each node.  The main operation of the algorithm, called \textsc{partition}, splits $(T, s, \top)$ into $j$ tuples $(T_i, s_i, u_i)$, as shown in Figure~\ref{fig:partition}.  Each tree $T_i$ is a copy of a single branch of $T$.  The partitioning is constructed in such a way that the action $c_i$ that labels the root edge of $T_i$ is a winning controller action in $s_i$ against environment action $u_i$.
+
+%%%The strategy generation algorithm takes an initial set $s_0$ and its certificate tree $T$, computed by the game solver, and generates a winning controller strategy starting from $s_0$. The generated strategy must define a controller action $c \in 2^{\mathcal{C}}$ to every $\{ (s, u) \mid s \in 2^{\mathcal{S}}, u \in 2^{\mathcal{U}} \}$. The algorithm begins with $(s_0, \top)$, which it then partitions in pairs of subsets $(s_i, u_i)$, one for each outgoing branch of $T$ (Figure~\ref{fig:partition}), such that the controller can win from $s_i$ when the controller plays $u_i$ by picking action $c_i$ along the $i$th branch of the tree.  This partitioning defines the local winning strategy in the root node of $T$.  Next, for each partition $(s_i, u_i)$, the algorithm computes the set of $c_i$-successor states of $s_i$, obtaining the set $s_i'$ of states winning in the child subtree $T_i'$ of $T_i$ (Figure~\ref{fig:partition}).  The algorithm is then invoked recursively for each subtree $T_i'$.
 
 \begin{figure}[b]
     \centering
@@ -177,7 +181,7 @@ The strategy generation algorithm takes an initial set $s_0$ and its certificate
     \label{fig:partition}
 \end{figure}
 
-Figure~\ref{fig:algex} illustrates operation of the algorithm on the winning abstract game tree returned by the game solver for our running example.  Figure~\ref{fig:algexa} displays $T$, the certificate tree for the game. The algorithm starts at the root of the tree and the initial set $s = (c = 0 \land q = 0 \land e = 0)$.  The game tree defines only one winning action in the root node, hence this action is winning in all states of $s$ and no partitioning is required.  We compute the successor set reachable by playing action $q_n = 0$ in $s$: $\{ s' \mid \delta(s, \top, q_n = 0, s') \} = (c = 1 \land e = 0) $.
+Figure~\ref{fig:algex} illustrates how local strategies are generated from the winning abstract game tree returned by the game solver for our running example.  Figure~\ref{fig:algexa} shows $T$, the certificate tree for the game. The algorithm starts at the root of the tree and the initial set $s = (c = 0 \land q = 0 \land e = 0)$.  The game tree defines only one winning action in the root node, hence this action is winning in all states of $s$ and no partitioning is required.  We compute the successor set reachable by playing action $q_n = 0$ in $s$: $\{ s' \mid \delta(s, \top, q_n = 0, s') \} = (c = 1 \land e = 0) $.
 
 \tikzset{every node/.style={solid}}
 \begin{figure}[b]
@@ -288,6 +292,8 @@ Figure~\ref{fig:algex} illustrates operation of the algorithm on the winning abs
 
 Next, we descend down the tree and consider subtree $T'$ and its initial set $s'$ (Figure~\ref{fig:algexb}).  We partition $(s', \top)$ into subsets $(s_1', u_1') \gets (c = 1 \land e = 0, d = 0)$ and $(s_1', u_1') \gets (c = 1 \land e = 0, d = 1)$ that are winning for the left and right subtrees of $T'$ respectively, i.e., from $(c = 1 \land e = 0)$ the controller must play action $q_n = 0$ when the environment plays $d = 0$, and $q_n = 1$ for $d = 1$.  Consider the resulting subtrees $T'_1$ and $T'_2$ with initial sets $s'_1$ and $s'_2$ (Figure~\ref{fig:algexc}).  We have $\{ s''_1 \mid \delta(s'_1, u'_1, q_n = 0, s''_1) \} = (c = 1 \land q = 0 \land e = 0)$, $\{ s''_2 \mid \delta(s'_2, u'_1, q_n = 1, s''_2) \} = (c = 1 \land q = 1 \land e = 0)$.  Finally, we obtain two subtrees $T''_1$ and $T''_2$ with initial sets $s''_1$ and $s''_2$ (Figure~\ref{fig:algexd}).  Both subtrees have one branch; hence corresponding actions $q_n = 0$ and $q_n = 1$ are winning for $(s''_1, \top)$ and $(s''_2, \top)$ respectively.
 
+The algorithm returns the set of tuples $(W, c, k)$.  Each tuple represents a fragment of the strategy in some tree node, where $W \in 2^{\mathcal{S}} \cup 2^{\mathcal{U}}$ is the winning set in this node, $c$ is the controller action to play in this set, and $k$ is the distance from the node to the bottom of the tree.
+
 Putting together fragments of the winning strategy computed above, we obtain the following strategy for this example:
 \begin{align*}
     \pi(c = 0 \land q = 0 \land e = 0, \top) &= (q_n = 0) \\
@@ -296,15 +302,15 @@ Putting together fragments of the winning strategy computed above, we obtain the
     \pi(c = 0 \land q = 1 \land e = 0, \top) &= (q_n = 1)
 \end{align*}
 
-The above algorithm involves two potentially costly operations: winning set partitioning and successor set computation.  If implemented na\"ively, these operations can lead to unacceptable performance.  The key insight behind our solution is that both operations can be efficiently approximated from the proof of unsatisfiability of the formula $s \land \opptf(T)$, with the help of interpolation, as described below.  The resulting approximations are sound, i.e., preserve the correctness of the resulting strategy.
 
-\subsection{Local Strategies}
 
-Algorithm~\ref{alg:strat} shows the pseudocode of the strategy generation algorithm.  The algorithm proceeds in two phases: the first phase (\textsc{genLocalStrats}) computes local strategies in nodes of $T$; the second phase (\textsc{compileStrat}) compiles all local strategies into a winning strategy function.
+%%%\subsection{Local Strategies}
 
-The \textsc{genLocalStrats} function recursively traverses the certificate tree $T$, starting from the root, computing local strategies in each node.  The main operation of the algorithm, called \textsc{partition}, splits $(T, s, \top)$ into $j$ tuples $(T_i, s_i, u_i)$, as shown in Figure~\ref{fig:partition}.  Each tree $T_i$ is a copy of a single branch of $T$.  The partitioning is constructed in such a way that the action $c_i$ that labels the root edge of $T_i$ is a winning controller action in $s_i$ against environment action $u_i$.
+%%%Algorithm~\ref{alg:strat} shows the pseudocode of the strategy generation algorithm.  The algorithm proceeds in two phases: the first phase (\textsc{genLocalStrats}) computes local strategies in nodes of $T$; the second phase (\textsc{compileStrat}) compiles all local strategies into a winning strategy function.
 
-Next we consider each tuple $(T_i, s_i, u_i)$ (lines~\ref{alg:strat:for}-\ref{alg:strat:endfor}). We descend down the tree and compute the controller strategy in the child subtree $T_i'$ of $T_i$ (right-hand side of Figure~\ref{fig:partition}).  To do so, we first compute the set of $c_i$-successors of $(s_i, u_i)$: More precisely, we compute an overapproximation $\mathcal{I} \supseteq \{ s_i' \mid \delta(s_i, u_i, c_i, s_i') \}$, such that $T_i'$ is a certificate tree for $\mathcal{I}$.  Such an overapproximation is returned by the \textsc{next} function in line~\ref{alg:strat:next}.  We can now recursively invoke the strategy generation function to compute a winning strategy for the subtree $T_i'$ from $\mathcal{I}$ (line~\ref{alg:strat:rec}).
+%%%The \textsc{genLocalStrats} function recursively traverses the certificate tree $T$, starting from the root, computing local strategies in each node.  The main operation of the algorithm, called \textsc{partition}, splits $(T, s, \top)$ into $j$ tuples $(T_i, s_i, u_i)$, as shown in Figure~\ref{fig:partition}.  Each tree $T_i$ is a copy of a single branch of $T$.  The partitioning is constructed in such a way that the action $c_i$ that labels the root edge of $T_i$ is a winning controller action in $s_i$ against environment action $u_i$.
+
+%%%Consider each tuple $(T_i, s_i, u_i)$ (lines~\ref{alg:strat:for}-\ref{alg:strat:endfor}). We descend down the tree and compute the controller strategy in the child subtree $T_i'$ of $T_i$ (right-hand side of Figure~\ref{fig:partition}).  To do so, we first compute the set of $c_i$-successors of $(s_i, u_i)$: More precisely, we compute an overapproximation $\mathcal{I} \supseteq \{ s_i' \mid \delta(s_i, u_i, c_i, s_i') \}$, such that $T_i'$ is a certificate tree for $\mathcal{I}$.  Such an overapproximation is returned by the \textsc{next} function in line~\ref{alg:strat:next}.  We can now recursively invoke the strategy generation function to compute a winning strategy for the subtree $T_i'$ from $\mathcal{I}$ (line~\ref{alg:strat:rec}).
 
 \begin{algorithm}
    \caption{Computing a winning strategy}\label{alg:strat}
@@ -329,9 +335,10 @@ Next we consider each tuple $(T_i, s_i, u_i)$ (lines~\ref{alg:strat:for}-\ref{al
     \end{algorithmic}
 \end{algorithm}
 
-The algorithm returns the set of tuples $(W, c, k)$.  Each tuple represents a fragment of the strategy in some tree node, where $W \in 2^{\mathcal{S}} \cup 2^{\mathcal{U}}$ is the winning set in this node, $c$ is the controller action to play in this set, and $k$ is the distance from the node to the bottom of the tree.
 
 \subsection{Partitioning game trees}
+
+The algorithm described so far involves two potentially costly operations: winning set partitioning and successor set computation.  If implemented na\"ively, these operations can lead to unacceptable performance.  The key insight behind our solution is that both operations can be efficiently approximated from the proof of unsatisfiability of the formula $s \land \opptf(T)$, with the help of interpolation, as described below.  The resulting approximations are sound, i.e., preserve the correctness of the resulting strategy.
 
 The \textsc{partition} function (Algorithm~\ref{alg:strat:partition}) computes a local strategy in the root of an abstract game tree.  It takes a pair $(T, s)$, such that $T$ is a certificate tree for set $s$ and partitions $s$ into subsets $(s_i, u_i)$ such that the controller can win in $s_i$ when the opponent plays $u_i$ by choosing action $c_i$.
 

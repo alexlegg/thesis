@@ -92,7 +92,7 @@ Each of these algorithms has been implemented in a tool that has the ability to 
 
 \section{Quantified Boolean Formula Solving}
 
-A quantified boolean formula (QBF) generalises the satisfiability problem to include universal and existential quantifiers. In accordance with the additional complexity of quantification QBF solvers have so far been less successful than SAT solvers at scaling to real world problems. However recent work in which competing SAT solvers are employed on behalf of each quantifier in a QBF problem have shown promising advances.
+A quantified boolean formula (QBF) generalises the satisfiability problem to include universal and existential quantifiers (see Section~\ref{sec:backgroundQBF}). In accordance with the additional complexity of quantification QBF solvers have so far been less successful than SAT solvers at scaling to real world problems. However recent work in which competing SAT solvers are employed on behalf of each quantifier in a QBF problem have shown promising advances.
 
 The bounded realisability problems of Chapter~\ref{ch:bounded} are specialisations of QBF problems. The algorithm proposed to solve those problems can be seen as a domain specific QBF solver. In particular, the algorithm is similar to and inspired by the general QBF algorithm of \cite{Janota12}. In this section we will review the state of the art in QBF solving in order to shed light on the advantages that an algorithm such as in Chapter~\ref{ch:bounded} has over a generalised QBF solver.
 
