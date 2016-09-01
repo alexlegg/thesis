@@ -1,12 +1,14 @@
 \chapter{Background}
 \label{ch:background}
 
-Synthesis is a process that demands mathematical formalisation in order to
-provide a strong guarantee of the correctness of the resultant software. As
-such we require a mathematical language to describe the system we wish to
-produce, the environment in which it operates, and the properties we want the
-system to adhere to. This chapter will outline that language and the ways we
-can reason about what we describe in it.
+\newcommand{\ctlE}[0]{\textbf{E}}
+\newcommand{\ctlA}[0]{\textbf{A}}
+\newcommand{\ltlF}[0]{\textbf{F}}
+\newcommand{\ltlG}[0]{\textbf{G}}
+\newcommand{\ltlX}[0]{\textbf{X}}
+
+
+Synthesis is a process that demands mathematical formalisation in order to provide a strong guarantee of the correctness of the resultant software. As such we require a mathematical language to describe the system we wish to produce, the environment in which it operates, and the properties we want the system to adhere to. This chapter will outline that language and the ways we can reason about what we describe in it.
 
 \section{Temporal Logic}
 
@@ -56,9 +58,9 @@ and eventualities. The syntax is:
 
 \begin{itemize}
     \item $\phi$ is a propositional formula referring to the current state,
-    \item $X\phi$ - $\phi$ is true in the next state of the execution,
-    \item $F\phi$ - Eventually (finally) $\phi$ will be true, and
-    \item $G\phi$ - $\phi$ is always (globally) true.
+    \item $\ltlX\phi$ - $\phi$ is true in the next state of the execution,
+    \item $\ltlF\phi$ - Eventually (finally) $\phi$ will be true, and
+    \item $\ltlG\phi$ - $\phi$ is always (globally) true.
     \item $\phi_1 U \phi_2$ - $\phi_1$ holds until $\phi_2$ holds.
 \end{itemize}
 
@@ -71,13 +73,13 @@ state $s \in S$ of structure $M$. We definte $\models$ recursively:
     \item $M, s \models \lnot\phi$ iff not $(M, s \models \phi)$.
     \item $M, s \models \phi_1 \land \phi_2$ iff $(M, s \models \phi_1) \land (M, s \models \phi_2)$.
     \item $M, s \models \phi_1 \lor \phi_2$ iff $(M, s \models \phi_1) \lor (M, s \models \phi_2)$.
-    \item $M, s \models X\phi$ iff for some state $s'$, $R(s, s') \land M, s' \models \phi$.
-    \item $M, s_0 \models F\phi$ iff for some path $(s_0, s_1, ...)$, $\exists i (i \geq 0 \land (M, s_i \models \phi))$.
-    \item $M, s_0 \models G\phi$ iff for some path $(s_0, s_1, ...)$, $\forall i (i \geq 0 \land (M, s_i \models \phi))$.
+    \item $M, s \models \ltlX\phi$ iff for some state $s'$, $R(s, s') \land M, s' \models \phi$.
+    \item $M, s_0 \models \ltlF\phi$ iff for some path $(s_0, s_1, ...)$, $\exists i (i \geq 0 \land (M, s_i \models \phi))$.
+    \item $M, s_0 \models \ltlG\phi$ iff for some path $(s_0, s_1, ...)$, $\forall i (i \geq 0 \land (M, s_i \models \phi))$.
     \item $M, s_0 \models \phi_1 U \phi_2$ iff for some path $(s_0, s_1, ...)$, $\exists i (i \geq 0 \land (M, s_i \models \phi_2) \land \forall j (j \geq 0 \land g < i \to (M, s_j \models \phi_1)))$.
 \end{itemize}
 
-Throughout this thesis we use $F$ and $G$ to represent the \emph{finally} and \emph{globally} operators. Elsewhere in the literature $\lozenge$ and $\square$ are sometimes used to represent the same.  
+Throughout this thesis we use $\ltlF$ and $\ltlG$ to represent the \emph{finally} and \emph{globally} operators. Elsewhere in the literature $\lozenge$ and $\square$ are sometimes used to represent the same.  
 
 \subsection{Computation Tree Logic}
 
@@ -88,8 +90,8 @@ has additional syntax and semantics for exactly that. The syntax of CTL is as
 follows:
 
 \begin{itemize}
-    \item $A\phi$ - $\phi$ is true on all paths
-    \item $E\phi$ - there exists a path on which $p$ is true
+    \item $\ctlA\phi$ - $\phi$ is true on all paths
+    \item $\ctlE\phi$ - there exists a path on which $p$ is true
 \end{itemize}
 
 We again define the semantics of CTL with respect to a Kripke structure $M =
@@ -102,19 +104,19 @@ We again define the semantics of CTL with respect to a Kripke structure $M =
     \item $M, s \models \phi_1 \lor \phi_2$ iff $(M, s \models \phi_1) \lor (M, s \models \phi_2)$.
     \item $M, s \models EX\phi$ iff for some state $s'$, $R(s, s') \land M, s' \models \phi$.
     \item $M, s \models AX\phi$ iff for all states $s'$, $R(s, s') \to M, s' \models \phi$.
-    \item $M, s_0 \models A[\phi_1 U \phi_2]$ iff for all paths $(s_0, s_1, ...)$, $\exists i (i \geq 0 \land (M, s_i \models \phi_2) \land \forall j (j \geq 0 \land g < i \to (M, s_j \models \phi_1)))$.
-    \item $M, s_0 \models E[\phi_1 U \phi_2]$ iff for some path $(s_0, s_1, ...)$, $\exists i (i \geq 0 \land (M, s_i \models \phi_2) \land \forall j (j \geq 0 \land g < i \to (M, s_j \models \phi_1)))$.
-    \item $(M, s \models AF\phi) \Leftrightarrow (M, s \models A[\top U \phi])$
-    \item $(M, s \models EF\phi) \Leftrightarrow (M, s \models E[\top U \phi])$
+    \item $M, s_0 \models \ctlA[\phi_1 U \phi_2]$ iff for all paths $(s_0, s_1, ...)$, $\exists i (i \geq 0 \land (M, s_i \models \phi_2) \land \forall j (j \geq 0 \land g < i \to (M, s_j \models \phi_1)))$.
+    \item $M, s_0 \models \ctlE[\phi_1 U \phi_2]$ iff for some path $(s_0, s_1, ...)$, $\exists i (i \geq 0 \land (M, s_i \models \phi_2) \land \forall j (j \geq 0 \land g < i \to (M, s_j \models \phi_1)))$.
+    \item $(M, s \models AF\phi) \Leftrightarrow (M, s \models \ctlA[\top U \phi])$
+    \item $(M, s \models EF\phi) \Leftrightarrow (M, s \models \ctlE[\top U \phi])$
     \item $(M, s \models AG\phi) \Leftrightarrow (M, s \models \lnot EF (\lnot \phi))$
     \item $(M, s \models EG\phi) \Leftrightarrow (M, s \models \lnot AF (\lnot \phi))$
 %%%    \item $M, s_0 \models AG\phi$ iff For all paths $(s_0, s_1, ...)$, $\forall i (i \geq 0 \land (M, s_i \models \phi))$.
 \end{itemize}
 
-In CTL, each $A$ or $E$ must be paired with an LTL operator. For example
+In CTL, each $\ctlA$ or $\ctlE$ must be paired with an LTL operator. For example
 $AG\phi$, which says that $\phi$ must always hold on all paths. Alternatively,
 CTL* allows for free mixing of operators from LTL and CTL. This allows for
-terms such as $E(GF\phi)$, which is true iff there exists a path where $\phi$
+terms such as $\ctlE(GF\phi)$, which is true iff there exists a path where $\phi$
 will always be true at some future state. There is also ACTL*, which is CTL* with no existential branch quantifier.
 
 \section{Model Checking}
@@ -167,83 +169,11 @@ The automaton itself is defined as a tuple $A = (Q, \Sigma, \delta, q_0, F)$ whe
 
 Rabin automata are also $\omega$-automata, which are similar to B\"uchi automata except with the acceptance condition given by a set of pairs $(E_i, F_i)$ such that an run is accepted if there is a pair where the run visits $F_i$ infinitely often and does not visit $E_i$ infinitely often.
 
-\section{Synthesis}
+\subsection{Symbolic Model Checking}
 
-Model checking is the art of deciding whether a program meets a specification. Synthesis is the related problem of \emph{constructing} the program to meet a specification. In model checking the actions of the program are decided by the software being checked. A synthesis procedure must instead decide how the controller chooses actions and the ways the environment can react to each decision. In order to model this requirement the controller and environment should be considered to be in an adversarial relationship. Thus the synthesis problem is formulated as a two player game between the reactive program and its environment~\cite{Pnueli89}.
+The model checking approaches described above involve a computationally expensive explicit exploration of the state space of the system. In the decisively titled \emph{Symbolic model checking: $10^{20}$ states and beyond}~\cite{Burch90} the authors claim an increase in the size of systems that can be checked from $10^3$--$10^6$ to $10^{20}$. This breakthrough result was achieved via symbolic, as opposed to explicit, representation of the states in the game structure.
 
-A game is a structure $G = (S, \mathcal{U}, \mathcal{C}, \delta, s_0)$. We consider only two player games and we name those players the \emph{controller} and \emph{environment}. The structure is defined by:
-
-\begin{itemize}
-    \item $S$ is a finite set of states,
-    \item $\mathcal{U}$ is a finite alphabet of \emph{uncontrollable} actions,
-    \item $\mathcal{C}$ is a finite alphabet of \emph{controllable} actions,
-    \item $\delta : S \times \mathcal{U} \times \mathcal{C} \to S$ is a transition relation mapping states, uncontrollable actions, and controllable actions to next states,
-    \item $s_0 \in S$ is an initial state.
-\end{itemize}
-
-Conceptually, the game structure is another finite state automaton where transitions are partially controlled by both players. In each state, the environment chooses an uncontrollable action from $\mathcal{U}$ and the system chooses a controllable action from $\mathcal{C}$. We consider only deterministic games where $\delta(s, u, c, s_1') \land \delta(s, u, c, s_2') \to (s_1' = s_2')$.  We modify the notion of a run to suit games: $(s_0, u_0, c_0), (s_1, u_1, c_1), ... (s_n, u_n, c_n)$ where $\forall i [i \geq 0 \to \delta(s_i, u_i, c_i, s_{i+1})]$. 
-
-In addition to the game structure itself we define a game \emph{objective} $\psi$ given by an LTL formula. We say that a run is \emph{winning} for the controller iff the run satisfies the objective. The game is zero-sum, therefore a run is winning for the environment in the dual case where the objective $\psi$ is not true. For a controller to be correct it must ensure that all choices of the environment lead to runs that are winning for the controller. 
-
-%%%Although $\psi$ is given in LTL we formally define the objective of the game with the \emph{all paths} branching operator: $\forall \mathcal{U} \exists \mathcal{C} A \psi$.
-
-%%%Formally, a run is controller-winning iff $\forall i [i \geq 0 \to \lnot E(s_i)]$ environment-winning iff $\exists i [i \geq 0 \land E(s_i)]$.
-
-A \emph{controller strategy} $\pi^c : \mathcal{S} \times \mathcal{U} \to \mathcal{C}$ is a mapping of states and uncontrollable inputs to controllable actions. $\pi^c$ is a \emph{winning strategy} iff all runs $(s_0, u_0, \pi^c(s_0, u_0)), (s_1, u_1, \pi^c(s_1, u_1)) \dots$ are winning. \emph{Realisability} is the problem of determining the existence of a winning controller strategy and \emph{synthesis} is the problem of constructing it.
-
-An \emph{environment strategy} $\pi^e : \mathcal{S} \to \mathcal{U}$ is a mapping of states to uncontrollable actions. An environment strategy is winning
-iff all runs $(s_0, \pi^e(s_0), c_0)$, $(s_1, \pi^e(s_1), c_1) \dots$ are winning for the environment. The existence of a winning environment strategy implies the nonexistence of a winning controller strategy and vice versa.
-
-\subsection{Solving Games}
-
-Reactive synthesis for a game with an LTL objective~\cite{Pnueli89} may be solved via the construction of an equivalent non-deterministic B\"uchi automaton that is subsequently determinised to a deterministic Rabin automaton. Without delving into details, the Rabin automaton is interpreted as a tree-automaton and checked for emptiness. This yields a double exponential time algorithm in the size of the specification.
-
-The double exponential complexity causes a \emph{state explosion}, which led to synthesis being considered infeasible for many years. However, synthesis has been applied in many real world scenarios by restricting the game objective to fragments of LTL. In this thesis we consider \emph{safety games}, or games with objectives of the form $G \phi$ where $\phi$ is a propositional formula only. Informally, a controller in a safety game has the objective to stay within a safe region or avoid error states. Safety games can be solved by drawing on $\mu$-calculus and solving a fixed point calculation~\cite{Asarin95}, which is a much less complex procedure than the above automata theoretic approach. 
-
-Whilst the LTL fragment that is solvable via a safety game is simple, fixed point computations can also be used to solve the much more expressive generalised reactivity fragment of LTL~\cite{Piterman15}. Safety synthesis can be seen as the first step on the path to more useful yet practical synthesis techniques.
-
-
-\subsection{Fixed Point Computation}
-
-Modal $\mu$-calculus~\cite{Kozen82} for propositional logic formalises the concept of fixed points. Given a monotone function $f$, a fixed point is a set $X$ such that $f(X) = X$. The least fixpoint operator $\mu$ gives the smallest set $X$ and the greatest fixpoint operator $\nu$ gives the largest. $\mu$-calculus formulas have the following syntax, given with respect to a set of propositions $P$ and a set of variables $V$.
-
-\begin{itemize}
-    \item If $p \in P$ then $p$ is a formula
-    \item If $p$ is a formula then $\lnot p$ is a formula
-    \item If $p$ and $q$ are formulas then $p \land q$ is a formula
-    \item If $p$ is a formula and $Z$ is a variable then both $\nu Z . p$ and $\mu Z . p$ are formulas when all occurrences of Z have an even number of negations
-    \item If $p$ is a formula and $Z$ is a variable then $\forall Z . p$ is a formula.
-    \item Additionally, we introduce some syntactic equivalences:
-        \begin{itemize}
-            \item $p \lor q \equiv \lnot ( \lnot p \land \lnot q )$
-            \item $\exists Z . p \equiv \lnot \forall Z . \lnot p$
-        \end{itemize}
-\end{itemize}
-
-Given a labelled transition system $(S, F)$ where $S$ is a set of states, and $F : P \to 2^S$ is a mapping of propositions to states with which they hold, we give the semantics of $\mu-calculus$ by a function $\llbracket p \rrbracket$:
-
-\begin{itemize}
-    \item $\llbracket p \rrbracket = F(p)$
-    \item $\llbracket \lnot p \rrbracket = S \setminus \llbracket p \rrbracket$
-    \item $\llbracket p \land q \rrbracket = \llbracket p \rrbracket \cup \llbracket q \rrbracket$
-    \item $\llbracket \nu Z . p \rrbracket = \bigcup \{ T \subseteq S | T \subseteq \llbracket p \rrbracket [ Z := T ] \}$ where $\llbracket p \rrbracket [ Z := T ]$ is $\llbracket p \rrbracket$ with $Z$ mapped to $T$.
-\end{itemize}
-
-\subsection{Fixed Point Game Solving}
-
-The safety game algorithm is centred on determining sets of states from which the controller can win. The building block of this algorithm is the uncontrollable predecessor ($UPre$), which returns a set of predecessor states from which the environment can force play into a given set. We define this operator for a game structure $G = (S, \mathcal{U}, \mathcal{C}, \delta, s_0)$ as 
-
-$$UPre(X) = \{ s \mid \exists u \forall c \forall x (\delta(s, u, c, s') \implies s' \in X) \}$$
-
-For simplicity we describe the algorithm as though playing for the environment. As such we are actually solving the dual to the safety game: a reachability game.  To solve the game we iteratively build a set of states backwards from the error set ($\lnot \phi$) using the uncontrollable predecessor. It is clear that this set will grow monotonically and (since the state space is finite) eventually converge on fixed point. We call this fixed point set the environment's winning set. If this set contains the initial state then the game is unrealisable and the environment's winning strategy is to always play to stay within its winning set. Conversely, if the initial state is outside the environment's winning set then the controller must have a strategy to avoid the error states and the specification is realisable. In terms of $\mu$-calculus, the environment's winning region with respect to an error set $E$ is given by the least fixed point of the uncontrollable predecessor of $E$. The complement of the environment's winning region gives the safe region for the controller:
-
-$$ SAFE(E) = \lnot(\mu Y . UPre( Y \lor E )) $$
-
-\subsection{Symbolic Algorithms}
-
-Model checking suffers from a similar state explosion issue and new approaches were developed in this field to deal with the problem.  In the decisively titled \emph{Symbolic model checking: $10^{20}$ states and beyond}~\cite{Burch90} the authors claim an increase in the size of systems that can be checked from $10^3$--$10^6$ to $10^{20}$. This breakthrough result was achieved via symbolic, as opposed to explicit, representation of the states in the game structure. This result may also be applied to synthesis.
-
-Consider the game structure in the previous sections. Without loss of generality, we may replace the set of states $S$ with a set of boolean variables. A single state is now a valuation to those variables and a set of states may be symbolically represented by a boolean function. In order to combat state explosion a compact representation of boolean functions is required. The standard choice is an ordered binary decision diagram (BDD)~\cite{Bryant86}.
+Consider the Kripke structures used in the previous sections. Without loss of generality, we may replace the set of states $S$ with a set of boolean variables. A single state is now a valuation to those variables and a set of states may be symbolically represented by a boolean function. In order to combat state explosion a compact representation of boolean functions is required. The standard choice is an ordered binary decision diagram (BDD)~\cite{Bryant86}.
 
 BDDs represent boolean functions as directed acyclic graphs. Each node contains a variable, each edge represents a decision (true or false) on its parent's variable. One node is designated root and each path through the graph will terminate in one of two sink nodes that represent whether the decisions on that path satisfy the boolean function or not. Isomorphic nodes (where both decisions lead to the same result) may be removed and isomorphic subgraphs may be merged in order to compress the function representation. The ordering of variables in the graph is important to this compressibility. In the worst case the representation is a tree with no removed or merged nodes, which is exponential in the number of variables. Given a boolean function and a variable ordering the corresponding BDD is canonical. Figure~\ref{fig:backgroundBDD} shows two example BDDs that represent the same boolean function with different variable orderings.
 
@@ -320,11 +250,88 @@ BDDs represent boolean functions as directed acyclic graphs. Each node contains 
     \label{fig:backgroundBDD}
 \end{figure}
 
-Conjunction and disjunction may be performed on BDDs via an algorithm with a running time of $O(n \times m)$ where $n$ and $m$ are the sizes of the two BDDs. The worst case of this algorithm is rarely reached however and in general the operation is efficient. Universal quantification may be performed by constructing the conjunction of the BDD with the quantified variable set one way and the BDD with the variable set the other way. Existential quantification works the same way with disjunction. In this way, the uncontrollable predecessor and winning sets may be efficiently computed and stored via BDDs.
+Conjunction and disjunction may be performed on BDDs via an algorithm with a running time of $O(n \times m)$ where $n$ and $m$ are the sizes of the two BDDs. The worst case of this algorithm is rarely reached however and in general the operation is efficient. Universal quantification may be performed by constructing the conjunction of the BDD with the quantified variable set one way and the BDD with the variable set the other way. Existential quantification works the same way with disjunction. An efficient use of BDDs for model checking uses these operations for a fixed point computation that computes sets of states that satisfy a CTL property.
+
+\subsection{Fixed point calculations}
+
+Modal $\mu$-calculus~\cite{Kozen82} for propositional logic formalises the concept of fixed points. Given a monotone function $f$, a fixed point is a set $X$ such that $f(X) = X$. The least fixpoint operator $\mu$ gives the smallest set $X$ and the greatest fixpoint operator $\nu$ gives the largest. $\mu$-calculus formulas have the following syntax, given with respect to a set of propositions $P$ and a set of variables $V$.
+
+\begin{itemize}
+    \item If $p \in P$ then $p$ is a formula
+    \item If $p$ is a formula then $\lnot p$ is a formula
+    \item If $p$ and $q$ are formulas then $p \land q$ is a formula
+    \item If $p$ is a formula and $Z$ is a variable then both $\nu Z . p$ and $\mu Z . p$ are formulas when all occurrences of Z have an even number of negations
+    \item If $p$ is a formula and $Z$ is a variable then $\forall Z . p$ is a formula.
+    \item Additionally, we introduce some syntactic equivalences:
+        \begin{itemize}
+            \item $p \lor q \equiv \lnot ( \lnot p \land \lnot q )$
+            \item $\exists Z . p \equiv \lnot \forall Z . \lnot p$
+        \end{itemize}
+\end{itemize}
+
+Given a labelled transition system $(S, F)$ where $S$ is a set of states, and $F : P \to 2^S$ is a mapping of propositions to states with which they hold, we give the semantics of $\mu-calculus$ by a function $\llbracket p \rrbracket$:
+
+\begin{itemize}
+    \item $\llbracket p \rrbracket = F(p)$
+    \item $\llbracket \lnot p \rrbracket = S \setminus \llbracket p \rrbracket$
+    \item $\llbracket p \land q \rrbracket = \llbracket p \rrbracket \cup \llbracket q \rrbracket$
+    \item $\llbracket \nu Z . p \rrbracket = \bigcup \{ T \subseteq S | T \subseteq \llbracket p \rrbracket [ Z := T ] \}$ where $\llbracket p \rrbracket [ Z := T ]$ is $\llbracket p \rrbracket$ with $Z$ mapped to $T$.
+\end{itemize}
+
+We can use $\mu$-calculus to characterise CTL formulas as fixed point computations. For example, the formula $\ctlE \ltlG \psi$ can be characterised with a greatest fixed point $\nu Z . \psi \land \ctlE \ltlX Z$. With this characterisation the formula can be checked by iterative executions of $\ctlE \ltlX Z$, which we call the \emph{image} of $Z$. The image of a set of states is the set of all possible successor states. Likewise we say that the \emph{pre-image} of a set of states is the set of all ancestor states. Both operations can be efficiently implemented on symbolic BDD representations of sets of states to check CTL formulas by computing fixed points. The fixed point can be computed forwards from the initial set using image operations or backwards from a target set using pre-image operations.
+
+\section{Synthesis}
+
+Model checking is the art of deciding whether a program meets a specification. Synthesis is the related problem of \emph{constructing} the program to meet a specification. In model checking the actions of the program are decided by the software being checked. A synthesis procedure must instead decide how the controller chooses actions and the ways the environment can react to each decision. In order to model this requirement the controller and environment should be considered to be in an adversarial relationship. Thus the synthesis problem is formulated as a two player game between the reactive program and its environment~\cite{Pnueli89}.
+
+A game is a structure $G = (S, \mathcal{U}, \mathcal{C}, \delta, s_0)$. We consider only two player games and we name those players the \emph{controller} and \emph{environment}. The structure is defined by:
+
+\begin{itemize}
+    \item $S$ is a finite set of states,
+    \item $\mathcal{U}$ is a finite alphabet of \emph{uncontrollable} actions,
+    \item $\mathcal{C}$ is a finite alphabet of \emph{controllable} actions,
+    \item $\delta : S \times \mathcal{U} \times \mathcal{C} \to S$ is a transition relation mapping states, uncontrollable actions, and controllable actions to next states,
+    \item $s_0 \in S$ is an initial state.
+\end{itemize}
+
+Conceptually, the game structure is another finite state automaton where transitions are partially controlled by both players. In each state, the environment chooses an uncontrollable action from $\mathcal{U}$ and the system chooses a controllable action from $\mathcal{C}$. We consider only deterministic games where $\delta(s, u, c, s_1') \land \delta(s, u, c, s_2') \to (s_1' = s_2')$.  We modify the notion of a run to suit games: $(s_0, u_0, c_0), (s_1, u_1, c_1), ... (s_n, u_n, c_n)$ where $\forall i [i \geq 0 \to \delta(s_i, u_i, c_i, s_{i+1})]$. 
+
+In addition to the game structure itself we define a game \emph{objective} $\psi$ given by an LTL formula. We say that a run is \emph{winning} for the controller iff the run satisfies the objective. The game is zero-sum, therefore a run is winning for the environment in the dual case where the objective $\psi$ is not true. For a controller to be correct it must ensure that all choices of the environment lead to runs that are winning for the controller. 
+
+%%%Although $\psi$ is given in LTL we formally define the objective of the game with the \emph{all paths} branching operator: $\forall \mathcal{U} \exists \mathcal{C} A \psi$.
+
+%%%Formally, a run is controller-winning iff $\forall i [i \geq 0 \to \lnot E(s_i)]$ environment-winning iff $\exists i [i \geq 0 \land E(s_i)]$.
+
+A \emph{controller strategy} $\pi^c : \mathcal{S} \times \mathcal{U} \to \mathcal{C}$ is a mapping of states and uncontrollable inputs to controllable actions. $\pi^c$ is a \emph{winning strategy} iff all runs $(s_0, u_0, \pi^c(s_0, u_0)), (s_1, u_1, \pi^c(s_1, u_1)) \dots$ are winning. \emph{Realisability} is the problem of determining the existence of a winning controller strategy and \emph{synthesis} is the problem of constructing it.
+
+An \emph{environment strategy} $\pi^e : \mathcal{S} \to \mathcal{U}$ is a mapping of states to uncontrollable actions. An environment strategy is winning
+iff all runs $(s_0, \pi^e(s_0), c_0)$, $(s_1, \pi^e(s_1), c_1) \dots$ are winning for the environment. The existence of a winning environment strategy implies the nonexistence of a winning controller strategy and vice versa.
+
+\subsection{Solving Games}
+
+Reactive synthesis for a game with an LTL objective~\cite{Pnueli89} may be solved via the construction of an equivalent non-deterministic B\"uchi automaton that is subsequently determinised to a deterministic Rabin automaton. Without delving into details, the Rabin automaton is interpreted as a tree-automaton and checked for emptiness. This yields a double exponential time algorithm in the size of the specification.
+
+The double exponential complexity causes a \emph{state explosion}, which led to synthesis being considered infeasible for many years. However, synthesis has been applied in many real world scenarios by restricting the game objective to fragments of LTL. In this thesis we consider \emph{safety games}, or games with objectives of the form $\ltlG \phi$ where $\phi$ is a propositional formula only. Informally, a controller in a safety game has the objective to stay within a safe region or avoid error states. Safety games can be solved using a fixed point computation similar to symbolic model checking of CTL properties as described above~\cite{Asarin95}.
+
+%%%Safety games can be solved by drawing on $\mu$-calculus and solving a fixed point calculation~\cite{Asarin95}, which is a much less complex procedure than the above automata theoretic approach. 
+
+Whilst the LTL fragment that is solvable via a safety game is simple, fixed point computations can also be used to solve the much more expressive generalised reactivity fragment of LTL~\cite{Piterman15}. Safety synthesis can be seen as the first step on the path to more useful yet practical synthesis techniques.
+
+\subsection{Symbolic Game Solving}
+
+The safety game algorithm is centred on determining sets of states from which the controller can win. The building block of this algorithm is the uncontrollable predecessor ($UPre$), which returns a set of predecessor states from which the environment can force play into a given set. We define this operator for a game structure $G = (S, \mathcal{U}, \mathcal{C}, \delta, s_0)$ as 
+
+$$UPre(X) = \{ s \mid \exists u \forall c \forall x (\delta(s, u, c, s') \implies s' \in X) \}$$
+
+For simplicity we describe the algorithm as though playing for the environment. As such we are actually solving the dual to the safety game: a reachability game.  To solve the game we iteratively build a set of states backwards from the error set ($\lnot \phi$) using the uncontrollable predecessor. It is clear that this set will grow monotonically and (since the state space is finite) eventually converge on fixed point. We call this fixed point set the environment's winning set. If this set contains the initial state then the game is unrealisable and the environment's winning strategy is to always play to stay within its winning set. Conversely, if the initial state is outside the environment's winning set then the controller must have a strategy to avoid the error states and the specification is realisable. In terms of $\mu$-calculus, the environment's winning region with respect to an error set $E$ is given by the least fixed point of the uncontrollable predecessor of $E$. The complement of the environment's winning region gives the safe region for the controller:
+
+$$ SAFE(E) = \lnot(\mu Y . UPre( Y \lor E )) $$
+
+As in model checking, fixed point calculations on sets of states may be efficiently implemented using binary decision diagrams to represent sets of game states. Synthesis algorithms implemented in this way are able to scale to games with large state spaces.
 
 \subsection{Abstraction}
 
-When the state space is very large, as it can be in many real world systems, symbolic representation is an insufficient optimisation to synthesise the system. Real world systems contain many complex details that may not be relevant to the verification property. Abstraction aims to reduce the level of detail in the system, without sacrificing correctness, so that it may be synthesised. For example, a system may require that a controller write a value to an 8 bit register ($2^8$ possible states). If the specification only refers to the register as being equal to a particular value then the abstraction may reduce this to 1 bit: set to the value, and not set to the value. This is known as predicate abstraction~\cite{Graf97} and is just one of several possible ways to abstract a specification.
+When the state space is very large, as it can be in many real world systems, symbolic representation is an insufficient optimisation. Real world systems contain many complex details that may not be relevant to the verification property. Abstraction aims to reduce the level of detail in the system, without sacrificing correctness, so that it may be synthesised. For example, a system may require that a controller write a value to an 8 bit register ($2^8$ possible states). If the specification only refers to the register as being equal to a particular value then the abstraction may reduce this to 1 bit: set to the value, and not set to the value. This is known as predicate abstraction~\cite{Graf97} and is just one of several possible ways to abstract a specification.
 
 An abstraction is a mapping of \emph{concrete} states onto a new, smaller, set of  \emph{abstract} states. Abstractions may be created manually or automatically constructed. A common technique is to approximate an abstraction for a system and refine it during the verification process. Counterexample guided abstraction refinement (CEGAR)~\cite{Clarke00} is a framework in which an approximate abstraction is refined via the analysis of counterexamples to the specification. An upper approximation is used for abstraction so that when the specification holds for the abstraction it also holds for concrete system. However, when a counterexample is found in the abstraction it may not be a concrete counterexample, in which case we call it a \emph{spurious} counterexample. These counterexamples are used for refinement and the procedure begins anew with the refined abstraction.
 
