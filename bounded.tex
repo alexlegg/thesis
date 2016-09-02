@@ -10,9 +10,9 @@ Realisability is the first step on the path to synthesis. In the subsequent chap
 
 The algorithm described in this chapter solves bounded safety games. Recall that Chapter~\ref{ch:background} introduced games as a formalism for synthesis by stating the problem in terms of a game between a controller and its environment. In this chapter we are concerned with \emph{bounded} games that restrict all runs in the game to certain length. This concept is borrowed from model checking where it is used to verify that a program emits no erroneous traces of a certain length. A propositional formula may be constructed that is satisfiable when a trace that visits an error state exists. A SAT solver can be used to efficiently search for a satisfying assignment to this formula, which represents a counterexample to the correctness property of the specification. 
 
-In realisability it is not enough to check for the existence of a trace that visits an error state. Such a trace only implies a counterexample that requires the controller to cooperate with the environment to fail. Instead we are interested in strategies for the players. A controller strategy must avoid the error states for all possible environment actions. Likewise, a counterexample strategy must take into account all controller actions. We cannot use a SAT solver to search for a strategy directly as now we require quantifiers. We can, however, check if a strategy allows a counterexample trace without quantification. This sets us up for a counterexample guided methodology in which we construct candidate strategies and check them for correctness. If we discover a counterexample we use it to guide a refinement step in which we improve the candidate strategy.
+In the case of realisability, the existence of a trace that reaches an error state does not guarantee that the specification is unrealisable.  Instead we are interested in player \emph{strategies}. A controller strategy must avoid the error states for all possible environment actions. Likewise, an environment strategy must take into account all controller actions. We cannot use a SAT solver to search for a strategy directly as now we require quantifiers. We can, however, check if a strategy allows a counterexample trace without quantification. This sets us up for a counterexample guided methodology in which we construct candidate strategies and check them for correctness. If we discover a counterexample we use it to guide a refinement step in which we improve the candidate strategy.
 
-Similar to bounded model checking, bounded realisability is not a complete procedure.  If we decide that the controller can avoid error states for a game bounded to $k$ rounds there is no guarantee that the environment can not force an error in a game with a bound higher than $k$. In Chapter~\ref{ch:unbounded} I present an extension to the algorithm that extends this algorithm to unbounded games.
+Similar to bounded model checking, bounded realisability does not guarantee unbounded realisability.  If we decide that the controller can avoid error states for a game bounded to $k$ rounds there is no guarantee that the environment can not force an error in a game with a bound higher than $k$. In Chapter~\ref{ch:unbounded} I present an extension to the algorithm that extends this algorithm to unbounded games.
 
 Restricting ourselves to solving a bounded safety game enables us to turn the focus of the algorithm from states to traces. The traditional approach of constructing a binary decision diagram to symbolically represent the winning region has the potential to consume exponential space. The advantage of concentrating on runs of the game is that we do not rely on computing the winning states and therefore do not suffer from the related state explosion. The factors affecting the upper limit on scalability for the bounded synthesis algorithm are different to those of the BDD based approach. The most efficient algorithm for a realisability problem depends on the properties of that problem instance.
 
@@ -30,14 +30,29 @@ The following quantified formula may be used to solve realisability of a safety 
     \end{multlined}
 \end{equation*}
 
-The formula is constructed by unrolling the transition relationship for every game round until the bound is reached. A quantifier alternation is introduced to the formula for the variables corresponding to the actions of each player. Universal quantifiers are used for the environment variables and existential for the controller. The formula is constrained so that if the state at any game round is an error state the formula evaluates to false. In this way the formula is a satisfiable if and only if a strategy exists for the controller that avoids the error states.
+The formula is constructed by unrolling the transition relationship for every game round until the bound is reached. A quantifier alternation is introduced to the formula for the variables corresponding to the actions of each player. Universal quantifiers are used for the environment variables and existential for the controller. The formula is constrained so that if the state at any game round is an error state the formula evaluates to false. In this way the formula is satisfiable if and only if a strategy exists for the controller that avoids the error states.
 
-It is possible to solve the QBF na\"ively but we can do better by taking into account structural information in the realisability problem that is lost in the translation to prenex normal form. In particular, awareness that the formula is constructed of a repeated transition relation enables more effective learning. A na\"ive solver may learn sets of actions in order to prune the search tree. Instead we learn sets of states and, where possible, we transmit learned information between game rounds. For example, if we discover that the environment can force a visit to an error state from some set of states $s$ in $n$ rounds we also know that the environment can win from $s$ in $n+m$ rounds for all $m > 1$. Knowledge of how to construct the formula also enables the solver to efficiently produce a smaller expanded formula when necessary by simply copying only the parts of the formula corresponding to game rounds after the action of the expanded quantifier.
+It is possible to solve the QBF na\"ively but we can do better by taking into account structural information in the realisability problem that is lost in the translation to prenex normal form. In particular, awareness that the formula is constructed of a repeated transition relation enables more effective learning. A na\"ive solver may learn sets of actions in order to prune the search tree. Instead we learn sets of states and, where possible, we transmit learned information between game rounds. For example, if we discover that the environment can force a visit to an error state from some set of states $s$ in $n$ rounds we also know that the environment can win from $s$ in $n+m$ rounds for all $m > 0$. Knowledge of how to construct the formula also enables the solver to efficiently produce a smaller expanded formula when necessary by simply copying only the parts of the formula corresponding to game rounds after the action of the expanded quantifier.
 
 \subsection{Example}
 \label{sec:boundedexample}
 
-We introduce an example to assist an intuitive explanation of the algorithm. Consider a simple model of an ethernet device driver. The operating system makes requests of the driver to write or read data to or from the device. It is the role of the driver to grant these requests while ensuring that a \texttt{read} never occurs when a \texttt{write} was requests and vice versa.
+We introduce an example to assist an intuitive explanation of the algorithm. Consider a model of a simple storage device driver. The operating system makes requests of the driver to write or read data to or from the device. The structure of the model is shown in Figure~\ref{fig:exampleStructural}. It is the role of the driver to grant these requests while ensuring that a \texttt{read} never occurs when a \texttt{write} was requests and vice versa.
+
+\begin{figure}
+    \centering
+    \begin{tikzpicture}
+        \node [minimum width=3.5cm,minimum height=1cm,draw] (osRoot){Operating System};
+        \node [minimum width=3.5cm,minimum height=1cm,draw,below =of osRoot] (drRoot){Driver};
+        \node [minimum width=3.5cm,minimum height=1cm,draw,below=of drRoot] (devRoot){Device};
+
+        \draw [->] (osRoot) -- node [right] {\texttt{os\_request}} (drRoot);
+        \draw [->] (drRoot) -- node [right] {\texttt{dev\_cmd}} (devRoot);
+
+    \end{tikzpicture}
+    \caption{Structure of device driver example}
+    \label{fig:exampleStructural}
+\end{figure}
 
 As detailed in Chapter~\ref{ch:background}, we formalise realisability by a game structure $G = (S, \mathcal{U}, \mathcal{C}, \delta, s_0)$. The structure for our example is:
 
