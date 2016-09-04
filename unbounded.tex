@@ -317,7 +317,7 @@ are no longer contained in $B^m$.
     \end{algorithmic}
 \end{algorithm}
 
-Learning of states losing for the controller is similar (\textsc{learn} in Algorithm~\ref{alg:learn}). The main difference is that environment-losing states are losing for all bounds. Therefore we record these states in a single set $B^M$ of must-losing states (Algorithm~\ref{alg:learn}, line~6).  This set is initialised to the error set $E$ and grows as new losing states are discovered.  The modified \textsc{\textoverline{treeFormula}} function (Algorithm~\ref{alg:unboundedTreeFormula}) blocks must-losing states, which also allows for recursive learning over the entire tree.
+Learning of states losing for the controller is similar (\textsc{learn} in Algorithm~\ref{alg:learn}). The main difference is that environment-losing states are losing for all bounds. Therefore we record these states in a single set $B^M$ of must-losing states (Algorithm~\ref{alg:learn}, line~6).  This set is initialised to the error set $E$ and grows as new losing states are discovered.  The modified \textsc{treeFormula} function (Algorithm~\ref{alg:unboundedTreeFormula}) blocks must-losing states, which also allows for recursive learning over the entire tree.
 
 \subsection{Main synthesis loop}
 
@@ -439,7 +439,7 @@ is empty, $n$ is the root node, $\textsc{\textoverline{treeFormula}}(k, T_1)
 B^m[\textsc{height}(k, T_1)](\mathcal{S}^T) \equiv \bot$.  Thus the second postcondition of
 \textsc{\textoverline{learn}} holds.
 
-The proof of \textsc{learn} is similar to the above proof of \textsc{learn}. An
+The proof of \textsc{learn} is similar to the above proof of \textsc{\textoverline{learn}}. An
 interpolant constructed from $F_1=s(\mathcal{S}_T) \land \textsc{treeFormula}(k, T_1)$
 and $F_2 = \textsc{treeFormula}(k, T_2)$ has the property $\II \land F_2 \equiv
 \bot$ and the precondition ensures that the controller is unable to force the
@@ -469,6 +469,21 @@ $B^m[\kappa]$.  Alternatively, if there is a winning strategy for the
 environment at bound $\kappa$ then a counterexample losing for the controller
 will be found.  Subsequently \textsc{learn} will be called and $s_0$ added to
 $B^M$.
+
+\subsection{Strategy extraction}
+
+In the previous chapter I showed how to extract a strategy from the certificate tree generated during bounded realisability. I will now prove that the same approach extracts a correct strategy for an unbounded game when strategy generation is done online as it is when the learning optimisation is enabled for bounded realisability. 
+
+\begin{theorem}
+    Let $\pi$ be a partial strategy from initial states $s_0$ generated online during an unbounded realisability check that terminates with certificate tree $T$ of height $\kappa$. By choosing the actions in $\pi$ the controller ensures that the game never reaches an error state.
+\end{theorem}
+\begin{proof}
+    Let $(b, k)$ be a pair such that $b$ is a set of states learned to be environment-losing for a game of length $k$ during execution of \textoverline{\textsc{learn}}. Then $(b, k)$ has corresponding tree with a depth one one $T$. We record $[(w_0, c_0, k_0), \ldots, (w_j, c_j, k_j)] = \textsc{genLocalStrats}(T, k, b)$ using \opptf from Algorithm~\ref{alg:unboundedTreeFormula}. Since the tree is of depth one, \textsc{next} is never called.  From the precondition of \textoverline{\textsc{learn}} we know that $b(\cS_T) \land \opptf(k, T)$ is false. Therefore interpolation in \textsc{partition} is well defined. The resulting partitioning defines a controller action $c_i$ such that every $c_i$-successor of the set of states and environment actions in $w_i$ is outside $B^m[k_i-1]$. By construction $b(\cSU) = \bigvee_i w_i$, i.e. the partial strategy defines an action for every state in $b$ and every environment action.
+
+    On termination of unbounded realisability $s_0$ will be removed from $B^m[\kappa]$. By collecting all the partial strategies generated online we have a controller strategy from $s_0$ that ensures that the environment can never reach any set in $B^m$. Since $B^m[i] = B^m[i+1]$ is known to overapproximate the winning region of the environment, the resulting strategy must stay within the safe region.
+
+    TODO: More rigorous proof.
+\end{proof}
 
 \section{Optimisations}
 
