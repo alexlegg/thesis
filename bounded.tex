@@ -20,14 +20,14 @@ Restricting ourselves to solving a bounded safety game enables us to turn the fo
 
 This work draws inspiration from a QBF solving algorithm that treats the QBF problem as a game~\cite{Janota12}. In that algorithm one player assumes the role of the universal quantifiers and the opponent takes on the existential quantifiers. In the game, the players take turns to chooses values for their variables from the outermost quantifier block in. Quantifiers may be removed from a formula by iteratively constructing and merging copies of the formula for each quantified variable. The copies of the formula represent the two possible values, true or false, of the quantified boolean variable. Universal quantification can then be reduced to the conjunction of these copies, and existential quantifications corresponds to a disjunction. In practice, these expanded formulas are far too large to be solved so the authors introduce abstractions, or partially expanded formulas, to avoid expanding on variables unnecessarily. The abstractions are refined through a CEGAR process of searching for candidate solutions and analysing counterexamples. The full algorithm is described in detail in Chapter~\ref{ch:relatedwork}. 
 
-We define a safety game by the tuple $G = (S, \mathcal{U}, \mathcal{C}, \delta, s_0, E)$. $S$, $\mathcal{U}$, and $\mathcal{C}$ are sets of boolean variables representing game states, environment actions, and controller actions respectively. The transition relation, $\delta$, is a boolean formula $2^{S} \times 2^{\mathcal{U}} \times 2^{\mathcal{C}} \to 2^{S}$ that maps current states and actions to successor states. The game begins in the initial state $s_0$ and the $E$ is the set of error states that the controller must avoid.
+We define a safety game by the tuple $G = (\cS, \cU, \cC, \delta, s_0, E)$. $S$, $\cU$, and $\cC$ are sets of boolean variables representing game states, environment actions, and controller actions respectively. The transition relation, $\delta$, is a boolean formula $\delta : 2^{S} \times 2^\cU \times 2^\cC \to 2^\cS$ that maps current states and actions to successor states. The game begins in the initial state $s_0$ and the $E$ is the set of error states that the controller must avoid.
 
 The following quantified formula may be used to solve realisability of a safety game bounded to $k$ game rounds: 
 \begin{equation*}
-    \begin{multlined}
-        \forall u_0 \exists c_0 ... \forall u_k \exists c_k \exists s_{0..k+1} \\
-        \shoveright{[\lnot E(s_0) \land \delta(s_0, u_0, c_0, s_1) \land ... \land \lnot E(s_k) \land \delta(s_k, u_k, c_k, s_{k+1}) \land \lnot E(s_{k+1})]}
-    \end{multlined}
+\begin{multlined}
+    \forall \cU_k \exists \cC_k \forall \cU_{k-1} \exists \cC_{k-1} \ldots \forall \cU_0 \exists \cC_0 \\
+    (\lnot E(\cS_k) \land \delta(\cS_k, \cU_k, \cC_k, \cS_{k-1}) \land \ldots \land \lnot E(\cS_1) \land \delta(\cS_1, \cU_1, \cC_1, \cS_0) \land \lnot E(\cS_0)).
+\end{multlined}
 \end{equation*}
 
 The formula is constructed by unrolling the transition relationship for every game round until the bound is reached. A quantifier alternation is introduced to the formula for the variables corresponding to the actions of each player. Universal quantifiers are used for the environment variables and existential for the controller. The formula is constrained so that if the state at any game round is an error state the formula evaluates to false. Hence it is satisfiable if and only if a strategy exists for the controller that avoids the error states.
@@ -56,12 +56,12 @@ We introduce an example to assist an intuitive explanation of the algorithm. Con
     \label{fig:exampleStructural}
 \end{figure}
 
-As detailed in Chapter~\ref{ch:background}, we formalise realisability by a game structure $G = (S, \mathcal{U}, \mathcal{C}, \delta, s_0)$. The structure for our example is:
+As detailed in Chapter~\ref{ch:background}, we formalise realisability by a game structure $G = (\cS, \cU, \cC, \delta, s_0)$. The structure for our example is:
 
 \begin{itemize}
-\item $S = \{ \texttt{request}, \texttt{error} \} $. The game consists of two boolean variables to denote the current request from the OS to the driver, and whether an error has occurred. We use $\texttt{request} = 0$ to represent a \texttt{read} and $\texttt{request} = 1$ for \texttt{write}.
-    \item $\mathcal{U} = \{ \texttt{os\_request} \} $. The uncontrollable actions consist of a single boolean variable to describe a \texttt{read} or a \texttt{write}. We use the same values as before, 0 for \texttt{read} and 1 for \texttt{write}.
-    \item $\mathcal{C} = \{ \texttt{dev\_cmd} \}$. The controllable actions similarly consists of a single boolean variable to denote the command given to the device: a \texttt{read} ($\texttt{dev\_cmd} = 0$) or a \texttt{write} ($\texttt{dev\_cmd} = 1$).
+\item $\cS = \{ \texttt{request}, \texttt{error} \} $. The game consists of two boolean variables to denote the current request from the OS to the driver, and whether an error has occurred. We use $\texttt{request} = 0$ to represent a \texttt{read} and $\texttt{request} = 1$ for \texttt{write}.
+    \item $\cU = \{ \texttt{os\_request} \} $. The uncontrollable actions consist of a single boolean variable to describe a \texttt{read} or a \texttt{write}. We use the same values as before, 0 for \texttt{read} and 1 for \texttt{write}.
+    \item $\cC = \{ \texttt{dev\_cmd} \}$. The controllable actions similarly consists of a single boolean variable to denote the command given to the device: a \texttt{read} ($\texttt{dev\_cmd} = 0$) or a \texttt{write} ($\texttt{dev\_cmd} = 1$).
     \item The transition relation $\delta$ is defined by the following formulas:
 
         $$ \texttt{request'} \gets \texttt{os\_request} $$
@@ -389,7 +389,7 @@ An abstract game tree (AGT) is a restricted version of the concrete game in whic
     \label{fig:agtHeight}
 \end{figure}
 
-Given an environment (controller) abstract game tree $T$ a \emph{partial strategy} $Strat: \textsc{nodes}(T) \rightarrow \mathcal{C}$ ($Strat: \textsc{nodes}(T) \rightarrow \mathcal{U}$) labels each node $n$ of the tree with the controller's (environment's) action to be played in the game round corresponding to $\textsc{height}(k, n)$. Figure~\ref{fig:example1d} shows a partial strategy constructed during the example execution. In the example an action for the controller ($\texttt{dev\_cmd} = 0$) is defined as the action to play in the first round of the game against the environment's first action ($\texttt{os\_request} = 1$).  
+Given an environment (controller) abstract game tree $T$ a \emph{partial strategy} $Strat: \textsc{nodes}(T) \rightarrow 2^\cC$ ($Strat: \textsc{nodes}(T) \rightarrow 2^\cU$) labels each node $n$ of the tree with the controller's (environment's) action to be played in the game round corresponding to $\textsc{height}(k, n)$. Figure~\ref{fig:example1d} shows a partial strategy constructed during the example execution. In the example an action for the controller ($\texttt{dev\_cmd} = 0$) is defined as the action to play in the first round of the game against the environment's first action ($\texttt{os\_request} = 1$).  
 
 Given a partial strategy $Strat$, we can map each leaf $l$ of the abstract game tree to $\langle s',i'\rangle=\textsc{outcome}(\langle s, i\rangle, Strat, l)$ obtained by playing all controllable and uncontrollable actions on the path from the root to the leaf.  An environment (controller) partial strategy is \emph{winning against $T$} if all its outcomes are states that are winning for the environment (controller) in the concrete game.
 
@@ -400,14 +400,14 @@ The bounded realisability algorithm constructs candidate strategies for one play
 \begin{algorithm}
     \begin{algorithmic}[1]
         \Function{solveAbstract}{$p, s, k, T$}
-        \State $cand \gets $ \Call{findCandidate}{$p, s, k, T$} \Comment{Look for a candidate}
+        \State $cand \gets $ \Call{findCandidate}{$p, s, k, T$} \Comment{Look for a candidate}\label{line:findcandidate}
         \IIf{$k = 1$} \Return $cand$ \EndIIf \Comment{Reached the bound}
         \State $T' \gets T$
         \Loop
             \If{$cand = \texttt{NULL}$} \Comment{No candidate: return with no solution}
                 \State \Return $\texttt{NULL}$
             \EndIf 
-            \State $\langle cex, l, u \rangle \gets $ \Call{verify}{$p, s, k, T, cand$} \Comment{Verify candidate}
+            \State $\langle cex, l, u \rangle \gets $ \Call{verify}{$p, s, k, T, cand$} \label{line:callVerify} \Comment{Verify candidate}
             \If{$cex = \False$} \Comment{No counterexample: return candidate}
                 \State \Return $cand$ 
             \EndIf 
@@ -426,19 +426,19 @@ The full procedure is illustrated in \Cref{alg:solveabstract,alg:findcandidate,a
 
 The algorithm is organised as a counterexample-guided abstraction refinement (CEGAR) loop.  The first step of the algorithm uses the \textsc{findCandidate} function, described below, to come up with a candidate partial strategy that is winning when the opponent is restricted to $T$.  If it fails to find a strategy, this means that no winning partial strategy exists against the opponent playing according to $T$.  If, on the other hand, a candidate partial strategy is found, we need to verify if it is indeed winning for the abstract game $T$.
 
-The \textsc{verify} procedure searches for a \emph{spoiling} counterexample strategy in each leaf of the candidate partial strategy by calling \textsc{solveAbstract} for the opponent. The dual solver solves games on behalf of the opponent player.  
+The \textsc{verify} procedure searches for a \emph{spoiling} counterexample strategy by solving new games beginning at the outcome in each leaf of the AGT after applying the candidate strategy. The new games are solved by a recursive call to \textsc{solveAbstract}, which now plays on behalf of the opponent. The dual solver is searching for a continuation of the current game that ensures that the opponent always wins.
 
 \begin{algorithm}
     \begin{algorithmic}
         \algrestore{b1}
         \Function{findCandidate}{$p, s, k, T$}
-        \State $\hat{T} \gets $ \Call{extend}{$T$} \Comment{Extend the tree with unfixed actions}
+        \State $\hat{T} \gets $ \Call{extend}{$T$} \Comment{Extend the tree with arbitrary actions}\label{line:extend}
             \If{$p = \texttt{cont}$}
                 \State $f \gets $ \Call{treeFormula}{$k, \hat{T}$}
             \Else
                 \State $f \gets $ \Call{\textoverline{treeFormula}}{$k, \hat{T}$}
             \EndIf
-            \State $sol \gets $ \Call{SAT}{$s(X_{\hat{T}}) \land f$}
+            \State $sol \gets $ \Call{SAT}{$s(\cS_{\hat{T}}) \land f$}
             \If{$sol = \texttt{unsat}$} 
                 \State \Return $\texttt{NULL}$ \Comment{No candidate exists}
             \Else
@@ -457,8 +457,9 @@ The \textsc{verify} procedure searches for a \emph{spoiling} counterexample stra
     \begin{algorithmic}
         \algrestore{b2}
         \Function{verify}{$p, s, k, T, cand$}
-            \For{$l \in leaves(gt)$}
+            \For{$l \in \Call{leaves}{T}$}
             \State $\langle k', s'\rangle \gets $ \Call{outcome}{$s, k, cand, l$} \Comment{Get bound and state at leaf}
+            \IIf{$k' = 0$} \Continue \EndIIf
             \If{$p = \textsc{cont}$}
                 \State $T' \gets \emptyset$
             \Else
@@ -476,13 +477,97 @@ The \textsc{verify} procedure searches for a \emph{spoiling} counterexample stra
     \label{alg:verify}
 \end{algorithm}
 
-If the dual solver can find no spoiling strategy at any of the leaves, then the candidate partial strategy is a winning one. Otherwise, \textsc{verify} returns the move used by the opponent to defeat a leaf of the partial strategy, which is appended to the corresponding node in $T$ in order to refine it in line~(9).  
+If the dual solver can find no spoiling strategy at any of the leaves then the candidate contains the prefix of a winning strategy for the abstract game.  Otherwise, \textsc{verify} returns the action used by the opponent after the leaf of the AGT in a spoiling strategy. The abstract game is refined by appending this action to the corresponding leaf in $T$ in line~/ref{line:callVerify}.
 
-We solve the refined game by recursively invoking \textsc{solveAbstract} on it.  If no partial winning strategy is found for the refined game then there is also no partial winning strategy for the original abstract game, and the algorithm returns a failure.  Otherwise, the partial strategy for the refined game is \emph{projected} on the original abstract game by removing the leaves introduced by refinements. The resulting partial strategy becomes a candidate strategy to be verified at the next iteration of the loop. In the worst case the loop terminates after all actions in the game are refined into the abstract game.  
+We solve the refined game by recursively invoking \textsc{solveAbstract} on it.  If no partial winning strategy is found for the refined game then there is also no partial winning strategy for the original abstract game, and the algorithm returns a failure.  Otherwise, the partial strategy for the refined game is \emph{projected} on the original abstract game by removing the leaves introduced by refinements (see Figure~\ref{fig:projection}). The resulting partial strategy becomes a candidate strategy to be verified at the next iteration of the loop. In the worst case the loop terminates after all actions in the game are refined into the abstract game.  
 
-The CEGAR loop depends on the ability to guess candidate partial strategies in \textsc{findCandidate}. For this purpose we use the heuristic that a partial strategy may be winning if each \textsc{outcome} of the strategy can be extended to a run of the game that is winning for the current player.  Clearly, if such a partial strategy does not exist then no winning partial strategy can exist for the abstract game tree. We can formulate this heuristic as a SAT query, which is constructed recursively by $\textsc{treeFormula}$ (for the controller) or $\textsc{\textoverline{treeFormula}}$ (for the environment) in Algorithm~\ref{alg:treeFormula}.  
+\begin{figure}
+    \centering
+    \begin{subfigure}[t]{0.3\textwidth}
+        \centering
+        \begin{minipage}[t][3.9cm][t]{\textwidth}
+        \centering
+        \begin{tikzpicture}[align at top, level distance = 10mm]
+            \node [circle,draw] (root){}
+                child {node [circle,draw] {}
+                    child {node [circle,draw] {}
+                        edge from parent node [left] {$u_1$}
+                    }
+                    child {node [circle,draw] {}
+                        edge from parent node [right] {$u_2$}
+                    }
+                    edge from parent node [left] {$u_0$}
+                }
+                node [left=4pt] {}
+                node [above=4pt] {$\langle s, k \rangle$};
+        \end{tikzpicture}
+        \end{minipage}
+        \caption{Original AGT}
+    \end{subfigure}%
+    \begin{subfigure}[t]{0.3\textwidth}
+        \centering
+        \begin{minipage}[t][3.9cm][t]{\textwidth}
+        \centering
+        \begin{tikzpicture}[align at top, level distance = 10mm]
+            \node [circle,draw] (root){}
+                child {node [circle,draw] {}
+                    child {node [circle,draw] {}
+                        child {node [circle,draw] {}
+                            node [left=4pt] {$c_3$}
+                            edge from parent node [right] {$u_3$}
+                        }
+                        node [left=4pt] {$c_1$}
+                        edge from parent node [left] {$u_1$}
+                    }
+                    child {node [circle,draw] {}
+                        child {node [circle,draw] {}
+                            node [right=4pt] {$c_4$}
+                            edge from parent node [right] {$u_4$}
+                        }
+                        node [right=4pt] {$c_2$}
+                        edge from parent node [right] {$u_2$}
+                    }
+                    node [left=4pt] {$c_0$}
+                    edge from parent node [left] {$u_0$}
+                }
+                node [left=4pt] {}
+                node [above=4pt] {$\langle s, k \rangle$};
+        \end{tikzpicture}
+        \end{minipage}
+        \captionsetup{justification=centering}
+        \caption{Refined AGT with candidate strategy}
+    \end{subfigure}%
+    \begin{subfigure}[t]{0.3\textwidth}
+        \centering
+        \begin{minipage}[t][3.9cm][t]{\textwidth}
+        \centering
+        \begin{tikzpicture}[align at top, level distance = 10mm]
+            \node [circle,draw] (root){}
+                child {node [circle,draw] {}
+                    child {node [circle,draw] {}
+                        node [left=4pt] {$c_1$}
+                        edge from parent node [left] {$u_1$}
+                    }
+                    child {node [circle,draw] {}
+                        node [right=4pt] {$c_2$}
+                        edge from parent node [right] {$u_2$}
+                    }
+                    node [left=4pt] {$c_0$}
+                    edge from parent node [left] {$u_0$}
+                }
+                node [left=4pt] {}
+                node [above=4pt] {$\langle s, k \rangle$};
+        \end{tikzpicture}
+        \end{minipage}
+        \caption{Projected strategy}
+    \end{subfigure}%
+    \caption{Projection of a candidate strategy}
+    \label{fig:projection}
+\end{figure}
 
-The tree is first extended to the maximum bound with edges that are labeled with arbitrary opponent actions (Algorithm~\ref{alg:bounded}, line 14).  For each node in the tree, new SAT variables are introduced corresponding to the state ($X_T$) and action ($U_T$ or $C_T$) variables of that node. Additional variables for the opponent actions in the edges of $T$ are introduced ($U_e$ or $C_e$) and set to $\textsc{action}(e)$.  The state and action variables of node $n$ are connected to successor nodes $\textsc{succ}(n)$ by an encoding of the transition relation and constrained to the winning condition of the player.  
+The CEGAR loop depends on the ability to guess candidate partial strategies in \textsc{findCandidate}. For this purpose we use the heuristic that a partial strategy may be winning if each \textsc{outcome} of the strategy can be extended to a run of the game that is winning for the current player.  Clearly, if such a partial strategy does not exist then no winning partial strategy can exist for the abstract game tree. We formulate this heuristic as a SAT query such that any satisfying assignment encodes such a strategy. The query is constructed recursively by $\textsc{treeFormula}$ (for the controller) or $\textsc{\textoverline{treeFormula}}$ (for the environment) in Algorithm~\ref{alg:treeFormula}.  
+
+The tree is first extended to the maximum bound with edges that are labeled with arbitrary opponent actions (Algorithm~\ref{alg:findcandidate}, line~\ref{line:extend}).  For each node in the tree, new SAT variables are introduced corresponding to the state ($\cS_T$) and action ($\cU_T$ or $\cC_T$) variables of that node. Additional variables for the opponent actions in the edges of $T$ are introduced ($U_e$ or $C_e$) and set to $\textsc{action}(e)$.  The state and action variables of node $n$ are connected to successor nodes $\textsc{succ}(n)$ by an encoding of the transition relation and constrained to the winning condition of the player.  
 
 \begin{algorithm}
     \caption{Tree formulas for Controller and Environment}
@@ -490,10 +575,10 @@ The tree is first extended to the maximum bound with edges that are labeled with
     \begin{algorithmic}[1]
         \Function{treeFormula}{$k, T$}
         \If{$\Call{height}{k, T} = 0$}
-        \State \Return{ $\lnot \Call{E}{X_{T}}$ }
+        \State \Return{ $\lnot \Call{E}{\cS_{T}}$ }
         \Else
-        \State \Return{$\lnot \Call{E}{X_{T}} \land$ \\
-            $$\bigwedge_{\langle e, n \rangle \in \Call{succ}{T}}(\Call{$\delta$}{X_T, U_e, C_T, X_n} \land U_e = \Call{action}{e} \land \Call{treeFormula}{k, n})$$
+        \State \Return{$\lnot \Call{E}{\cS_{T}} \land$ \\
+            $$\bigwedge_{\langle e, n \rangle \in \Call{succ}{T}}(\Call{$\delta$}{\cS_T, \cU_e, \cC_T, \cS_n} \land U_e = \Call{action}{e} \land \Call{treeFormula}{k, n})$$
         }
         \EndIf
         \EndFunction
@@ -504,10 +589,10 @@ The tree is first extended to the maximum bound with edges that are labeled with
         \algrestore{tf1}
         \Function{\textoverline{treeFormula}}{$k, T$}
         \If{$\Call{height}{k, T} = 0$}
-        \State \Return{\Call{E}{$X_{T}$}}
+        \State \Return{\Call{E}{$\cS_{T}$}}
         \Else
-        \State \Return{ $\Call{E}{X_{T}} \lor$ \\
-        $$\bigvee_{\langle e, n \rangle \in \Call{succ}{T}}(\Call{$\delta$}{X_T, U_T, C_e, X_n} \land C_e = \Call{action}{e} \land \Call{\textoverline{treeFormula}}{k, n})$$ }
+        \State \Return{ $\Call{E}{\cS_{T}} \lor$ \\
+        $$\bigvee_{\langle e, n \rangle \in \Call{succ}{T}}(\Call{$\delta$}{\cS_T, \cU_T, \cC_e, \cS_n} \land C_e = \Call{action}{e} \land \Call{\textoverline{treeFormula}}{k, n})$$ }
         \EndIf
         \EndFunction
     \end{algorithmic}
@@ -517,16 +602,42 @@ The tree is first extended to the maximum bound with edges that are labeled with
 
 Completeness of the algorithm follows from the completeness of the backtracking search. In the worst case the algorithm will construct the entire concrete game tree and effectively expand all quantifiers. Soundness follows from the existential search of the SAT solver in \textsc{findCandidate}. The algorithm terminates after searching for a candidate strategy on an abstract game tree with actions fixed only for the opponent. If no candidate can be found with the opponent restricted in this way then no strategy exists for the player.
 
+\begin{proposition}\label{prop:findcandidate}
+    Let $T$ be an abstract game tree with edges labelled by opponent actions. If $\textsc{findCandidate}(p, s, k, T) = \texttt{NULL}$ then there is no strategy for $p$ to win a game bounded to $k$ rounds from $s$.
+\end{proposition}
+\begin{proof}
+    We assume that $p$ is the controller, the proof for the environment is similar. The first line of $\textsc{findCandidate}$ constructs $\hat{T}$ by extending $T$ to the full length of the game with arbitrary environment actions. The algorithm then proceeds to construct $f = \textsc{treeFormula}(k, \hat{T})$ and query a SAT solver for a satisfying assignment to $s(\cS_k) \land f)$. The algorithm returns \texttt{NULL} when there is no satisfying assignment.
+
+
+    At every iteration of $\textsc{treeFormula}$, a conjunction expands a universal quantifier into a subset of its possible values: the actions in the tree. Therefore, $s(\cS_k) \land f$ is a partial expansion of the formula representing the existence of a controller strategy:
+    \begin{equation*}
+    \begin{multlined}
+        \forall \cU_k \exists \cC_k \forall \cU_{k-1} \exists \cC_{k-1} \ldots \forall \cU_0 \exists \cC_0 \\
+        (\lnot E(\cS_k) \land \delta(\cS_k, \cU_k, \cC_k, \cS_{k-1}) \land \ldots \land \lnot E(\cS_1) \land \delta(\cS_1, \cU_1, \cC_1, \cS_0) \land \lnot E(\cS_0)).
+    \end{multlined}
+    \end{equation*}
+    The partial expansion is satisfiable when there is a corresponding assignment to $\cC_k \dots \cC_1$ for every value in the subset of expanded environment variables.  If there is not an assignment that satisfies the formula for \emph{one} value to universal variables then clearly the formula is not satisfiable for \emph{all} values.  Hence if \textsc{findCandidate} returns \texttt{NULL} there cannot exist a strategy for the bounded game.
+\end{proof}
+
+\begin{theorem}
+    If there exists a strategy to a bounded game then \textsc{solveAbstract} will return a certificate tree labelled with a partial strategy.
+\end{theorem}
+\begin{proof}
+    Consider an abstract game tree $T$ with all opponent actions enumerated, i.e $T$ is a concrete game tree. The call to \textsc{findCandidate} on line~\ref{line:findcandidate} produces a formula exactly equivalent to a full expansion of the quantified formula above. If there is a winning strategy then it will be found by the SAT query and returned as a labelling of the certificate tree $T$. The call to \textsc{verify} amounts to a check that the outcome in every leaf of the tree is a winning state for the opponent. The computed strategy guarantees that no outcome is losing so \textsc{verify} must return false and the algorithm terminates.
+
+    If $T$ does not yet contain all opponent actions then \textsc{verify} may return a spoiling strategy that is then appended to the tree. The call to \textsc{verify} recursively calls \textsc{solveAbstract} for the opponent, so if a spoiling strategy is found it must be a valid opponent strategy against the candidate by Proposition~\ref{prop:findcandidate}. Any action appended to the tree must be one that is winning for the opponent against the candidate and so cannot already exist in the abstraction. Hence the refinement grows monotonically with each call to \textsc{verify}. Thus, either \textsc{verify} returns false and the algorithm terminates, or eventually abstraction is refined into a concrete game tree. A winning strategy for the concrete game must be winning in any abstraction so even if $T$ is the empty abstraction \textsc{verify} will return false in this case.
+\end{proof}
+
 \section{Optimisations}
 
-The bounded realisability algorithm has an exponential worst case running time when the entire search tree must be explored before discovering a winning strategy. In this section I present some optimisations that aim to prune the search tree as well as discover winning strategies earlier in the search.
+The bounded realisability algorithm has an worst case running time that is exponential in the number of opponent actions when the entire search tree must be explored before discovering a winning strategy. In this section I present some optimisations that aim to prune the search tree as well as discover winning strategies earlier in the search.
 
 \subsection{Bad State Learning}
 \label{sec:boundedLearning}
 
 The most important optimisation that allows the algorithm to avoid much of the search space is to record states that are known to be losing for one player. On subsequent calls to the SAT solver we encode these states in the candidate strategy formula (see Algorithm~\ref{alg:treeFormulaLearning}). Thus the algorithm avoids choosing moves that lead to states that are already known to be losing.
 
-Bad states are learned from failed attempts to find a candidate. If the SAT solver cannot find a candidate strategy for a given abstract game tree that means that there is a fixed prefix in the game tree for which the current player can never win. The state reached by playing the moves in the prefix must then be a losing state with some caveats. If the state is at the node with height $k$ and losing for the environment then we know that the environment cannot force to the error set in $k$ rounds. We do not know if the environment can force to the error set in $> k$ rounds. Therefore we record losing states for the environment in an array of sets of states $B^e$ indexed by the height at which the set is losing. For the controller, a losing state is losing for any run of length $>= k$. In practical use we are uninterested in controller strategies that make use of states that would lose should the game be extended to a longer bound so we merely maintain a single set of controller losing states $B^c$.
+Bad states are learned from failed attempts to find a candidate. If the SAT solver cannot find a candidate strategy for a given abstract game tree that means that there is a fixed prefix in the game tree for which the current player can never win. The state reached by playing the moves in the prefix must then be a losing state with some caveats. If the state is at the node with height $k$ and losing for the environment then we know that the environment cannot force to the error set in $k$ rounds. We do not know if the environment can force to the error set in $> k$ rounds. Therefore we record losing states for the environment in an array of sets of states $B^e$ indexed by the height at which the set is losing. For the controller, a losing state is losing for any run of length $>= k$. Instead of keeping an array we maintain a single set of losing states $B^c$ and block the entire set in all rounds of the game. This means that the algorithm is no longer complete: we can no longer find strategies that visit states in a round $<k$ after we discover that they are losing states for $>=k$. In practical use we are uninterested in these controller strategies since they are not winning for the unbounded game.
 
 Additional states can be learned by expanding a single state into a set of losing states by greedily testing each variable of the state for inclusion in a \emph{cube} of states. This technique is well known in the literature and can be efficiently implemented using a SAT solver capable of solving under assumptions~\cite{Een03}. It is shown in Algorithm~\ref{alg:boundedLearning}.
 
@@ -536,10 +647,10 @@ Additional states can be learned by expanding a single state into a set of losin
     \begin{algorithmic}[1]
         \Function{treeFormula}{$k, T$}
         \If{$\Call{height}{k, T} = 0$}
-        \State \Return{ $\lnot \Call{$B^c$}{X_{T}}$ }
+        \State \Return{ $\lnot \Call{$B^c$}{\cS_{T}}$ }
         \Else
-        \State \Return{$\lnot \Call{$B^c$}{X_{T}} \land$ \\
-            $$\bigwedge_{\langle e, n \rangle \in \Call{succ}{T}}(\Call{$\delta$}{X_T, U_e, C_T, X_n} \land U_e = \Call{action}{e} \land \Call{treeFormula}{k, n})$$
+        \State \Return{$\lnot \Call{$B^c$}{\cS_{T}} \land$ \\
+            $$\bigwedge_{\langle e, n \rangle \in \Call{succ}{T}}(\Call{$\delta$}{\cS_T, \cU_e, \cC_T, \cS_n} \land U_e = \Call{action}{e} \land \Call{treeFormula}{k, n})$$
         }
         \EndIf
         \EndFunction
@@ -550,11 +661,20 @@ Additional states can be learned by expanding a single state into a set of losin
         \algrestore{tf1}
         \Function{\textoverline{treeFormula}}{$k, T$}
         \If{$\Call{height}{k, T} = 0$}
-        \State \Return{\Call{E}{$X_{T}$}}
+        \State \Return{\Call{E}{$\cS_{T}$}}
         \Else
-        \State \Return{\Call{$B^e$[\Call{height}{k,t}]}{$X_{T}$} $\lor$ \\
-        $$\bigvee_{\langle e, n \rangle \in \Call{succ}{T}}(\Call{$\delta$}{X_T, U_T, C_e, X_n} \land C_e = \Call{action}{e} \land \Call{\textoverline{treeFormula}}{k, n})$$ }
+        \State \Return{\Call{$B^e$[\Call{height}{k,t}]}{$\cS_{T}$} $\lor$ \\
+        $$\bigvee_{\langle e, n \rangle \in \Call{succ}{T}}(\Call{$\delta$}{\cS_T, \cU_T, \cC_e, \cS_n} \land C_e = \Call{action}{e} \land \Call{\textoverline{treeFormula}}{k, n})$$ }
         \EndIf
+        \EndFunction
+    \end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}
+    \caption{Expansion of learned states}
+    \label{alg:boundedLearning}
+    \begin{algorithmic}
+        \Function{learn}{$s$}
         \EndFunction
     \end{algorithmic}
 \end{algorithm}
@@ -577,11 +697,11 @@ Encouraging the SAT solver to find \emph{shorter} strategies is a successful heu
                 \State $n \gets $ \Call{root}{$l$}
                 \While{\Call{height}{$k, n$} $\neq 0$}
                     \If{$p = \texttt{cont}$}
-                        \State $a \gets $ \Call{$B^e$[\Call{height}{$k, l$}]}{$X_n$}
+                        \State $a \gets $ \Call{$B^e$[\Call{height}{$k, l$}]}{$\cS_n$}
                     \Else
-                        \State $a \gets $ \Call{$E$}{$X_n$}
+                        \State $a \gets $ \Call{$E$}{$\cS_n$}
                     \EndIf
-                    \State $sol \gets $ \Call{SATWithAssumptions}{$prev \land a$, $s(X_{\hat{T}}) \land f$}
+                    \State $sol \gets $ \Call{SATWithAssumptions}{$prev \land a$, $s(\cS_{\hat{T}}) \land f$}
                     \If{$sol \neq \texttt{NULL}$}
                         \State $prev \gets prev \land a$
                         \Break
@@ -631,9 +751,9 @@ Algorithms that avoid BDDs in favour of SAT solving have been proposed for safet
 The performance of bounded realisability is influenced primarily on the branching factor of the game tree. The worst case scenario occurs when each environment action must be matched with a different controller action and no state learning is possible. For example, consider a modified version of the example given in Section~\ref{sec:boundedexample} in which the environment requests are not latched into a state variable.
 
 \begin{itemize}
-    \item $S = \{ \texttt{error} \} $. The only state is whether or not an error has occurred. 
-    \item $\mathcal{U} = \{ \texttt{os\_request} \} $. 
-    \item $\mathcal{C} = \{ \texttt{dev\_cmd} \}$.
+    \item $\cS = \{ \texttt{error} \} $. The only state is whether or not an error has occurred. 
+    \item $\cU = \{ \texttt{os\_request} \} $. 
+    \item $\cC = \{ \texttt{dev\_cmd} \}$.
     \item The transition relation $\delta$ is now: $$ \texttt{err'} \gets \texttt{os\_request} \neq \texttt{dev\_cmd} $$
     \item $s_0 = (\texttt{err} = 0)$. 
 \end{itemize}
@@ -780,9 +900,9 @@ Bounded realisability is most useful in the case where the winning region of a g
 To demonstrate the usefulness of the algorithm we introduce a simple warehouse robot controller. In this example the warehouse consists of four loading bays and the robot is tasked with shipping items placed in the bays in a timely fashion. We model the problem with a \texttt{timer} variable that begins at one, ticks down to zero, and then resets back to one. At the beginning of the cycle the environment may items in any two bays. The robot then may ship all items in one bay per timer tick and must clear all bays before the timer resets. The example is trivial but it could be scaled on the number of bays, number of items that the environment can load, and the length of the timer to produce complex specifications. In this example we use integer values for \texttt{timer}, \texttt{ship}, \texttt{load0} and \texttt{load1} to make the description more concise.
 
 \begin{itemize}
-    \item $S = \{ \texttt{error, bay0, bay1, bay2, bay3, timer} \} $.
-    \item $\mathcal{U} = \{ \texttt{load0, load1} \} $. 
-    \item $\mathcal{C} = \{ \texttt{ship} \}$.
+    \item $\cS = \{ \texttt{error, bay0, bay1, bay2, bay3, timer} \} $.
+    \item $\cU = \{ \texttt{load0, load1} \} $. 
+    \item $\cC = \{ \texttt{ship} \}$.
     \item The transition relation $\delta$ is now: 
         \begin{align*}
             \texttt{error'} \gets {}& \texttt{timer} = 1 \land (\texttt{bay0} = 1 \lor \texttt{bay1} = 1 \lor \texttt{bay2} = 1 \lor \texttt{bay3} = 1 ) \\
