@@ -20,9 +20,9 @@ Restricting ourselves to solving a bounded safety game enables us to turn the fo
 
 This work draws inspiration from a QBF solving algorithm that treats the QBF problem as a game~\cite{Janota12}. In that algorithm one player assumes the role of the universal quantifiers and the opponent takes on the existential quantifiers. In the game, the players take turns to chooses values for their variables from the outermost quantifier block in. Quantifiers may be removed from a formula by iteratively constructing and merging copies of the formula for each quantified variable. The copies of the formula represent the two possible values, true or false, of the quantified boolean variable. Universal quantification can then be reduced to the conjunction of these copies, and existential quantifications corresponds to a disjunction. In practice, these expanded formulas are far too large to be solved so the authors introduce abstractions, or partially expanded formulas, to avoid expanding on variables unnecessarily. The abstractions are refined through a CEGAR process of searching for candidate solutions and analysing counterexamples. The full algorithm is described in detail in Chapter~\ref{ch:relatedwork}. 
 
-We define a safety game by the tuple $G = (\cS, \cU, \cC, \delta, s_0, E)$. $S$, $\cU$, and $\cC$ are sets of boolean variables representing game states, environment actions, and controller actions respectively. The transition relation, $\delta$, is a boolean formula $\delta : 2^{S} \times 2^\cU \times 2^\cC \to 2^\cS$ that maps current states and actions to successor states. The game begins in the initial state $s_0$ and the $E$ is the set of error states that the controller must avoid.
+We define a safety game by the tuple $G = (\cS, \cU, \cC, \delta, s_0, E)$. $S$, $\cU$, and $\cC$ are sets of boolean variables representing game states, environment actions, and controller actions respectively. The transition relation, $\delta$, is a boolean formula $\delta : 2^{S} \times 2^\cU \times 2^\cC \to 2^\cS$ that maps current states and actions to successor states. The game begins in the initial state $s_0$ and the $E$ is the set of error states that the controller must avoid.  A controller strategy is a function $\pi^c : 2^\cS \times 2^\cU \to 2^\cC$, i.e. a mapping from states and environment actions to controller actions. We say that a strategy is winning if all runs in which the controller chooses actions according to $\pi^c$ avoid error states. If $\pi^c$ is a partial function that defines a mapping for a subset of $2^\cS \times 2^\cU$ to $2^\cC$ then we call $\pi^c$ a partial strategy.
 
-The following quantified formula may be used to solve realisability of a safety game bounded to $k$ game rounds: 
+Realisability is the problem to determining the existence of a winning controller strategy.  The following quantified formula may be used to solve realisability of a safety game bounded to $k$ game rounds: 
 \begin{equation*}
 \begin{multlined}
     \forall \cU_k \exists \cC_k \forall \cU_{k-1} \exists \cC_{k-1} \ldots \forall \cU_0 \exists \cC_0 \\
@@ -32,9 +32,9 @@ The following quantified formula may be used to solve realisability of a safety 
 
 The formula is constructed by unrolling the transition relationship for every game round until the bound is reached. A quantifier alternation is introduced to the formula for the variables corresponding to the actions of each player. Universal quantifiers are used for the environment variables and existential for the controller. The formula is constrained so that if the state at any game round is an error state the formula evaluates to false. Hence it is satisfiable if and only if a strategy exists for the controller that avoids the error states.
 
-A controller strategy is a function $\pi^c : 2^\cS \times 2^\cU \to 2^\cC$, i.e. a mapping from states and environment actions to controller actions. We say that a strategy is winning if all runs in which the controller chooses actions according to $\pi^c$ avoid error states. If $\pi^c$ is a partial function that defines a mapping for a subset of $2^\cS \times 2^\cU$ to $2^\cC$ then we call $\pi^c$ a partial strategy.
+It is possible to solve the QBF na\"ively but we can do better by taking into account structural information in the realisability problem that is lost in the translation to prenex normal form. In the remainder of this chapter I describe an adaptation of the counterexample guided QBF algorithm that takes advantage of this information.
 
-It is possible to solve the QBF na\"ively but we can do better by taking into account structural information in the realisability problem that is lost in the translation to prenex normal form. In particular, awareness that the formula is constructed of a repeated transition relation enables more effective learning. A na\"ive solver may learn sets of actions in order to prune the search tree. Instead we learn sets of states and, where possible, we transmit learned information between game rounds. For example, if we discover that the environment can force a visit to an error state from some set of states $s$ in $n$ rounds we also know that the environment can win from $s$ in $n+m$ rounds for all $m > 0$. Knowledge of how to construct the formula also enables the solver to efficiently produce a smaller expanded formula when necessary by simply copying only the parts of the formula corresponding to game rounds after the action of the expanded quantifier.
+%%%In particular, awareness that the formula is constructed of a repeated transition relation enables more effective learning. A na\"ive solver may learn sets of actions in order to prune the search tree. Instead we learn sets of states and, where possible, we transmit learned information between game rounds. For example, if we discover that the environment can force a visit to an error state from some set of states $s$ in $n$ rounds we also know that the environment can win from $s$ in $n+m$ rounds for all $m > 0$. Knowledge of how to construct the formula also enables the solver to efficiently produce a smaller expanded formula when necessary by simply copying only the parts of the formula corresponding to game rounds after the action of the expanded quantifier.
 
 \subsection{Example}
 \label{sec:boundedexample}
@@ -639,7 +639,7 @@ The most important optimisation that allows the algorithm to avoid much of the s
 
 Bad states are learned from failed attempts to find a candidate. If the SAT solver cannot find a candidate strategy for a given abstract game tree that means that there is a fixed prefix in the game tree for which the current player can never win. The state reached by playing the moves in the prefix must then be a losing state with some caveats. If the state is at the node with height $k$ and losing for the environment then we know that the environment cannot force to the error set in $k$ rounds. We do not know if the environment can force to the error set in $> k$ rounds. Therefore we record losing states for the environment in an array of sets of states $B^e$ indexed by the height at which the set is losing. For the controller, a losing state is losing for any run of length $>= k$. Instead of keeping an array we maintain a single set of losing states $B^c$ and block the entire set in all rounds of the game. This means that the algorithm is no longer complete: we can no longer find strategies that visit states in a round $<k$ after we discover that they are losing states for $>=k$. In practical use we are uninterested in these controller strategies since they are not winning for the unbounded game.
 
-Additional states can be learned by expanding a single state into a set of losing states by greedily testing each variable of the state for inclusion in a \emph{cube} of states. This technique is well known in the literature and can be efficiently implemented using a SAT solver capable of solving under assumptions~\cite{Een03}. It is shown in Algorithm~\ref{alg:boundedLearning}.
+Additional states can be learned by expanding a single state into a set of losing states by greedily testing each variable of the state for inclusion in a \emph{cube} of states. If the formula remains unsatisfiable for the generalised cube then the entire set of states must also be losing. This technique is well known in the literature and can be efficiently implemented using a SAT solver capable of solving under assumptions~\cite{Een03}. The entire learning procedure is shown in Algorithm~\ref{alg:boundedLearning}. \textsc{learn} takes a state $s$, and a tree formula $f$ that was found to be losing for the player $k$ at height $k$. First, literals are greedily removed from $s$ and the resulting generalised cube is added to $B^c$ or $B^e$.
 
 \begin{algorithm}
     \caption{Modified Tree Formulas with Bad State Avoidance}
@@ -674,7 +674,21 @@ Additional states can be learned by expanding a single state into a set of losin
     \caption{Expansion of learned states}
     \label{alg:boundedLearning}
     \begin{algorithmic}
-        \Function{learn}{$s$}
+        \Function{learn}{$p, s, k, f$}
+            \State $ \hat{s} \gets s$
+            \For{$s \in \cS$}
+            \State $sol \gets \Call{SATWithAssumptions}{\hat{s} \setminus \{ s \}, f}$
+                \If{$sol = \texttt{NULL}$}
+                    \State $\hat{s} \gets \hat{s} \setminus \{ s \}$
+                \EndIf
+            \EndFor
+            \If{$p = \texttt{cont}$}
+                \State $B^c \gets B^c \lor \hat{s}$
+            \Else
+                \For{$i \in [0,\ldots,k]$}
+                    \State $B^e[i] \gets B^e[i] \lor \hat{s}$
+                \EndFor
+            \EndIf
         \EndFunction
     \end{algorithmic}
 \end{algorithm}
@@ -683,7 +697,7 @@ Additional states can be learned by expanding a single state into a set of losin
 
 Learning new bad states means reducing the search space for the algorithm. It follows that it is better to learn states earlier in the algorithm's execution. One problem with relying on SAT calls that assume cooperation is that there is no urgency to the returned candidate strategies. Consider the running example: the environment can reach the error set by setting \texttt{request} to 2 during two rounds. However, in the empty abstract game tree of a bounded game of length 3 or longer, there is no reason for the SAT solver to make the first action one of the requesting rounds if it can assume the environment will never grant any resources. The first action is important because the candidate strategy is derived from that. The candidate is what the opponent has the chance to respond to, so if the candidate does not do anything useful the opponent's response has the freedom to be equally apathetic about reaching its goal. This leads to much of the search space being explored unnecessarily until we learn a losing state.
 
-Encouraging the SAT solver to find \emph{shorter} strategies is a successful heuristic for mitigating this issue. Whilst it does require more SAT calls per call to \textsc{findCandidate} it can be efficiently implemented using incremental SAT solving and during our benchmarking we found the cost to be worthwhile. A strategy is shorter if following the strategy leads to a known bad state for the opponent is fewer game rounds. For the environment this is clearly analogous to reaching the error set sooner. For the controller it is less clear but intuitively states that are environment losing at a certain height are more likely to be \emph{safe} states from which the controller may be able to force a loop.
+Encouraging the SAT solver to find \emph{shorter} candidate strategies is a successful heuristic for mitigating this issue. Whilst it does require more SAT calls per call to \textsc{findCandidate} it can be efficiently implemented using incremental SAT solving and during our benchmarking we found the cost to be worthwhile. A strategy is shorter if following the strategy leads to a known bad state for the opponent in fewer game rounds. For the environment this is clearly analogous to reaching the error set sooner. For the controller it is less clear, we use states that have been learned to be losing for the environment for a particular game height. The intuition is that these states are more likely to be \emph{safe}, i.e. belonging to the winning region of the controller.
 
 \begin{algorithm}
     \caption{Strategy Shortening}
@@ -692,28 +706,32 @@ Encouraging the SAT solver to find \emph{shorter} strategies is a successful heu
         \Function{shorten}{$p, s, k, T$}
             \State $\hat{T} \gets $ \Call{extend}{$T$}
             \State $f \gets $ \IfElse{$p = \texttt{cont}$}{\Call{treeFormula}{$k, \hat{T}$}}{\Call{\textoverline{treeFormula}}{$k, \hat{T}$}} \EndIfElse
-            \State $prev \gets \top$
-            \For{$l \in leaves(gt)$}
+            \State $\alpha \gets \top$
+            \State $cand \gets \Call{SAT}{s(\cS_{\hat{T}}) \land f}$
+            \For{$l \in \Call{leaves}{T}$}
                 \State $n \gets $ \Call{root}{$l$}
                 \While{\Call{height}{$k, n$} $\neq 0$}
                     \If{$p = \texttt{cont}$}
-                        \State $a \gets $ \Call{$B^e$[\Call{height}{$k, l$}]}{$\cS_n$}
+                        \State $\hat{\alpha} \gets $ \Call{$B^e$[\Call{height}{$k, n$}]}{$\cS_n$}
                     \Else
-                        \State $a \gets $ \Call{$E$}{$\cS_n$}
+                    \State $\hat{\alpha} \gets $ \Call{$B^c$}{$\cS_n$}
                     \EndIf
-                    \State $sol \gets $ \Call{SATWithAssumptions}{$prev \land a$, $s(\cS_{\hat{T}}) \land f$}
+                    \State $sol \gets $ \Call{SATWithAssumptions}{$\alpha \land \hat{\alpha}$, $s(\cS_{\hat{T}}) \land f$}
                     \If{$sol \neq \texttt{NULL}$}
-                        \State $prev \gets prev \land a$
+                    \State $\alpha \gets \alpha \land \hat{\alpha}$
+                        \State $cand \gets sol$
                         \Break
                     \EndIf
                         
                     \State $n \gets $ \Call{succ}{$n$}
                 \EndWhile
             \EndFor
-            \State \Return $sol$
+            \State \Return $cand$
         \EndFunction
     \end{algorithmic}
 \end{algorithm}
+
+Algorithm~\ref{alg:strategyShortening} gives the pseudocode for the optimisation. First a formula $f$ representing the abstract game is constructed in the same way as in \textsc{findCandidate}. An additional constraint on the formula $\alpha$ is initialised to true. Then for a leaf $l$ in the game tree the algorithm greedily attempts to construct a candidate strategy such that the highest possible predecessor of $l$ is a known winning state. If a candidate is found then the constraint is added to $\alpha$ and the algorithm continues on to find candidates with constraints added to other branches of the tree. The solution to the SAT query with the least permissive constraint is returned to be used as a candidate strategy.
 
 \subsection{Default Actions}
 
@@ -724,21 +742,21 @@ To avoid problematic action selection the solver can instead use some heuristic 
 
 \section{Discussion}
 
-The design of the algorithm is motivated by the desire to solve bounded safety games whilst avoiding the potential state explosion of computing the winning set. The key insight is to shift the emphasis from finding a winning set to finding winning strategies. The shift is made possible by searching for runs in an abstraction of the game and using the results to refine the abstraction. The advantage of this approach is that even when the winning set is difficult to represent symbolically (via a BDD or similar) a winning strategy may still be found. The reverse is also true: if the winning strategy requires too much branching it will become intractable to construct it using this algorithm. The difference can be likened to breadth-first versus depth-first search, the appropriate algorithm depends on the particular problem instance to be solved.
+The design of the algorithm is motivated by the desire to solve bounded safety games whilst avoiding the potential state explosion of computing the winning set. The key insight is to shift the emphasis from finding a winning set to finding winning strategies. The shift is made possible by searching for runs in an abstraction of the game and using the results to refine the abstraction. The advantage of this approach is that even when the winning set is difficult to represent symbolically (via a BDD or similar) a winning strategy may still be found. The reverse is also true: if the winning strategy requires too much branching it will become intractable to construct it using this algorithm. The difference can be likened to breadth-first versus depth-first search: the controllable predecessor used to construct a BDD explores all branches before progressing to the next game round, and bounded realisability explores traces through the full height of the bounded game before constructing branches in the abstraction. As with search, the best performing algorithm depends on the particular problem instance to be solved.
 
 \subsection{Comparison to QBF}
 
 As previously stated the bounded realisability problem is a specialisation of QBF and the algorithm presented in this chapter is a domain specific QBF solver. In Chapter~\ref{ch:relatedwork} several approaches to solving general QBF problems were described. The state of the art in QBF is focused on several areas: dependency analysis, circuit analysis, and counterexample guided search. 
 
-Analysing dependencies or the original circuit of the presented QBF are both aimed at reconstructing information that was lost during the conversion to a prenex normal form formula. The aim is to use that information to speed up the search for a solution. The bounded realisability algorithm is aware of the original problem formulation and constructs parts of it on the fly. For example, the quantifier dependency graph for a bounded realisability problem would normally be mostly linear due to the construction via unrollings of the transition relation, which rarely contains fully independent subformulas. An exception to this is the set of state and Tseitin variables which belongs to the last existential quantifier in the prefix. Those variables are decided by the action variables preceding them in the game. The algorithm presented here never includes anything other than action variables in player strategies, which reflects an awareness of that dependency. 
+A QBF solver may use dependency analysis to determine a partial ordering on decision making in the search. The bounded realisability algorithm is based on partial expansions and not search but the way that partial expansions are made is effectively a decision. In the case of bounded realisability formulas analysis will most likely not reveal a dependency tree significantly different from the linear quantifier prefix itself. The formula is constructed by unrolling a transition relation that takes states and actions as input and outputs states for the next iteration. It may be possible that the relation contains independent subformulas and some actions and states can be decided in parallel but the formula also contains constraints on states variables in the form of error and learned states. Thus it is unlikely that any action from a subsequent game round may be decided before an action in the current game round. One aspect of the dependency tree is that state variables are decided entirely by a prefix of action variable assignments. This information is used in bounded realisability when the \textsc{outcome} of a labelled game tree is used to create a subgame. 
 
-The algorithm contains a higher level of information about the original problem than an analysis of the circuit could provide. It may be possible to implement some the propagation techniques introduced by these methods but in general learning sets of states provides a greater pruning of the search tree. We are able to transmit learned states between game rounds, which would not be possible in a general QBF solver.
+The algorithm takes advantage of a higher level of information about the original problem than an analysis of the circuit could provide. A generalised approach to learning in QBF detects cubes of satisfying assignments and conflict clauses so that they are not reconsidered in other branches of the search after backtracking. Every unsatisfiable formula produced by \textsc{findCandidate} is effectively discovering either a satisfying assignment (when the environment loses) or a conflict clauses (when the controller loses). The specialised solver projects this information onto state variables and transmits the learned states between rounds of the game. This is only possible with the knowledge that the formula is constructed from an iterated unrolling of the transition relation of a game and it would be difficult to reproduce this level of learning in a general QBF solver.
 
 The ability to learn states is also the primary difference between the specialised solver and the counterexample guided QBF algorithm proposed in \cite{Janota12}. More recent QBF approaches use counterexamples to guide an abstraction of the problem via clause selection. It would interesting to apply these techniques to bounded realisability although the extension to unbounded synthesis in Chapter~\ref{ch:unbounded} would not be applicable without and abstract game tree.
 
 \subsection{Model checking}
 
-The concept of solving games by searching for counterexamples of a certain length with a SAT solver was first introduced in a bounded approach to model checking~\cite{Biere99}. Replacing counterexample traces with trees is the natural extension of this approach to realisability given that the controller now has agency to select actions in the game rather than modelling an implementation. The move from model checking to realisability brings additional complexity to the problem but the efficiency of SAT is still exploited to discover counterexamples quickly.
+The concept of verifying programs by searching for counterexamples of a certain length with a SAT solver was first introduced in a bounded approach to model checking~\cite{Biere99}. Replacing counterexample traces with trees is the natural extension of this approach to realisability given that the realisability problem is modelled as a game of opposing players.  The move from model checking to realisability brings additional complexity to the problem but the efficiency of SAT is still exploited to discover counterexamples quickly.
 
 \subsection{Related synthesis techniques}
 
@@ -758,7 +776,9 @@ The performance of bounded realisability is influenced primarily on the branchin
     \item $s_0 = (\texttt{err} = 0)$. 
 \end{itemize}
 
-Without a state variable to learn the algorithm is forced to explore all possible actions to determine realisability. If the example is modified again to allow for more types of requests by increasing the size of the action variables then it is easy to see the potential blow up. In Figure~\ref{fig:limitationexample} the final AGT for this example with a bound of $3$ and action variables of size $3$ is shown. The figure shows the values of \texttt{os\_request} in all possible paths through the game. It is clear that this algorithm cannot scale with these kinds of specifications. It should be noted that it is trivial to solve this example with a BDD solver, which can immediately prove that $\texttt{err} = 0$ is a winning region for the controller. The extension to unbounded realisability in Chapter~\ref{ch:unbounded} will also be able to handle this example by constructing the winning region.
+Without a state variable to learn the algorithm is forced to explore all possible actions to determine realisability. If the example is modified again to allow for more types of requests by increasing the domain of the action variables then it is easy to see the potential blow up. In Figure~\ref{fig:limitationexample} the final AGT for this example with a bound of $3$ and action variables of size $3$ is shown. The figure shows the values of \texttt{os\_request} in all possible paths through the game. It is clear that this algorithm cannot scale with these kinds of specifications. In this particular example learning that the state $\texttt{err} = 0$ is losing for the environment a various game rounds will significantly reduce the size of the tree. This example can be trivially extended so that learning will no longer be helpful by introducing states that record the history of the game. This extension can be done in a way that ensures that even with cube generalisation a unique state is learned in every node of the tree and learning does not reduce the search space.
+
+It should be noted that it is trivial to solve this example with a BDD solver, which can immediately prove that $\texttt{err} = 0$ is a winning region for the controller. The extension to unbounded realisability in Chapter~\ref{ch:unbounded} will also be able to handle this example by constructing the winning region.
 
 \begin{figure}
     \centering
@@ -897,7 +917,7 @@ Without a state variable to learn the algorithm is forced to explore all possibl
 
 Bounded realisability is most useful in the case where the winning region of a game has a large BDD but the winning strategy for the game is compact. It is not fair to compare the incomplete bounded algorithm to a complete winning region computation but we may consider the ability for each technique to find counterexamples. 
 
-To demonstrate the usefulness of the algorithm we introduce a simple warehouse robot controller. In this example the warehouse consists of four loading bays and the robot is tasked with shipping items placed in the bays in a timely fashion. We model the problem with a \texttt{timer} variable that begins at one, ticks down to zero, and then resets back to one. At the beginning of the cycle the environment may items in any two bays. The robot then may ship all items in one bay per timer tick and must clear all bays before the timer resets. The example is trivial but it could be scaled on the number of bays, number of items that the environment can load, and the length of the timer to produce complex specifications. In this example we use integer values for \texttt{timer}, \texttt{ship}, \texttt{load0} and \texttt{load1} to make the description more concise.
+To demonstrate the usefulness of the algorithm we introduce a simple warehouse robot controller. In this example the warehouse consists of four loading bays and the robot is tasked with shipping items placed in the bays in a timely fashion. We model the problem with a \texttt{timer} variable that begins at one, ticks down to zero, and then resets back to one. At the beginning of the cycle the environment may place items in any two bays. The robot then may ship all items in one bay per timer tick and must clear all bays before the timer resets. The example is trivial but it could be scaled on the number of bays, number of items that the environment can load, and the length of the timer to produce complex specifications. In this example we use integer values for \texttt{timer}, \texttt{ship}, \texttt{load0} and \texttt{load1} to make the description more concise.
 
 \begin{itemize}
     \item $\cS = \{ \texttt{error, bay0, bay1, bay2, bay3, timer} \} $.
@@ -922,7 +942,7 @@ To demonstrate the usefulness of the algorithm we introduce a simple warehouse r
         \end{aligned}$
 \end{itemize}
 
-The specification is clearly unrealisable given that in every cycle the environment can load items into two bays and the controller can only remove items from one bay. A realisability solver that uses BDDs might attempt to compute a winning region for the environment. The entire environment winning region for this game contains all possible configurations in which the environment loads two distinct bays. As shown in Figure~\ref{fig:strengthsexamplebdd}, BDDs are not succinct on are in this enumeration of cubes style. If this problem was to scale the BDD would quickly consume a large amount of space.
+The specification is clearly unrealisable given that in every cycle the environment can load items into two bays and the controller can only remove items from one bay. A realisability solver that uses BDDs might attempt to compute a winning region for the environment. The entire environment winning region for this game contains all possible configurations in which the environment loads two distinct bays. As shown in Figure~\ref{fig:strengthsexamplebdd}, BDDs are not succinct when used to represent formulas that are in this enumeration of cubes style. If this problem was to scale the BDD would quickly consume a large amount of space.
 
 \tikzset{>={Latex[width=2.2mm,length=2.5mm]}}
 \tikzstyle{one}=[->,solid]
@@ -972,7 +992,7 @@ The specification is clearly unrealisable given that in every cycle the environm
     \label{fig:strengthsexamplebdd}
 \end{figure}
 
-By instead using a SAT solver to check for the existence of a spoiling strategy to the environment filling two bays, the bounded realisability algorithm avoids computing the set of all environment winning states. The difference between the two methodologies is similar to the difference between breadth first search and depth first search. The BDD driven approach explores the game tree level by level similar to BFS and builds a compact set of winning states. The SAT based algorithm present here finds single paths through the tree that may be winning and checks them. Both approaches are efficient on different classes of specifications.
+By instead using a SAT solver to check for the existence of a spoiling strategy to the environment filling two bays, the bounded realisability algorithm avoids computing the set of all environment winning states. The difference between the two methodologies is similar to the difference between breadth first search and depth first search. The BDD driven approach explores the game tree level by level similar to BFS and builds a compact set of winning states. The SAT based algorithm presented here finds single paths through the tree that may be winning and checks them. Both approaches are efficient on different classes of specifications.
 
 \section{Summary}
 
