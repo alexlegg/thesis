@@ -5,6 +5,31 @@
 \newcommand{\termitesat}[0]{\textsc{TermiteSAT}\xspace}
 \newcommand{\ignore}[1]{}
 
+\definecolor{RYB1}{RGB}{238, 46, 47}
+\definecolor{RYB2}{RGB}{0, 140, 72}
+\definecolor{RYB3}{RGB}{24, 90, 169}
+\definecolor{RYB4}{RGB}{244, 125, 35}
+\definecolor{RYB5}{RGB}{102, 44, 145}
+\definecolor{RYB6}{RGB}{180, 56, 148}
+
+\pgfplotscreateplotcyclelist{plotcolours}{%
+{RYB1!80!black, mark options={fill=RYB1,color=RYB1}, mark=pentagon*},
+{RYB3!80!black, mark options={fill=RYB3,color=RYB3}, mark=triangle*},
+{RYB2!80!black, mark options={fill=RYB2,color=RYB2}, mark=halfsquare*},
+{RYB4!80!black, mark options={fill=RYB4,color=RYB4}, mark=diamond*},
+{RYB5!80!black, mark options={fill=RYB5,color=RYB5}, mark=halfcircle*},
+{RYB6!80!black, mark options={fill=RYB6,color=RYB6}, mark=x}}
+
+\pgfplotsset{
+    every axis plot/.append style={line width=0.8pt},
+    every axis/.append style={
+        axis lines=middle, 
+        x label style={at={(axis description cs:0.5,-0.1)},anchor=north},
+        y label style={at={(axis description cs:-0.1,.5)},rotate=90,anchor=south},
+        legend style={draw=none,cells={anchor=west},anchor=north west,at={(axis description cs:0.05,1)}},
+        cycle list name=plotcolours}
+}
+
 In this chapter I present benchmarking results for the implementations of each previous chapter. Bounded realisability is implemented in a tool called \eva as joint work between Nina Narodytska and myself. \eva was built in C++ and is based on the source code of \textsc{RAReQS}~\cite{Janota12}. The tool calls out to Glucose~\cite{Audemard09} for SAT solving. Strategy extraction was later added to \eva using PeRIPLO~\cite{Rollini13} to construct interpolants. The implementation also uses cudd~\cite{Somenzi01} to reduce interpolants into cubes via BDDs. I implemented unbounded realisability in a separate open source tool, \termitesat~\cite{TermiteSAT}, which contains a reimplementation of the bounded realisability algorithm. \termitesat is written in Haskell and also uses Glucose for SAT solving, PeRIPLO for interpolant construction, and cudd to reduce interpolants to cubes. \termitesat was submitted to the 2016 synthesis competition and the results are shown below. As part of that submission I added a hybrid mode to \termitesat that runs the unbounded synthesis algorithm in parallel with Simple BDD Solver~\cite{Walker14b}.
 
 \section{Bounded realisability}
@@ -15,175 +40,70 @@ We compare our solver against two existing approaches to solving games.  First, 
 
 Our experiments, summarised in \Cref{fig:uart,fig:ide,fig:spi,fig:ethernet}, show that off-the-shelf QBF solvers are not well-suited for solving games.  Although our algorithm is inspired by \textsc{RAReQS}, we achieve much better performance, since our solver takes into account the structure of the game, rather than treating it as a generic QBF problem.  
 
-\begin{figure}
+\begin{figure}[ht]
     \centering
-    \begin{tikzpicture}[y=0.002cm, x=0.2cm]
-        %axis
-        \draw (0,0) -- coordinate (x axis mid) (50,0);
-            \draw (0,0) -- coordinate (y axis mid) (0,4000);
-            %ticks
-            \foreach \x in {0,5,...,50}
-                \draw (\x,1pt) -- (\x,-3pt)
-                node[anchor=north] {\x};
-            \foreach \y in {0,500,...,4000}
-                \draw (1pt,\y) -- (-3pt,\y) 
-                    node[anchor=east] {\y}; 
-        %labels      
-        \node[below=0.8cm] at (x axis mid) {Instance size ($| \mathcal{S} |$)};
-        \node[rotate=90, above left=1cm and 1.5cm] at (y axis mid) {Time (seconds)};
-        
-        %Plots
-        \draw plot[mark=o, mark size=2pt, mark options={fill=white,color=red}] file {data/bench_uart_eva.dat};
-        \draw plot[mark=+, mark options={fill=white,color=blue}] file {data/bench_uart_termite.dat};
-        \draw plot[mark=triangle, mark size=2pt, mark options={fill=white}] file {data/bench_uart_depqbf.dat};
-        \draw plot[mark=x, mark options={fill=white,color=green}] file {data/bench_uart_rareqs.dat};
-
-        \begin{scope}[shift={(5,2000)}] 
-            \draw (0,0) -- 
-                plot[mark=o, mark size=2pt, mark options={fill=white,color=red}] (0.25,0)
-                node[right]{Bounded realisability};
-            \draw[yshift=\baselineskip] (0,0) -- 
-                plot[mark=x, mark options={fill=white,color=green}] (0.25,0)
-                node[right]{Rareqs};
-            \draw[yshift=2\baselineskip] (0,0) -- 
-                plot[mark=+, mark options={fill=white,color=blue}] (0.25,0)
-                node[right]{Termite};
-            \draw[yshift=3\baselineskip] (0,0) -- 
-                plot[mark=triangle, mark options={fill=white}] (0.25,0)
-                node[right]{DepQBF};
-        \end{scope}
-
+    \pgfplotsset{width=\textwidth, height=0.5\textheight}
+    \begin{tikzpicture}
+        \begin{axis}[xmin=0, xmax=50, ymin=0, ymax=4000, xlabel={Instance size ($| \cS |$)}, ylabel={Time (seconds)}]
+            \addplot file {data/bench_uart_eva.dat};
+            \addplot file {data/bench_uart_termite.dat};
+            \addplot file {data/bench_uart_rareqs.dat};
+            \addplot file {data/bench_uart_depqbf.dat};
+            \legend{EvaSolver,Termite,RAReQS,depQBF}
+        \end{axis}
     \end{tikzpicture}
     \caption{UART}
     \label{fig:uart}
 \end{figure}
 
-\begin{figure}
+\begin{figure}[hb]
     \centering
-    \begin{tikzpicture}[y=0.002cm, x=0.2cm]
-        %axis
-        \draw (0,0) -- coordinate (x axis mid) (50,0);
-            \draw (0,0) -- coordinate (y axis mid) (0,2000);
-            %ticks
-            \foreach \x in {0,5,...,50}
-                \draw (\x,1pt) -- (\x,-3pt)
-                node[anchor=north] {\x};
-            \foreach \y in {0,500,...,2000}
-                \draw (1pt,\y) -- (-3pt,\y) 
-                    node[anchor=east] {\y}; 
-        %labels      
-        \node[below=0.8cm] at (x axis mid) {Instance size ($| \mathcal{S} |$)};
-        \node[rotate=90, above left=1cm and 1.5cm] at (y axis mid) {Time (seconds)};
-        
-        %Plots
-        \draw plot[mark=o, mark size=2pt, mark options={fill=white,color=red}] file {data/bench_ide_eva.dat};
-        \draw plot[mark=+, mark options={fill=white,color=blue}] file {data/bench_ide_termite.dat};
-
-        \begin{scope}[shift={(5,500)}] 
-            \draw (0,0) -- 
-                plot[mark=o, mark size=2pt, mark options={fill=white,color=red}] (0.25,0)
-                node[right]{Bounded realisability};
-            \draw[yshift=\baselineskip] (0,0) -- 
-                plot[mark=x, mark options={fill=white,color=green}] (0.25,0)
-                node[right]{Rareqs};
-            \draw[yshift=2\baselineskip] (0,0) -- 
-                plot[mark=+, mark options={fill=white,color=blue}] (0.25,0)
-                node[right]{Termite};
-            \draw[yshift=3\baselineskip] (0,0) -- 
-                plot[mark=triangle, mark options={fill=white}] (0.25,0)
-                node[right]{DepQBF};
-        \end{scope}
-
+    \pgfplotsset{width=\textwidth, height=0.375\textheight}
+    \begin{tikzpicture}
+        \begin{axis}[xmin=15, xmax=50, ymin=0, ymax=3000, xlabel={Instance size ($| \cS |$)}, ylabel={Time (seconds)}]
+            \addplot file {data/bench_ide_eva.dat};
+            \addplot file {data/bench_ide_termite.dat};
+%%%            \addplot file {data/bench_ide_rareqs.dat};
+%%%            \addplot file {data/bench_ide_depqbf.dat};
+            \legend{EvaSolver,Termite,RAReQS,depQBF}
+        \end{axis}
     \end{tikzpicture}
     \caption{IDE DMA}
     \label{fig:ide}
 \end{figure}
 
-\begin{figure}
+\begin{figure}[ht]
     \centering
-    \begin{tikzpicture}[y=0.002cm, x=0.1cm]
-        %axis
-        \draw (0,0) -- coordinate (x axis mid) (100,0);
-            \draw (0,0) -- coordinate (y axis mid) (0,3000);
-            %ticks
-            \foreach \x in {0,20,...,100}
-                \draw (\x,1pt) -- (\x,-3pt)
-                node[anchor=north] {\x};
-            \foreach \y in {0,500,...,3000}
-                \draw (1pt,\y) -- (-3pt,\y) 
-                    node[anchor=east] {\y}; 
-        %labels      
-        \node[below=0.8cm] at (x axis mid) {Instance size ($| \mathcal{S} |$)};
-        \node[rotate=90, above left=1cm and 1.5cm] at (y axis mid) {Time (seconds)};
-        
-        %Plots
-        \draw plot[mark=o, mark size=2pt, mark options={fill=white,color=red}] file {data/bench_spi_eva.dat};
-        \draw plot[mark=+, mark options={fill=white,color=blue}] file {data/bench_spi_termite.dat};
-        \draw plot[mark=triangle, mark size=2pt, mark options={fill=white}] file {data/bench_spi_depqbf.dat};
-        \draw plot[mark=x, mark options={fill=white,color=green}] file {data/bench_spi_rareqs.dat};
-
-        \begin{scope}[shift={(5,2000)}] 
-            \draw (0,0) -- 
-                plot[mark=o, mark size=2pt, mark options={fill=white,color=red}] (0.25,0)
-                node[right]{Bounded realisability};
-            \draw[yshift=\baselineskip] (0,0) -- 
-                plot[mark=x, mark options={fill=white,color=green}] (0.25,0)
-                node[right]{Rareqs};
-            \draw[yshift=2\baselineskip] (0,0) -- 
-                plot[mark=+, mark options={fill=white,color=blue}] (0.25,0)
-                node[right]{Termite};
-            \draw[yshift=3\baselineskip] (0,0) -- 
-                plot[mark=triangle, mark options={fill=white}] (0.25,0)
-                node[right]{DepQBF};
-        \end{scope}
-
+    \pgfplotsset{width=\textwidth, height=0.375\textheight}
+    \begin{tikzpicture}
+        \begin{axis}[xmin=0, xmax=100, ymin=0, ymax=3000, xlabel={Instance size ($| \cS |$)}, ylabel={Time (seconds)}]
+            \addplot file {data/bench_spi_eva.dat};
+            \addplot file {data/bench_spi_termite.dat};
+            \addplot file {data/bench_spi_rareqs.dat};
+            \addplot file {data/bench_spi_depqbf.dat};
+            \legend{EvaSolver,Termite,RAReQS,depQBF}
+        \end{axis}
     \end{tikzpicture}
     \caption{SPI}
     \label{fig:spi}
 \end{figure}
 
-\begin{figure}
+\begin{figure}[hb]
     \centering
-    \begin{tikzpicture}[y=0.002cm, x=0.15cm]
-        %axis
-        \draw (0,0) -- coordinate (x axis mid) (70,0);
-            \draw (0,0) -- coordinate (y axis mid) (0,4000);
-            %ticks
-            \foreach \x in {0,5,...,70}
-                \draw (\x,1pt) -- (\x,-3pt)
-                node[anchor=north] {\x};
-            \foreach \y in {0,500,...,4000}
-                \draw (1pt,\y) -- (-3pt,\y) 
-                    node[anchor=east] {\y}; 
-        %labels      
-        \node[below=0.8cm] at (x axis mid) {Instance size ($| \mathcal{S} |$)};
-        \node[rotate=90, above left=1cm and 1.5cm] at (y axis mid) {Time (seconds)};
-        
-        %Plots
-        \draw plot[mark=o, mark size=2pt, mark options={fill=white,color=red}] file {data/bench_queue_eva.dat};
-        \draw plot[mark=+, mark options={fill=white,color=blue}] file {data/bench_queue_termite.dat};
-        \draw plot[mark=triangle, mark size=2pt, mark options={fill=white}] file {data/bench_queue_depqbf.dat};
-        \draw plot[mark=x, mark options={fill=white,color=green}] file {data/bench_queue_rareqs.dat};
-
-        \begin{scope}[shift={(5,2000)}] 
-            \draw (0,0) -- 
-                plot[mark=o, mark size=2pt, mark options={fill=white,color=red}] (0.25,0)
-                node[right]{Bounded realisability};
-            \draw[yshift=\baselineskip] (0,0) -- 
-                plot[mark=x, mark options={fill=white,color=green}] (0.25,0)
-                node[right]{Rareqs};
-            \draw[yshift=2\baselineskip] (0,0) -- 
-                plot[mark=+, mark options={fill=white,color=blue}] (0.25,0)
-                node[right]{Termite};
-            \draw[yshift=3\baselineskip] (0,0) -- 
-                plot[mark=triangle, mark options={fill=white}] (0.25,0)
-                node[right]{DepQBF};
-        \end{scope}
-
+    \pgfplotsset{width=\textwidth, height=0.5\textheight}
+    \begin{tikzpicture}
+        \begin{axis}[xmin=0, xmax=75, ymin=0, ymax=4000, xlabel={Instance size ($| \cS |$)}, ylabel={Time (seconds)}]
+            \addplot file {data/bench_queue_eva.dat};
+            \addplot file {data/bench_queue_termite.dat};
+            \addplot file {data/bench_queue_rareqs.dat};
+            \addplot file {data/bench_queue_depqbf.dat};
+            \legend{EvaSolver,Termite,RAReQS,depQBF}
+        \end{axis}
     \end{tikzpicture}
     \caption{Ethernet}
     \label{fig:ethernet}
 \end{figure}
+
 
 All four benchmarks have very large sets of winning states.  
 Nevertheless, in the UART and IDE benchmarks, Termite is able to 
@@ -202,6 +122,8 @@ confirms the the key premise behind the design of \eva, namely,
 solving real-world synthesis problems requires considering only a 
 small number of opponent moves in every state of the game.}  
 
+\clearpage
+
 \section{Strategy extraction}
 
 %%%\eva implements an important optimisation whereby it generates multiple certificate trees for fragments of the original game, which enables computational learning of winning states.  Our strategy generation algorithm is invoked in an online fashion, whenever \eva computes a certificate tree for a fragment.  This results in multiple partial strategies, where each strategy is computed as described in the previous section.  We introduce an additional final step to \eva, which combines partial strategies into a global winning strategy for the original game.
@@ -209,211 +131,69 @@ small number of opponent moves in every state of the game.}
 Strategy extraction is evaluated on the same set of driver synthesis benchmarks.  \Cref{fig:uart2,fig:ide2,fig:spi2,fig:ethernet2} sumarise the results.  For each family, we show strategy generation time as a function of the number of state variables in the specification for a selection of the hardest instances of the family solved by \eva.  Specifically, we show the time it took the base realisability solver to determine the winner (the realisability line), as well as the total time taken to solve the game and compute the winning strategy (the total line).
 
 
-\begin{figure}
-    \centering
-    \begin{tikzpicture}[y=0.002cm, x=0.2cm]
-        %axis
-        \draw (0,0) -- coordinate (x axis mid) (50,0);
-            \draw (0,0) -- coordinate (y axis mid) (0,4000);
-            %ticks
-            \foreach \x in {0,5,...,50}
-                \draw (\x,1pt) -- (\x,-3pt)
-                node[anchor=north] {\x};
-            \foreach \y in {0,500,...,4000}
-                \draw (1pt,\y) -- (-3pt,\y) 
-                    node[anchor=east] {\y}; 
-        %labels      
-        \node[below=0.8cm] at (x axis mid) {Instance size ($| \mathcal{S} |$)};
-        \node[rotate=90, above left=1cm and 1.5cm] at (y axis mid) {Time (seconds)};
-        
-        %Plots
-        \draw plot[mark=o, mark size=2pt, mark options={fill=white,color=red}] file {data/bench_strat_uart_total.dat};
-        \draw plot[mark=+, mark options={fill=white,color=blue}] file {data/bench_strat_uart_real.dat};
-
-        \begin{scope}[shift={(5,2000)}] 
-            \draw (0,0) -- 
-                plot[mark=o, mark size=2pt, mark options={fill=white,color=red}] (0.25,0)
-                node[right]{Bounded realisability};
-            \draw[yshift=\baselineskip] (0,0) -- 
-                plot[mark=x, mark options={fill=white,color=green}] (0.25,0)
-                node[right]{Rareqs};
-            \draw[yshift=2\baselineskip] (0,0) -- 
-                plot[mark=+, mark options={fill=white,color=blue}] (0.25,0)
-                node[right]{Termite};
-            \draw[yshift=3\baselineskip] (0,0) -- 
-                plot[mark=triangle, mark options={fill=white}] (0.25,0)
-                node[right]{DepQBF};
-        \end{scope}
-
-    \end{tikzpicture}
-    \caption{Strategy Extraction (UART)}
-    \label{fig:uart2}
-\end{figure}
-
-\begin{figure}
-    \centering
-    \begin{tikzpicture}[y=0.002cm, x=0.3cm]
-        %axis
-        \draw (0,0) -- coordinate (x axis mid) (35,0);
-            \draw (0,0) -- coordinate (y axis mid) (0,2000);
-            %ticks
-            \foreach \x in {0,5,...,35}
-                \draw (\x,1pt) -- (\x,-3pt)
-                node[anchor=north] {\x};
-            \foreach \y in {0,500,...,2000}
-                \draw (1pt,\y) -- (-3pt,\y) 
-                    node[anchor=east] {\y}; 
-        %labels      
-        \node[below=0.8cm] at (x axis mid) {Instance size ($| \mathcal{S} |$)};
-        \node[rotate=90, above left=1cm and 1.5cm] at (y axis mid) {Time (seconds)};
-        
-        %Plots
-        \draw plot[mark=o, mark size=2pt, mark options={fill=white,color=red}] file {data/bench_strat_ide_total.dat};
-        \draw plot[mark=+, mark options={fill=white,color=blue}] file {data/bench_strat_ide_real.dat};
-
-        \begin{scope}[shift={(5,200)}] 
-            \draw (0,0) -- 
-                plot[mark=o, mark size=2pt, mark options={fill=white,color=red}] (0.25,0)
-                node[right]{Bounded realisability};
-            \draw[yshift=\baselineskip] (0,0) -- 
-                plot[mark=x, mark options={fill=white,color=green}] (0.25,0)
-                node[right]{Rareqs};
-            \draw[yshift=2\baselineskip] (0,0) -- 
-                plot[mark=+, mark options={fill=white,color=blue}] (0.25,0)
-                node[right]{Termite};
-            \draw[yshift=3\baselineskip] (0,0) -- 
-                plot[mark=triangle, mark options={fill=white}] (0.25,0)
-                node[right]{DepQBF};
-        \end{scope}
-
-    \end{tikzpicture}
-    \caption{Strategy Extraction (IDE DMA)}
-    \label{fig:ide2}
-\end{figure}
-
-\begin{figure}
-    \centering
-    \begin{tikzpicture}[y=0.002cm, x=0.08cm]
-        %axis
-        \draw (0,0) -- coordinate (x axis mid) (140,0);
-            \draw (0,0) -- coordinate (y axis mid) (0,4000);
-            %ticks
-            \foreach \x in {0,10,...,140}
-                \draw (\x,1pt) -- (\x,-3pt)
-                node[anchor=north] {\x};
-            \foreach \y in {0,500,...,4000}
-                \draw (1pt,\y) -- (-3pt,\y) 
-                    node[anchor=east] {\y}; 
-        %labels      
-        \node[below=0.8cm] at (x axis mid) {Instance size ($| \mathcal{S} |$)};
-        \node[rotate=90, above left=1cm and 1.5cm] at (y axis mid) {Time (seconds)};
-        
-        %Plots
-        \draw plot[mark=o, mark size=2pt, mark options={fill=white,color=red}] file {data/bench_strat_spi_total.dat};
-        \draw plot[mark=+, mark options={fill=white,color=blue}] file {data/bench_strat_spi_real.dat};
-
-        \begin{scope}[shift={(5,2000)}] 
-            \draw (0,0) -- 
-                plot[mark=o, mark size=2pt, mark options={fill=white,color=red}] (0.25,0)
-                node[right]{Bounded realisability};
-            \draw[yshift=\baselineskip] (0,0) -- 
-                plot[mark=x, mark options={fill=white,color=green}] (0.25,0)
-                node[right]{Rareqs};
-            \draw[yshift=2\baselineskip] (0,0) -- 
-                plot[mark=+, mark options={fill=white,color=blue}] (0.25,0)
-                node[right]{Termite};
-            \draw[yshift=3\baselineskip] (0,0) -- 
-                plot[mark=triangle, mark options={fill=white}] (0.25,0)
-                node[right]{DepQBF};
-        \end{scope}
-
-    \end{tikzpicture}
-    \caption{Strategy Extraction (SPI)}
-    \label{fig:spi2}
-\end{figure}
-
-\begin{figure}
-    \centering
-    \begin{tikzpicture}[y=0.002cm, x=0.2cm]
-        %axis
-        \draw (0,0) -- coordinate (x axis mid) (50,0);
-            \draw (0,0) -- coordinate (y axis mid) (0,4000);
-            %ticks
-            \foreach \x in {0,5,...,50}
-                \draw (\x,1pt) -- (\x,-3pt)
-                node[anchor=north] {\x};
-            \foreach \y in {0,500,...,4000}
-                \draw (1pt,\y) -- (-3pt,\y) 
-                    node[anchor=east] {\y}; 
-        %labels      
-        \node[below=0.8cm] at (x axis mid) {Instance size ($| \mathcal{S} |$)};
-        \node[rotate=90, above left=1cm and 1.5cm] at (y axis mid) {Time (seconds)};
-        
-        %Plots
-        \draw plot[mark=o, mark size=2pt, mark options={fill=white,color=red}] file {data/bench_strat_ethernet_total.dat};
-        \draw plot[mark=+, mark options={fill=white,color=blue}] file {data/bench_strat_ethernet_real.dat};
-
-        \begin{scope}[shift={(5,2000)}] 
-            \draw (0,0) -- 
-                plot[mark=o, mark size=2pt, mark options={fill=white,color=red}] (0.25,0)
-                node[right]{Bounded realisability};
-            \draw[yshift=\baselineskip] (0,0) -- 
-                plot[mark=x, mark options={fill=white,color=green}] (0.25,0)
-                node[right]{Rareqs};
-            \draw[yshift=2\baselineskip] (0,0) -- 
-                plot[mark=+, mark options={fill=white,color=blue}] (0.25,0)
-                node[right]{Termite};
-            \draw[yshift=3\baselineskip] (0,0) -- 
-                plot[mark=triangle, mark options={fill=white}] (0.25,0)
-                node[right]{DepQBF};
-        \end{scope}
-
-    \end{tikzpicture}
-    \caption{Strategy Extraction (Ethernet)}
-    \label{fig:ethernet2}
-\end{figure}
-
-\begin{figure}
-\centering
-\small
-\begin{subfigure}{.5\linewidth}
-  \centering
-%%%  \includegraphics[width=\linewidth]{IDE.pdf}
-  \caption{IDE}
-  \label{fig:sub1}
-\end{subfigure}%
-~
-\begin{subfigure}{.5\linewidth}
-  \centering
-%%%  \includegraphics[width=\linewidth]{UART.pdf}
-  \caption{UART}
-  \label{fig:sub2}
-\end{subfigure}
-\begin{subfigure}{.5\linewidth}
-  \centering
-%%%  \includegraphics[width=\linewidth]{SPI.pdf}
-  \caption{SPI Flash}
-  \label{fig:sub1}
-\end{subfigure}%
-~
-\begin{subfigure}{.5\linewidth}
-  \centering
-%%%  \includegraphics[width=\linewidth]{Ethernet.pdf}
-  \caption{Ethernet}
-  \label{fig:sub2}
-\end{subfigure}
-\vspace{-3mm}
-\caption{Performance of strategy extraction algorithm on four parameterised benchmarks.
-The $X$-axis shows the number of state vars in the game.}
-\vspace{-4mm}
-\label{f:graphs}
-\end{figure}
-
 Table~\ref{table:strategyextractionresults} shows a detailed breakdown of experimental results, including the number of state variables for each instance (\textbf{Vars}) and the total time taken by the solver (\textbf{Total(s)}), split between the time used to determine the winner (and generate certificate trees) (\textbf{Base(s)}) and the strategy generation time (\textbf{Strategy(s)}). The \textbf{OH} column shows the overhead of strategy extraction.
 
 Profiling showed that non-negligible overhead was introduced by transferring CNFs from $\eva$'s internal representation to the representation used by the interpolation library.  This overhead can be almost completely eliminated with additional engineering effort.  Hence, I report the effective overhead (\textbf{EffOH}) of strategy extraction if this engineering effort had been done.
 
 The \textbf{Size} column shows the size of the strategy, i.e., the number of $(W,a,k)$ tuples returned by the \textsc{GenLocalStrats} function.  The last three columns report on the use of the PeRIPLO interpolation library in terms of the number of interpolation operations performed by the algorithm when solving the instance, the average and the maximal size of interpolants returned by PeRIPLO.  The size of an interpolant is reported by the size of its corresponding BDD. This conversion is done by the tool as an optimisation to simplify interpolants into cubes.
+
+These results show that strategy generation adds a modest overhead to the base solver.  Effective overheads are about $12\%$ for IDE and SPI, about $35\%$ for Ethernet and about $30\%$ for UART.  Most of this overhead is due to interpolant computation.  Moreover, experiments show that our algorithm scales linearly with the time taken by the base solver to determine the winner.  
+
+\begin{figure}[ht]
+    \centering
+    \pgfplotsset{width=\textwidth, height=0.5\textheight}
+    \begin{tikzpicture}
+        \begin{axis}[xmin=10, xmax=40, ymin=0, ymax=4000, xlabel={Instance size ($| \cS |$)}, ylabel={Time (seconds)}]
+            \addplot file {data/bench_strat_uart_total.dat};
+            \addplot file {data/bench_strat_uart_real.dat};
+            \legend{Total,Realisability}
+        \end{axis}
+    \end{tikzpicture}
+    \caption{Strategy Extraction (UART)}
+    \label{fig:uart2}
+\end{figure}
+
+\begin{figure}[hb]
+    \centering
+    \pgfplotsset{width=\textwidth, height=0.25\textheight}
+    \begin{tikzpicture}
+        \begin{axis}[xmin=25, xmax=35, ymin=0, ymax=2000, xlabel={Instance size ($| \cS |$)}, ylabel={Time (seconds)}]
+            \addplot file {data/bench_strat_ide_total.dat};
+            \addplot file {data/bench_strat_ide_real.dat};
+            \legend{Total,Realisability}
+        \end{axis}
+    \end{tikzpicture}
+    \caption{Strategy Extraction (IDE DMA)}
+    \label{fig:ide2}
+\end{figure}
+
+\begin{figure}[ht]
+    \centering
+    \pgfplotsset{width=\textwidth, height=0.4375\textheight}
+    \begin{tikzpicture}
+        \begin{axis}[xmin=0, xmax=140, ymin=0, ymax=3500, xlabel={Instance size ($| \cS |$)}, ylabel={Time (seconds)}]
+            \addplot file {data/bench_strat_spi_total.dat};
+            \addplot file {data/bench_strat_spi_real.dat};
+            \legend{Total,Realisability}
+        \end{axis}
+    \end{tikzpicture}
+    \caption{Strategy Extraction (SPI)}
+    \label{fig:spi2}
+\end{figure}
+
+\begin{figure}[hb]
+    \centering
+    \pgfplotsset{width=\textwidth, height=0.25\textheight}
+    \begin{tikzpicture}
+        \begin{axis}[ xmin=0, xmax=60, ymin=0, ymax=2000, xlabel={Instance size ($| \cS |$)}, ylabel={Time (seconds)}]
+            \addplot file {data/bench_strat_ethernet_total.dat};
+            \addplot file {data/bench_strat_ethernet_real.dat};
+            \legend{Total,Realisability}
+        \end{axis}
+    \end{tikzpicture}
+    \caption{Strategy Extraction (Ethernet)}
+    \label{fig:ethernet2}
+\end{figure}
 
 \begin{table}[t]
 \resizebox{\columnwidth}{!}{%
@@ -487,9 +267,10 @@ The \textbf{Size} column shows the size of the strategy, i.e., the number of $(W
 \label{table:strategyextractionresults}
 \end{table}
 
-These results show that strategy generation adds a modest overhead to the base solver.  Effective overheads are about $12\%$ for IDE and SPI, about $35\%$ for Ethernet and about $30\%$ for UART.  Most of this overhead is due to interpolant computation.  Moreover, experiments show that our algorithm scales linearly with the time taken by the base solver to determine the winner.  
 
 %%%These results show that strategy extraction is efficient, scalable and robust.  The last property is particularly interesting, as existing strategy extraction algorithms for traditional game solvers, based on winning set compilation, have been reported to introduce significant variance across instances~\cite{Bloem_KS_14corr,Bloem_KS_13}.  A conclusive comparison can only be performed by evaluating both types of algorithms on a common set of benchmarks.  Such a comparison requires first extending $\eva$ to support unbounded safety and reachability games and is part of the future work.
+
+\clearpage
 
 \section{Unbounded realisability}
 
@@ -499,7 +280,7 @@ Unbounded realisability is evaluated on the benchmarks of the 2015 synthesis com
 
 The benchmarks were run on a cluster of Intel Quad Core Xeon E5405 2GHz CPUs with 16GB of memory.  The solvers were allowed exclusive access to a node for one hour to solve an instance.  The results of this benchmarking are shown, along with the synthesis competition results~\cite{syntcompedacc}, in Table~\ref{tab:syntcomp}. The competition was run on Intel Quad Core 3.2Ghz CPUs with 32GB of memory, also on isolated nodes for one hour per instance. The competition results differ significantly from our own benchmarks due to this more powerful hardware.  For our benchmarks we report only the results for solvers we were able to run on our cluster. The unique column lists the number of instances that only that tool could solve in the competition (excluding our solver). In brackets is the number of instances that only that tool could solve, including our solver.
 
-\begin{table}
+\begin{table}[b]
     \centering
     \setlength{\tabcolsep}{8pt}
     \begin{tabular}{l | r | r | r }
@@ -541,46 +322,18 @@ Five of the instances unique to our solver are device driver instances and anoth
 
 I also present a cactus plot of the number of instances solved over time (Figure~\ref{fig:cactus}). We have plotted the best configuration of each solver we benchmarked. The solvers shown are \textsc{Demiurge}~\cite{Bloem14}, the only SAT-based tool in the competition, the winner of the sequential realisability track \textsc{Simple BDD Solver 2}~\cite{Walker14}, and AbsSynthe (seq3) \cite{Brenguier14}.
 
-\begin{figure}[h]
+\begin{figure}
     \centering
-    \begin{tikzpicture}[y=0.03cm, x=0.15cm]
-        %axis
-        \draw (0,0) -- coordinate (x axis mid) (60,0);
-            \draw (0,0) -- coordinate (y axis mid) (0,200);
-            %ticks
-            \foreach \x in {0,10,...,60}
-                \draw (\x,1pt) -- (\x,-3pt)
-                node[anchor=north] {\x};
-            \foreach \y in {0,25,...,200}
-                \draw (1pt,\y) -- (-3pt,\y) 
-                    node[anchor=east] {\y}; 
-        %labels      
-        \node[below=0.8cm] at (x axis mid) {Time (minutes)};
-        \node[rotate=90, above left=1cm and 0.7cm] at (y axis mid) {Instances solved};
-        
-        %Plots
-        \draw plot[mark=o, mark size=1pt, mark options={fill=white,color=red}] file {data/bench_termite.dat};
-        \draw plot[mark=+, mark options={fill=white,color=blue}] file {data/bench_demiurge.dat};
-        \draw plot[mark=triangle, mark options={fill=white}] file {data/bench_simple2.dat};
-        \draw plot[mark=x, mark options={fill=white,color=green}] file {data/bench_abs1.dat};
-%%%        \draw plot[mark=x, mark options={fill=white,color=green}] file {bench_abs2.dat};
-%%%        \draw plot[mark=x, mark options={fill=white,color=green}] file {bench_abs3.dat};
-
-        \begin{scope}[shift={(30,20)}] 
-            \draw (0,0) -- 
-                plot[mark=o, mark size=1pt, mark options={fill=white,color=red}] (0.25,0) -- (0.5,0) 
-                node[right]{Unbounded synthesis};
-            \draw[yshift=\baselineskip] (0,0) -- 
-                plot[mark=x, mark options={fill=white,color=green}] (0.25,0) -- (0.5,0)
-                node[right]{AbsSynthe (seq2)};
-            \draw[yshift=2\baselineskip] (0,0) -- 
-                plot[mark=+, mark options={fill=white,color=blue}] (0.25,0) -- (0.5,0)
-                node[right]{Demiurge};
-            \draw[yshift=3\baselineskip] (0,0) -- 
-                plot[mark=triangle, mark options={fill=white}] (0.25,0) -- (0.5,0)
-                node[right]{Simple BDD Solver 2};
-        \end{scope}
-
+    \pgfplotsset{width=\textwidth}
+    \begin{tikzpicture}
+        \begin{axis}[ xmin=0, xmax=60, ymin=0, ymax=200, xlabel={Time (minutes)}, ylabel={Instances solved},
+                legend style={draw=none,cells={anchor=west},anchor=south east,at={(axis description cs:1,0.05)}}]
+            \addplot file {data/bench_termite.dat};
+            \addplot file {data/bench_demiurge.dat};
+            \addplot file {data/bench_simple2.dat};
+            \addplot file {data/bench_abs1.dat};
+            \legend{TermiteSAT,Demiurge,Simple BDD Solver,AbsSynthe}
+        \end{axis}
     \end{tikzpicture}
     \caption{Number of instances solved over time.}
     \label{fig:cactus}
@@ -608,38 +361,23 @@ I report the results of the sequential realisability track of the 2016 synthesis
     \label{table:syntcomp16s}
 \end{table}
 
-\definecolor{RYB1}{RGB}{141, 211, 199}
-\definecolor{RYB2}{RGB}{179, 222, 105}
-\definecolor{RYB3}{RGB}{190, 186, 218}
-\definecolor{RYB4}{RGB}{251, 128, 114}
-\definecolor{RYB5}{RGB}{128, 177, 211}
-\definecolor{RYB6}{RGB}{253, 180, 98}
-
-\begin{figure}[h]
+\begin{figure}
     \centering
     \pgfplotsset{width=\textwidth}
     \begin{tikzpicture}
-        %Plots
-        \begin{axis}[axis lines=middle, 
-                xmin=0, xmax=60, 
-                ymin=0, ymax=200, 
-                x label style={at={(axis description cs:0.5,-0.1)},anchor=north},
-                y label style={at={(axis description cs:-0.1,.5)},rotate=90,anchor=south},
-                legend style={draw=none,cells={anchor=west},anchor=south east,at={(axis description cs:1,0.05)}},
-                xlabel={Time (minutes)},
-                ylabel={Instances solved}]
-            \addplot[RYB1!80!black, mark options={fill=RYB1,color=RYB1}, mark=pentagon*]    file {data/comp_sequential_TermiteSAT.dat};
-            \addplot[RYB3!80!black, mark options={fill=RYB3,color=RYB3}, mark=triangle*]    file {data/comp_sequential_SimpleBDDSolverwithAbstraction.dat};
-            \addplot[RYB2!80!black, mark options={fill=RYB2,color=RYB2}, mark=halfsquare*]  file {data/comp_sequential_DemiurgeD1real.dat};
-            \addplot[RYB4!80!black, mark options={fill=RYB4,color=RYB4}, mark=diamond*]     file {data/comp_sequential_AbsSyntheS3.dat};
-            \addplot[RYB5!80!black, mark options={fill=RYB5,color=RYB5}, mark=oplus*]       file {data/comp_sequential_SafetySynth.dat};
-            \addplot[RYB6!80!black, mark options={fill=RYB6,color=RYB6}, mark=x]            file {data/comp_sequential_SDF.dat};
-
+        \begin{axis}[ xmin=0, xmax=60, ymin=0, ymax=200, xlabel={Time (minutes)}, ylabel={Instances solved},
+                legend style={draw=none,cells={anchor=west},anchor=south east,at={(axis description cs:1,0.05)}}]
+            \addplot file {data/comp_sequential_TermiteSAT.dat};
+            \addplot file {data/comp_sequential_SimpleBDDSolverwithAbstraction.dat};
+            \addplot file {data/comp_sequential_DemiurgeD1real.dat};
+            \addplot file {data/comp_sequential_AbsSyntheS3.dat};
+            \addplot file {data/comp_sequential_SafetySynth.dat};
+            \addplot file {data/comp_sequential_SDF.dat};
             \legend{TermiteSAT,Demiurge,Simple BDD Solver,AbsSynthe,SafetySynth,SDF}
         \end{axis}
     \end{tikzpicture}
     \caption{SYNTCOMP'16 sequential track: Instances solved over time}
-    \label{fig:cactus}
+    \label{fig:syntcomp16seq}
 \end{figure}
 
 
