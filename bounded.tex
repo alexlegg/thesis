@@ -440,10 +440,12 @@ The \textsc{verify} procedure searches for a \emph{spoiling} counterexample stra
             \EndIf
             \State $sol \gets $ \Call{SAT}{$s(\cS_{\hat{T}}) \land f$}
             \If{$sol = \texttt{unsat}$} 
+                \State $\Call{learn}{p, s, k, T, f}$\label{line:boundedLearning}
+                \Comment{This line is enabled in an optimisation}
                 \State \Return $\texttt{NULL}$ \Comment{No candidate exists}
             \Else
                 \LineComment{Return partial strategy for $T$}
-                \State \Return $\{ \langle n, c \rangle\ |\ n \in $ \Call{nodes}{$T$}$, c = \Call{sol}{n} \}$
+                \State \Return $\{ \langle n, c \rangle\ |\ n \in $ \Call{nodes}{$T$}$, c = sol(n) \}$
             \EndIf
         \EndFunction
         \algstore{b2}
@@ -619,7 +621,7 @@ Completeness of the algorithm follows from the completeness of the backtracking 
     The partial expansion is satisfiable when there is a corresponding assignment to $\cC_k \dots \cC_1$ for every value in the subset of expanded environment variables.  If there is not an assignment that satisfies the formula for \emph{one} value to universal variables then clearly the formula is not satisfiable for \emph{all} values.  Hence if \textsc{findCandidate} returns \texttt{NULL} there cannot exist a strategy for the bounded game.
 \end{proof}
 
-\begin{theorem}
+\begin{theorem}\label{theorem:solveAbstract}
     If there exists a strategy to a bounded game then \textsc{solveAbstract} will return a certificate tree labelled with a partial strategy.
 \end{theorem}
 \begin{proof}
@@ -637,7 +639,7 @@ The bounded realisability algorithm has an worst case running time that is expon
 
 The most important optimisation that allows the algorithm to avoid much of the search space is to record states that are known to be losing for one player. On subsequent calls to the SAT solver we encode these states in the candidate strategy formula (see Algorithm~\ref{alg:treeFormulaLearning}). Thus the algorithm avoids choosing moves that lead to states that are already known to be losing.
 
-Bad states are learned from failed attempts to find a candidate. If the SAT solver cannot find a candidate strategy for a given abstract game tree that means that there is a fixed prefix in the game tree for which the current player can never win. The state reached by playing the moves in the prefix must then be a losing state with some caveats. If the state is at the node with height $k$ and losing for the environment then we know that the environment cannot force to the error set in $k$ rounds. We do not know if the environment can force to the error set in $> k$ rounds. Therefore we record losing states for the environment in an array of sets of states $B^e$ indexed by the height at which the set is losing. For the controller, a losing state is losing for any run of length $>= k$. Instead of keeping an array we maintain a single set of losing states $B^c$ and block the entire set in all rounds of the game. This means that the algorithm is no longer complete: we can no longer find strategies that visit states in a round $<k$ after we discover that they are losing states for $>=k$. In practical use we are uninterested in these controller strategies since they are not winning for the unbounded game.
+Bad states are learned from failed attempts to find a candidate. Enabling the optimisation triggers a call to \textsc{learn} in line~\ref{line:boundedLearning} of \textsc{findCandidate}.  If the SAT solver cannot find a candidate strategy for a given abstract game tree that means that there is a fixed prefix in the game tree for which the current player can never win. The state reached by playing the moves in the prefix must then be a losing state with some caveats. If the state is at the node with height $k$ and losing for the environment then we know that the environment cannot force to the error set in $k$ rounds. We do not know if the environment can force to the error set in $> k$ rounds. Therefore we record losing states for the environment in an array of sets of states $B^e$ indexed by the height at which the set is losing. For the controller, a losing state is losing for any run of length $>= k$. Instead of keeping an array we maintain a single set of losing states $B^c$ and block the entire set in all rounds of the game. This means that the algorithm is no longer complete: we can no longer find strategies that visit states in a round $<k$ after we discover that they are losing states for $>=k$. In practical use we are uninterested in these controller strategies since they are not winning for the unbounded game.
 
 Additional states can be learned by expanding a single state into a set of losing states by greedily testing each variable of the state for inclusion in a \emph{cube} of states. If the formula remains unsatisfiable for the generalised cube then the entire set of states must also be losing. This technique is well known in the literature and can be efficiently implemented using a SAT solver capable of solving under assumptions~\cite{Een03}. The entire learning procedure is shown in Algorithm~\ref{alg:boundedLearning}. \textsc{learn} takes a state $s$, and a tree formula $f$ that was found to be losing for the player $k$ at height $k$. First, literals are greedily removed from $s$ and the resulting generalised cube is added to $B^c$ or $B^e$.
 
@@ -671,10 +673,10 @@ Additional states can be learned by expanding a single state into a set of losin
 \end{algorithm}
 
 \begin{algorithm}
-    \caption{Expansion of learned states}
+    \caption{Learn an expanded cube of losing states}
     \label{alg:boundedLearning}
     \begin{algorithmic}
-        \Function{learn}{$p, s, k, f$}
+        \Function{learn}{$p, s, k, T, f$}
             \State $ \hat{s} \gets s$
             \For{$s \in \cS$}
             \State $sol \gets \Call{SATWithAssumptions}{\hat{s} \setminus \{ s \}, f}$

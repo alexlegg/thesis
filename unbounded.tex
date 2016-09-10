@@ -54,7 +54,7 @@ Recall the bounded realisability algorithm from Chapter~\ref{ch:bounded}. In Sec
     \begin{algorithmic}
         \algrestore{b2}
         \Function{verify}{$p, s, k, T, cand$}
-            \For{$l \in leaves(gt)$}
+            \For{$l \in \Call{leaves}{T}$}
             \State $\langle k', s'\rangle \gets $ \Call{outcome}{$s, k, cand, l$}
             \If{$p = \textsc{cont}$}
                 \State $T' \gets \emptyset$
@@ -178,7 +178,7 @@ We use these properties to learn the states that are losing to the actions in ev
         \Require $s(\mathcal{S}_T) \land $ \Call{treeFormula}{$k, T$} $\equiv \bot$
         \Require \emph{Must-invariant} holds
         \Ensure \emph{Must-invariant} holds
-        \Ensure $s(\mathcal{S}_T) \land B^M \not\equiv \bot$
+        \Ensure $s \land B^M \not\equiv \bot$
         \Comment $s$ will be added to $B^M$
         \Function{learn}{$s, T$}
             \IIf{\Call{succ}{$T$} $= \emptyset$}
@@ -189,6 +189,9 @@ We use these properties to learn the states that are losing to the actions in ev
             \State $F_1 \gets s(\mathcal{S}_T) \land \Call{treeFormula}{k, T_1}$
             \State $F_2 \gets \Call{treeFormula}{k, T_2}$
             \State $\mathcal{I} \gets  \Call{interpolate}{F_1, F_2}$
+%%%            \If{\text{strategy generation enabled}}
+%%%                \State $Strats^e \gets \Call{genLocalStrats}{\mathcal{I}, T_2}$\label{line:estrats}
+%%%            \EndIf
             \State $B^M \gets B^M \lor \mathcal{I}$
             \State \Call{learn}{$s, T_1$}
         \EndFunction
@@ -200,7 +203,7 @@ We use these properties to learn the states that are losing to the actions in ev
         \Require $s(\mathcal{S}_T) \land $ \Call{\textoverline{treeFormula}}{$k, T$} $\equiv \bot$
         \Require \emph{May-invariant} holds
         \Ensure \emph{May-invariant} holds
-        \Ensure $s(\mathcal{S}_T) \land B^m[$\Call{height}{$k, T$}$] \equiv \bot$
+        \Ensure $s \land B^m[$\Call{height}{$k, T$}$] \equiv \bot$
         \Comment{$s$ will be removed from $B^m$}
         \Function{\textoverline{learn}}{$s, T$}
             \IIf{\Call{succ}{$T$} $= \emptyset$}
@@ -211,6 +214,9 @@ We use these properties to learn the states that are losing to the actions in ev
             \State $F_1 \gets s(\mathcal{S}_T) \land $ \Call{\textoverline{treeFormula}}{$k, T_1$}
             \State $F_2 \gets \Call{\textoverline{treeFormula}}{k, T_2}$
             \State $\mathcal{I} \gets $ \Call{interpolate}{$F_1, F_2$}
+            \If{\text{strategy generation enabled}}
+                \State $Strats \gets \Call{genLocalStrats}{\mathcal{I}, T_2}$\label{cstrats}
+            \EndIf
             \For{$i = 1$ to \Call{height}{$k, n$}}
                 \State $B^m[i] \gets B^m[i] \setminus \mathcal{I}$
             \EndFor
@@ -226,7 +232,7 @@ We use these properties to learn the states that are losing to the actions in ev
 
 We construct an interpolant with $F_1 = s(\mathcal{S}_T) \land \textsc{treeFormula}(k, T_1)$ and $F_2 = \textsc{treeFormula}(k, T_2)$ (line~5). The only variables shared between $F_1$ and $F_2$ are the state variable copies belonging to node $n$. By the properties of the interpolant, $F_2 \land \mathcal{I}$ is unsatisfiable, therefore all states in $\mathcal{I}$ are losing against abstract game tree $T_2$ in Figure~\ref{fig:splitc}.  We also know that $F_1 \to \mathcal{I}$, thus $\mathcal{I}$ contains all states reachable at $n$ by following $T_1$ and avoiding error states.  
 
-We have discovered a set $\mathcal{I}$ of states losing for the environment and now must record it. Care must be taken in this step because the learning procedure operates on a bounded game. We have learned that there is no environment strategy that forces the game into an error state from $\mathcal{I}$ in $k$ rounds or less but there may be a longer strategy that does force an error.  We therefore record learned environment-losing states along with associated bounds.  To this end, we maintain a conceptually infinite array of sets $B^m[k]$ that are may-losing for the controller, indexed by bound $k$.  $B^m[k]$ are initialised to $\top$ for all $k$.  Whenever an environment-losing set $\mathcal{I}$ is discovered for a node $n$ with bound $\textsc{height}(k, n)$ in line~13 of Algorithm~\ref{alg:learn}, this set is subtracted from $B^m[i]$, for all $i$ less than or equal to the bound (lines~14--16).
+We have discovered a set $\mathcal{I}$ of states losing for the environment and now must record it. Care must be taken in this step because the learning procedure operates on a bounded game. We have learned that there is no environment strategy that forces the game into an error state from $\mathcal{I}$ in $k$ rounds or less but there may be a longer strategy that does force an error.  We therefore record learned environment-losing states along with associated bounds.  To this end, we maintain a conceptually infinite array of sets $B^m[k]$ that are may-losing for the controller, indexed by bound $k$.  $B^m[k]$ are initialised to $\top$ for all $k>0$ and $B^m[0] \gets E$.  Whenever an environment-losing set $\mathcal{I}$ is discovered for a node $n$ with bound $\textsc{height}(k, n)$ in line~13 of Algorithm~\ref{alg:learn}, this set is subtracted from $B^m[i]$, for all $i$ less than or equal to the bound (lines~14--16).
 
 Learning of states losing for the controller is similar (\textsc{learn} in Algorithm~\ref{alg:learn}). The main difference is that environment-losing states are losing for all game heights. Therefore we record these states in a single set $B^M$ of must-losing states (Algorithm~\ref{alg:learn}, line~6).  This set is initialised to the error set $E$ and grows as new losing states are discovered.  
 
@@ -344,7 +350,6 @@ Consider a simple arbiter system in which the environment makes a request for a 
 
 
 
-This example is the $n=2$ instance of the more general problem of an arbiter of $n$ resources. For large values of $n$, the set of winning states has no compact representation, which makes the problem hard for BDD solvers. One approach is to compute the uncontrollable predecessor of the set of error states, i.e. the states from which the environment can force the game into an error state. In the example, one iteration of this operation would give the set: $\texttt{nrequests} = 3 \lor (\texttt{nrequests} = 2 \land ( \texttt{resource0} = 0 \lor \texttt{resource1} = 0)) \lor (\texttt{nrequests} = 1 \land (\texttt{resource0} = 0 \land \texttt{resource1} = 0))$. We try to avoid computing the entire winning set by employing interpolation to approximate it instead. The benefit of interpolation is that an approximation can be obtained efficiently from the resolution proof of two mutually unsatisfiability formulas.
 
 Consider node $n$ in Figure~\ref{fig:interpolatetree}, which shows an abstract game tree for which the environment has no winning action. At this node there are two controller actions that prevent the environment from forcing the game into an error state in one game round. We want to use this tree to learn the states from which the controller can win playing one of these actions. Specifically, we compute a subset of such states, using interpolation, which we will show is sufficient to ensure convergence.
 
@@ -355,8 +360,7 @@ At node $n$, the interpolant $(\texttt{nrequests} = 1 \land
 environment followed by one of the controller actions at $n$ will be
 winning for the controller.
 
-\begin{algorithm}[t] \caption{Amended tree formulas for Controller and
-    Environment} \label{alg:unboundedTreeFormula} \begin{algorithmic}[1]
+\begin{algorithm}[t] \caption{Tree formula construction with $B^m$ and $B^M$} \label{alg:unboundedTreeFormula} \begin{algorithmic}[1]
         \Function{treeFormula}{$k, T$} \If{$\Call{height}{k, T} = 0$} \State
         \Return{ $\lnot \Call{$B^M$}{\mathcal{S}_{T}}$ } \Else \State \Return{$\lnot
             \Call{$B^M$}{\mathcal{S}_{T}} \land$ \\ $$\bigwedge_{\langle e, n \rangle \in
@@ -377,13 +381,13 @@ winning for the controller.
     \end{algorithmic}
 \end{algorithm}
 
-\subsection{Main synthesis loop}
+\subsection{Convergence on a fixed point}
 
-Figure~\ref{alg:unbounded} shows the main loop of the unbounded synthesis algorithm.  The algorithm invokes the modified bounded synthesis procedure with increasing bound $k$ until the initial state is in $B^M$ (environment wins) or $B^m$ reaches a fixed point (controller wins). We prove correctness in the next section.
+Algorithm~\ref{alg:unbounded} shows the main loop of the unbounded synthesis algorithm.  The algorithm invokes the modified bounded synthesis procedure with increasing bound $k$ until the initial state is in $B^M$ (environment wins) or $B^m$ reaches a fixed point (controller wins). We now prove that the algorithm will eventually converge on a fixed point and that it guarantees that the game is realisable.
 
 \begin{algorithm}[h]
     \begin{algorithmic}[1]
-        \Function{solveUnbounded}{$T$}
+        \Function{solveUnbounded}{$G, E$}
             \State $B^M \gets E$
             \State $B^m[0] \gets E$
             \For{$k = 1 \dots$}
@@ -395,7 +399,7 @@ Figure~\ref{alg:unbounded} shows the main loop of the unbounded synthesis algori
                     \LineComment{Reached fixed point}
                     \State \Return \texttt{realisable} 
                 \EndIf
-                \State $B^m[k] \gets E$
+                \State $B^m[k] \gets \top$
                 \State \Call{checkBound}{$k$}
             \EndFor
         \EndFunction
@@ -418,21 +422,18 @@ Figure~\ref{alg:unbounded} shows the main loop of the unbounded synthesis algori
     \label{alg:unbounded}
 \end{algorithm}
 
-
-
-\section{Correctness}
-
-
 We define two global invariants of the algorithm.  The \emph{may-invariant}
-states that sets $B^m[i]$ grow monotonically with $i$ and that each $B^m[i+1]$
-overapproximates the states from which the environment can force the game into
-$B^m[i]$, i.e. $B^m[i+1]$ overapproximates the uncontrollable predecessor of $B^m[i]$.  The \emph{must-invariant} guarantees that the must-losing set $B^M$ is an underapproximation of the actual losing set $B$. The interaction of the algorithm with the recorded learned states is constrained to \textsc{learn} and \textoverline{\textsc{learn}} so it suffices to prove these invariants for these functions only.
+states that sets $B^m[i]$ decrease monotonically with $i$ and that each $B^m[i+1]$ overapproximates the states from which the environment can force the game into $B^m[i]$, i.e. $B^m[i+1]$ overapproximates the uncontrollable predecessor of $B^m[i]$.  The \emph{must-invariant} guarantees that the must-losing set $B^M$ is an underapproximation of the actual losing set $B$.  Both invariants trivially hold after $B^m$ and $B^M$ have been initialised in the beginning of the algorithm.  Further interaction of the algorithm with the recorded learned states is constrained to \textsc{learn} and \textoverline{\textsc{learn}} so it suffices to prove these invariants for these functions only.
 
-\begin{proposition}
-    \textoverline{\textsc{learn}} maintains the may-invariant: $$\forall i<k.~B^m[i] \subseteq B^m[i+1], Upre(B^m[i]) \subseteq B^m[i+1].$$
+\begin{proposition}\label{prop:opplearn}
+    Assuming the preconditions are met, \textoverline{\textsc{learn}} satisfies its postconditions. Namely,
+    \begin{enumerate}
+        \item \textoverline{\textsc{learn}} maintains the may-invariant: $$\forall (0<i<k).~B^m[i] \subseteq B^m[i+1], Upre(B^m[i]) \subseteq B^m[i+1].$$
+        \item \textoverline{\textsc{learn}} ensures that $s$ is removed from $B^m$: $$s \land B^m[\textsc{height}(k, T)] \equiv \bot$$
+    \end{enumerate}
 \end{proposition}
 \begin{proof}
-    The precondition of \textoverline{\textsc{learn}} states that $s(\cS_T) \land \textsc{\textoverline{treeFormula}}(k, T) \equiv \bot$. We use the unsatisfiability of this formula to construct an interpolant.  Line~(11--12) splits the tree $T$ into $T_1$ and $T_2$, such that $T_2$ has depth 1.  Consider formulas $F_1=s(\mathcal{S}_T) \land \textsc{\textoverline{treeFormula}}(k, T_1)$ and $F_2 = \textsc{\textoverline{treeFormula}}(k, T_2)$.  These formulas only share variables $\mathcal{S}_n$.  Their conjunction $F_1 \land F_2$ is unsatisfiable, as by construction any solution of $F_1 \land F_2$ also satisfies $s(\mathcal{S}_T) \land \textsc{\textoverline{treeFormula}}(k, T)$, which is unsatisfiable by the precondition.  Hence the interpolation operation is defined for $F_1$ and $F_2$.  
+    The precondition of \textoverline{\textsc{learn}} states that $s(\cS_T) \land \textsc{\textoverline{treeFormula}}(k, T) \equiv \bot$. We use the unsatisfiability of this formula to construct an interpolant.  Line~(11--12) splits the tree $T$ into $T_1$ and $T_2$, such that $T_2$ has depth 1.  Consider formulas $F_1=s(\cS_T) \land \textsc{\textoverline{treeFormula}}(k, T_1)$ and $F_2 = \textsc{\textoverline{treeFormula}}(k, T_2)$.  These formulas only share variables $\mathcal{S}_n$.  Their conjunction $F_1 \land F_2$ is unsatisfiable, as by construction any solution of $F_1 \land F_2$ also satisfies $s(\cS_T) \land \textsc{\textoverline{treeFormula}}(k, T)$, which is unsatisfiable by the precondition.  Hence the interpolation operation is defined for $F_1$ and $F_2$.  
 
 Intuitively, the interpolant computed in line~(13) overapproximates the set of states reachable from $s$ by following the tree from the root node to $n$, and underapproximates the set of states from which the environment loses against tree $T_2$.  
 
@@ -444,77 +445,60 @@ At the second last recursive call to \textsc{\textoverline{learn}}, tree $T_1$ i
 
 \end{proof}
 
-\begin{proposition}
-    \textsc{learn} maintains the \emph{must-invariant}: $$B^M \subseteq B.$$
+\begin{proposition}\label{prop:learn}
+    Assuming the preconditions are met, \textsc{learn} satisfies its postconditions. Namely,
+    \begin{enumerate}
+        \item \textsc{learn} maintains the \emph{must-invariant}: $$B^M \subseteq B.$$
+        \item \textsc{learn} ensures that $s$ is added to $B^M$: $$s \land B^M \not\equiv$$
+    \end{enumerate}
 \end{proposition}
 
 \begin{proof}
-The proof of \textsc{learn} is similar to the above proof of \textsc{\textoverline{learn}}. An
-interpolant constructed from $F_1=s(\mathcal{S}_T) \land \textsc{treeFormula}(k, T_1)$
-and $F_2 = \textsc{treeFormula}(k, T_2)$ has the property $\II \land F_2 \equiv
-\bot$ and the precondition ensures that the controller is unable to force the
-game into $B^M$ playing against the counterexample moves in $T_2$. Thus adding
-$\II$ to $B^M$ maintains the must-invariant satisfying the first postcondition.
+The proof of \textsc{learn} is similar to the above proof of \textsc{\textoverline{learn}}. An interpolant constructed from $F_1=s(\mathcal{S}_T) \land \textsc{treeFormula}(k, T_1)$ and $F_2 = \textsc{treeFormula}(k, T_2)$ has the property $\II \land F_2 \equiv \bot$ and the precondition ensures that the controller is unable to force the game into $B^M$ playing against the counterexample moves in $T_2$. Thus adding $\II$ to $B^M$ maintains the must-invariant satisfying the first postcondition.  
 
-Likewise, in the second last recursive call of \textsc{learn} with the empty
-tree $T_1$ and root node $n$: $\textsc{treeFormula}(k, T_1) \equiv \lnot
-B^M(\mathcal{S}_T)$.  Hence $s(\mathcal{S}_T) \land \textsc{treeFormula}(k, T_1) \equiv
-s(\mathcal{S}_T) \land \lnot B^M(\mathcal{S}_T) \equiv \bot$. Therefore $s(\mathcal{S}_T) \land
-B^M(\mathcal{S}_T) \not\equiv \bot$, the second postcondition, is true.
+Likewise, in the second last recursive call of \textsc{learn} with the empty tree $T_1$ and root node $n$: $\textsc{treeFormula}(k, T_1) \equiv \lnot B^M(\mathcal{S}_T)$.  Hence $s(\mathcal{S}_T) \land \textsc{treeFormula}(k, T_1) \equiv s(\mathcal{S}_T) \land \lnot B^M(\mathcal{S}_T) \equiv \bot$. Therefore $s \land B^M \not\equiv \bot$, the second postcondition, is true.
+\end{proof}
+
+\begin{proposition}\label{prop:checkBound}
+    We prove the following for \textsc{checkBound}
+    \begin{enumerate}
+        \item \textsc{checkBound} maintains the may and must invariants
+        \item If the bounded game is realisable for $k$ then \textsc{checkBound} terminates and guarantees $s_0 \not\in B^m[k]$.
+        \item If the bounded game is unrealisable for $k$ then \textsc{checkBound} terminates and guarantees $s_0 \in B^M$.
+    \end{enumerate}
+\end{proposition}
+\begin{proof}
+    $B^m$ and $B^M$ are updated inside $\textsc{\textoverline{learn}}$ and $\textsc{learn}$ only. Therefore, by Propositions~\ref{prop:opplearn} and \ref{prop:learn}, \textsc{checkBound} maintains both invariants.
+
+    From the correctness of \textsc{solveAbstract} given in Theorem~\ref{theorem:solveAbstract} we ensure that \textsc{checkBound} terminates and during execution a certificate tree is generated and checked by \textsc{findCandidate}. In the modified version of \textsc{solveAbstract}, one of the learning procedures is called when \textsc{findCandidate} returns \texttt{NULL}. Thus \textsc{checkBound} generates a call to a learning procedure and passes $s$ and a certificate tree $T$.  Therefore, when the game is realisable, Proposition~\ref{prop:opplearn} guarantees that $s$ is removed from $B^m[k]$. Likewise, when the game is unrealisable Proposition~\ref{prop:learn} guarantees that $s$ is removed from $B^M$.
+
+%%%Assume that there is a winning strategy for the controller at bound $\kappa$.  This means that at some point the algorithm discovers a counterexample tree of bound $\kappa$ for which the environment cannot force into $E$. The algorithm then invokes the \textsc{\textoverline{learn}} method, which removes $s_0$ from $B^m[\kappa]$.  Alternatively, if there is a winning strategy for the environment at bound $\kappa$ then a counterexample losing for the controller will be found.  Subsequently \textsc{learn} will be called and $s_0$ added to $B^M$.
 \end{proof}
 
 
 \begin{theorem}
-
+    Let $G$ be a game with a safety condition defined by a set of error states $E$.  $\textsc{solveUnbounded}(G, E)$ is guaranteed to terminate and correctly decide realisability for $G$.
 \end{theorem}
 \begin{proof}
-Correctness of $\textsc{solveUnbounded}$ follows from these invariants. The
-must-invariant guarantees that the environment can force the game into an error
-state from $B^M$, therefore checking whether the initial state is in $B^M$ (as
-in line~5) is sufficient to return \texttt{unrealisable}. The may-invariant
-tells us that if $B^m[i] \equiv B^m[i+1]$ (line~6) then $Upre(B^m[i]) \subseteq
-B^m[i]$, i.e. $B^m[i]$ overapproximates the winning states for the environment.
-We know that $s_0 \not\in B^m[k]$ due to the post-condition of
-\textsc{checkBound}, and since the may-invariant tells us that $B^m$ is
-monotonic then $s_0$ must not be in $B^m[i]$. If $s_0 \not\in B^m[i]$ then $s_0$ is not in the winning states for the environment and the controller can always win from $s_0$. 
+Assume that $G$ is realisable, we use the may-invariant to show correctness of \textsc{solveUnbounded}.  The invariant guarantees that $B^m[i]$ contains all states from which the environment can force the game into an error state in at most $i$ steps. If $B^m[i] \equiv B^m[i+1]$ (line~6) then the invariant states that $Upre(B^m[i]) \subseteq B^m[i]$. Thus, any state that the environment can use to force the game into $B^m[i]$ is contained within $B^m[i]$. In other words, $B^m[i]$ overapproximates the winning states for the environment.  Proposition~\ref{prop:checkBound} ensures that $s_0 \not\in B^m[k]$, and since the invariant ensures that $B^m$ is monotonic then $s_0$ must not be in $B^m[i]$. If $s_0 \not\in B^m[i]$ then $s_0$ is not in the winning states for the environment and the controller can always win from $s_0$.  
 
-Both invariants trivially hold after $B^m$ and $B^M$ have been initialised in
-the beginning of the algorithm. The sets $B^m$ and $B^M$ are only modified by
-the functions \textsc{learn} and \textoverline{\textsc{learn}}.  Below we prove
-that \textoverline{\textsc{learn}} maintains the invariants.  The proof of
-\textsc{learn} is similar.
+Alternatively, $G$ is unrealisable. The must-invariant guarantees that the environment can force the game into an error state from $B^M$, therefore checking whether the initial state is in $B^M$ (as in line~5) is sufficient to return \texttt{unrealisable}.  
 
-We must prove that $\textsc{checkBound}$ terminates and that upon termination
-its postcondition holds, i.e., state $s_0$ is removed from $B^m[\kappa]$ if there
-is a winning controller strategy on the bounded safety game of maximum bound
-$\kappa$ or it is added to $B^M$ otherwise. Termination follows from
-completeness of counterexample guided search, which terminates after
-enumerating all possible opponent moves in the worst case.
-
-Assume that there is a winning strategy for the controller at bound $\kappa$.
-This means that at some point the algorithm discovers a counterexample tree of
-bound $\kappa$ for which the environment cannot force into $E$. The algorithm
-then invokes the \textsc{\textoverline{learn}} method, which removes $s_0$ from
-$B^m[\kappa]$.  Alternatively, if there is a winning strategy for the
-environment at bound $\kappa$ then a counterexample losing for the controller
-will be found.  Subsequently \textsc{learn} will be called and $s_0$ added to
-$B^M$.
+Termination also follows from the invariants. Given that $B^m$ decreases monotonically and there are a finite set of states in the game, the algorithm is guaranteed to reach a fixed point if the game is realisable. If the game is unrealisable there must exist a finite length winning environment strategy, thus by iteratively increasing $k$ we guarantee termination.
 
 \end{proof}
 
 \subsection{Strategy extraction}
 
-In the previous chapter I showed how to extract a strategy from the certificate tree generated during bounded realisability. I will now prove that the same approach extracts a correct strategy for an unbounded game when strategy generation is done online as it is when the learning optimisation is enabled for bounded realisability. 
+In the previous chapter I showed how to extract a strategy from the certificate tree generated during the bounded realisability algorithm. I will now prove that a similar approach extracts a correct strategy for an unbounded game when strategy generation is done online as it is when the learning optimisation is enabled for bounded realisability. In order to extract strategies online, line~\ref{line:cstrats} becomes active in \textoverline{\textsc{learn}} and a local strategy is generated for each learned interpolant.
 
 \begin{theorem}
-    Let $\pi$ be a partial strategy from initial states $s_0$ generated online during an unbounded realisability check that terminates with certificate tree $T$ of height $\kappa$. By choosing the actions in $\pi$ the controller ensures that the game never reaches an error state.
+    Let $G$ be a safety game that is realisable with respect to an error set $E$. Let $Strats$ be a set of partial strategies generated during $\textsc{solveUnbounded}(G, E)$, then $\pi = \textsc{compileStrat}(Strats)$ is a winning partial controller strategy for $G$.
 \end{theorem}
 \begin{proof}
-    Let $(b, k)$ be a pair such that $b$ is a set of states learned to be environment-losing for a game of length $k$ during execution of \textoverline{\textsc{learn}}. Then $(b, k)$ has corresponding tree with a depth one one $T$. We record $[(w_0, c_0, k_0), \ldots, (w_j, c_j, k_j)] = \textsc{genLocalStrats}(T, k, b)$ using \opptf from Algorithm~\ref{alg:unboundedTreeFormula}. Since the tree is of depth one, \textsc{next} is never called.  From the precondition of \textoverline{\textsc{learn}} we know that $b(\cS_T) \land \opptf(k, T)$ is false. Therefore interpolation in \textsc{partition} is well defined. The resulting partitioning defines a controller action $c_i$ such that every $c_i$-successor of the set of states and environment actions in $w_i$ is outside $B^m[k_i-1]$. By construction $b(\cW) = \bigvee_i w_i$, i.e. the partial strategy defines an action for every state in $b$ and every environment action.
+    Let $(b, k)$ be a pair such that $b$ is a set of states learned to be environment-losing for a game of length $k$ during execution of \textoverline{\textsc{learn}}. Then $(b, k)$ has corresponding tree with a depth of one $T$. We record $[(w_0, c_0, k_0), \ldots, (w_j, c_j, k_j)] = \textsc{genLocalStrats}(T, k, b)$ using \opptf from Algorithm~\ref{alg:unboundedTreeFormula}. Since the tree is of depth one, \textsc{next} is never called.  From the precondition of \textoverline{\textsc{learn}} we know that $b(\cS_T) \land \opptf(k, T)$ is false. Therefore interpolation in \textsc{partition} is well defined. The resulting partitioning defines a controller action $c_i$ such that every $c_i$-successor of the set of states and environment actions in $w_i$ is outside $B^m[k_i-1]$. By construction $b(\cW) = \bigvee_i w_i$, i.e. the partial strategy defines an action for every state in $b$ and every environment action.
 
     On termination of unbounded realisability $s_0$ will be removed from $B^m[\kappa]$. By collecting all the partial strategies generated online we have a controller strategy from $s_0$ that ensures that the environment can never reach any set in $B^m$. Since $B^m[i] = B^m[i+1]$ is known to overapproximate the winning region of the environment, the resulting strategy must stay within the safe region.
-
-    TODO: More rigorous proof.
 \end{proof}
 
 \section{Optimisations}
@@ -699,7 +683,11 @@ In practise, unbounded synthesis can do well on this specification when the SAT 
 
 \subsection{Strengths}
 
-The strength of unbounded synthesis lies in the ability to approximate the winning region. This can be seen on a scaled up version of the example used in Section~\ref{sec:unboundedAlgorithm}. A system with $n$ resources and an environment that can make $m$ requests at once is always realisable if $n \geq m$ by a controller that always grants access to $m$ resources. The problem for BDD solvers is that it can be difficult to compactly represent all $^n C_m$ combinations of granted resources that make up the winning region. With unbounded synthesis a fixed point can be reached by choosing just one winning combination and proving that the environment cannot force an escape from that small set of states.
+The strength of unbounded synthesis lies in the ability to approximate the winning region. This can be seen on a scaled up version of the example used in Section~\ref{sec:unboundedAlgorithm}.  The example as described is the $n=2, m=2$ instance of the more general problem of an arbiter of $n$ resources and an environment that can make up to $m$ requests at once. The general problem is realisable if $n \geq m$ by a controller that always grants access to $m$ resources.  The problem for BDD solvers is that it can be difficult to compactly represent all $^n C_m$ combinations of granted resources that make up the winning region. With unbounded synthesis a fixed point can be reached by choosing just one winning combination and proving that the environment cannot force an escape from that small set of states.
+
+%%%Consider the $n=2, m=2$ instance as given above.  One approach taken by BDD solvers is to iteratively compute the uncontrollable predecessor of the set of error states until a fixed point.  One iteration of this operation would give the set: $\texttt{nrequests} = 3 \lor (\texttt{nrequests} = 2 \land ( \texttt{resource0} = 0 \lor \texttt{resource1} = 0)) \lor (\texttt{nrequests} = 1 \land (\texttt{resource0} = 0 \land \texttt{resource1} = 0))$. 
+
+%%%We try to avoid computing the entire winning set by employing interpolation to approximate it instead. The benefit of interpolation is that an approximation can be obtained efficiently from the resolution proof of two mutually unsatisfiability formulas.
 
 In Chapter~\ref{ch:bounded} I showed that the strength of the bounded realisability algorithm lies in quickly discovering counterexamples that are difficult to find by representing the entire winning or losing region as a BDD. Unbounded synthesis has similar advantages except that we can extend this advantage to specifications that are realisable.
 

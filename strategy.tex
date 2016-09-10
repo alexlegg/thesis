@@ -11,7 +11,7 @@
 \newcommand{\apgametree}[0]{\mbox{\sc AbsSolvedGT}}
 \newcommand{\opgametree}[0]{\mbox{\sc Spoiling}}
 
-\newcommand{\opptf}[0]{\textsc{\textoverline{treeFormula}}}
+\newcommand{\opptf}[0]{\textsc{\textoverline{treeFormula}}\xspace}
 
 \newcommand{\clk}[0]{\texttt{clk}}
 \newcommand{\curr}[0]{\texttt{curr}}
@@ -546,13 +546,37 @@ Let abstract game tree $T$ of height $\kappa$ be a certificate tree for the set 
 
 In Section~\ref{sec:boundedLearning} I described an optimisation to bounded realisability in which computational learning is used to exclude known losing states from the search tree. If this optimisation is enable then the final certificate tree returned by the realisability algorithm will assume the absence of those states. In this case we need to adjust the way that strategy extraction is done so that the generated strategy includes winning actions for excluded states. 
 
-The modification is simple: partial strategies are extracted online during the realisability check. A set of states $b$ is learned to be losing for the environment for height $k$ when $b \land \opptf(k, T)$ is unsatisfiable for some subtree $T$. In other words, $T$ is a certificate tree for $b$. We can use \textsc{genLocalStrats} to record a partial strategy $Strat$ for the subtree $T$. On termination of the bounded realisability check a final partial strategy for game's certificate tree and combined with every partial strategy collected online. 
+The modification is simple: partial strategies are extracted online during the realisability check. Recall that a set of states $b$ is learned to be losing for the environment for height $k$ when $b \land \opptf(k, T)$ is unsatisfiable for some subtree $T$. In other words, $T$ is a certificate tree for $b$. Algorithm~\ref{alg:stratLearning} shows \textsc{learn} with an additional call to \textsc{genLocalStrats} in line~\ref{line:onlineLocalStrats}.  We use \textsc{genLocalStrats} to record a set of partial strategies, $Strats$, one for each learned state. On termination of the bounded realisability algorithm a final partial strategy is extracted from the game's certificate tree and combined $Strats$ to produce a strategy for the entire game.
 
-Algorithm~\ref{alg:stratLearning} (reproduced from the previous chapter) shows how an opponent tree formula is constructed with respect to an indexed array of sets of learned states $B^e$. At each index $k$ of the array is a set of states for which the environment is known to lose a game of $k$ rounds. $B^e$ conceptually consists of pairs of state sets and tree heights $(b_i, k_i)$ for which $\textsc{findCandidate}(\textsc{env}, b_i, k_i, T_i)$ returned false for some abstract game tree $T_i$, i.e. $T_i$ is a certificate tree for $(b_i, k_i)$.
+\begin{algorithm}
+    \caption{Learning with online strategy extraction}
+    \label{alg:stratLearning}
+    \begin{algorithmic}
+        \Function{learn}{$p, s, k, T, f$}
+            \State $ \hat{s} \gets s$
+            \For{$s \in \cS$}
+            \State $sol \gets \Call{SATWithAssumptions}{\hat{s} \setminus \{ s \}, f}$
+                \If{$sol = \texttt{NULL}$}
+                    \State $\hat{s} \gets \hat{s} \setminus \{ s \}$
+                \EndIf
+            \EndFor
+            \If{$p = \texttt{cont}$}
+                \State $B^c \gets B^c \lor \hat{s}$
+            \Else
+                \State $Strats \gets Strats \cup \Call{genLocalStrats}{T, k, \hat{s}}$ \label{line:onlineLocalStrats}
+                \For{$i \in [0,\ldots,k]$}
+                    \State $B^e[i] \gets B^e[i] \lor \hat{s}$
+                \EndFor
+            \EndIf
+        \EndFunction
+    \end{algorithmic}
+\end{algorithm}
+
+Algorithm~\ref{alg:stratTreeFml} (reproduced from the previous chapter) shows how an opponent tree formula is constructed with respect to an indexed array of sets of learned states $B^e$. At each index $k$ of the array is a set of states for which the environment is known to lose a game of $k$ rounds. $B^e$ conceptually consists of pairs of state sets and tree heights $(b_i, k_i)$ for which $\textsc{findCandidate}(\textsc{env}, b_i, k_i, T_i)$ returned false for some abstract game tree $T_i$, i.e. $T_i$ is a certificate tree for $(b_i, k_i)$.
 
 \begin{algorithm}
     \caption{Opponent tree formula with state learning}
-    \label{alg:stratLearning}
+    \label{alg:stratTreeFml}
     \begin{algorithmic}[1]
         \Function{\textoverline{treeFormula}}{$k, T$}
         \If{$\Call{height}{k, T} = 0$}
