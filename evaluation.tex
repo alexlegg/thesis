@@ -283,7 +283,7 @@ The benchmarks were run on a cluster of Intel Quad Core Xeon E5405 2GHz CPUs wit
 \begin{table}[b]
     \centering
     \setlength{\tabcolsep}{8pt}
-    \begin{tabular}{l | r | r | r }
+    \begin{tabular}{l r r r }
         \textbf{Solver} & \textbf{Solved} & \textbf{Solved} & \textbf{Unique} \\
                         & \textbf{(Competition)} & \textbf{(Benchmarks)} & \\
         \hline
@@ -295,7 +295,7 @@ The benchmarks were run on a cluster of Intel Quad Core Xeon E5405 2GHz CPUs wit
         AbsSynthe (seq1) & 173 & 139 & 1 \\
         Demiurge (D1real) & 139 & 136 & 5 \textit{(2)} \\
         Aisy & 98 & \\
-        \textit{Unbounded Synthesis} & & \textit{103} & \textit{12} \\
+        \textit{TermiteSAT} & & \textit{103} & \textit{12} \\
     \end{tabular}
     \caption{Synthesis Competition 2015 Results}
     \label{tab:syntcomp}
@@ -351,39 +351,43 @@ I also present a cactus plot of the number of instances solved over time (Figure
 %%%solved by our solver but there may still be value in the addition of this work
 %%%to the portfolio.  It remains future work to explore this possibility.
 
+\clearpage
 \subsection{Synthesis Competition Results}
 
 I report the results of the sequential realisability track of the 2016 synthesis competition in Table~\ref{table:syntcomp16s}
 
 \begin{table}
-%%%    \begin{tabular}{r l r r}
-%%%        1 & Simple BDD Solver (w/ Abstraction) & 175 & 1 \\
-%%%        2 & Simple BDD Solver (w/ Abstraction 2) & 167 & 1 \\
-%%%        3 & SafetySynth & 164 & 0 \\
-%%%        Simple BDD Solver & 164 & 0 \\
-%%%        5 & SafetySynth (Alt) & 163 & 0 \\
-%%%        6 & AbsSynthe (S3) & 161 & 4 \\
-%%%        7 & AbsSynthe (S2) & 151 & 0 \\
-%%%        8 & SDF & 149 & 0 \\
-%%%        9 & AbsSynthe (S1) & 147 & 0 \\
-%%%        10 & Demiurge D1real & 129 & 6 \\
-%%%        11 & TermiteSAT & 97 & 4 \\
-%%%    \begin{end}
+    \centering
+    \begin{tabular}{l r r}
+        \textbf{Solver} & \textbf{Solved} & \textbf{Unique} \\
+        \hline
+        Simple BDD Solver (w/ Abstraction) & 175 & 1 \\
+        Simple BDD Solver (w/ Abstraction 2) & 167 & 1 \\
+        SafetySynth & 164 & 0 \\
+        Simple BDD Solver & 164 & 0 \\
+        SafetySynth (Alt) & 163 & 0 \\
+        AbsSynthe (S3) & 161 & 4 \\
+        AbsSynthe (S2) & 151 & 0 \\
+        SDF & 149 & 0 \\
+        AbsSynthe (S1) & 147 & 0 \\
+        Demiurge D1real & 129 & 6 \\
+        TermiteSAT & 97 & 4 \\
+    \end{tabular}
     \caption{SYNTCOMP'16: sequential realisability track}
     \label{table:syntcomp16s}
 \end{table}
 
-\begin{table}
-    \centering
-    \begin{enumerate}
-        \item \texttt{stay18}
-        \item \texttt{stay20n}
-        \item \texttt{amba9match5}
-        \item \texttt{6s191\_c0t8}
-    \end{enumerate}
-    \caption{SYNTCOMP'16: Instances uniquely solved by our approach}
-    \label{tab:synt16unique}
-\end{table}
+%%%\begin{table}
+%%%    \centering
+%%%    \begin{enumerate}
+%%%        \item \texttt{stay18}
+%%%        \item \texttt{stay20n}
+%%%        \item \texttt{amba9match5}
+%%%        \item \texttt{6s191\_c0t8}
+%%%    \end{enumerate}
+%%%    \caption{SYNTCOMP'16: Instances uniquely solved by our approach}
+%%%    \label{tab:synt16unique}
+%%%\end{table}
 
 \begin{figure}
     \centering

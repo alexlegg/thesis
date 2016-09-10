@@ -171,9 +171,9 @@ Rabin automata are also $\omega$-automata, which are similar to B\"uchi automata
 
 \subsection{Symbolic Model Checking}
 
-The model checking approaches described above involve a computationally expensive explicit exploration of the state space of the system. In the decisively titled \emph{Symbolic model checking: $10^{20}$ states and beyond}~\cite{Burch90} the authors claim an increase in the size of systems that can be checked from $10^3$--$10^6$ to $10^{20}$. This breakthrough result was achieved via symbolic, as opposed to explicit, representation of the states in the game structure.
+The model checking approaches described above involve a computationally expensive explicit exploration of the state space of the system. In the decisively titled \emph{Symbolic model checking: $10^{20}$ states and beyond}~\cite{Burch90} the authors claim an increase in the size of systems that can be checked from $10^3$--$10^6$ to $10^{20}$. This breakthrough result was achieved via symbolic, as opposed to explicit, representation of the states in the Kripke structure.
 
-Consider the Kripke structures used in the previous sections. Without loss of generality, we may replace the set of states $S$ with a set of boolean variables. A single state is now a valuation to those variables and a set of states may be symbolically represented by a boolean function. In order to combat state explosion a compact representation of boolean functions is required. The standard choice is an ordered binary decision diagram (BDD)~\cite{Bryant86}.
+Consider the Kripke structures used in the previous sections. Without loss of generality, we may replace the set of states with a set of boolean variables. A single state is now a valuation to those variables and a set of states may be symbolically represented by a boolean function. In order to combat state explosion a compact representation of boolean functions is required. The standard choice is an ordered binary decision diagram (BDD)~\cite{Bryant86}.
 
 BDDs represent boolean functions as directed acyclic graphs. Each node contains a variable, each edge represents a decision (true or false) on its parent's variable. One node is designated root and each path through the graph will terminate in one of two sink nodes that represent whether the decisions on that path satisfy the boolean function or not. Isomorphic nodes (where both decisions lead to the same result) may be removed and isomorphic subgraphs may be merged in order to compress the function representation. The ordering of variables in the graph is important to this compressibility. In the worst case the representation is a tree with no removed or merged nodes, which is exponential in the number of variables. Given a boolean function and a variable ordering the corresponding BDD is canonical. Figure~\ref{fig:backgroundBDD} shows two example BDDs that represent the same boolean function with different variable orderings.
 
@@ -284,17 +284,17 @@ We can use $\mu$-calculus to characterise CTL formulas as fixed point computatio
 
 Model checking is the art of deciding whether a program meets a specification. Synthesis is the related problem of \emph{constructing} the program to meet a specification. In model checking the actions of the program are decided by the software being checked. A synthesis procedure must instead decide how the controller chooses actions and the ways the environment can react to each decision. In order to model this requirement the controller and environment should be considered to be in an adversarial relationship. Thus the synthesis problem is formulated as a two player game between the reactive program and its environment~\cite{Pnueli89}.
 
-A game is a structure $G = (S, \mathcal{U}, \mathcal{C}, \delta, s_0)$. We consider only two player games and we name those players the \emph{controller} and \emph{environment}. The structure is defined by:
+A game is a structure $G = (S, U, C, \delta, s_0)$. We consider only two player games and we name those players the \emph{controller} and \emph{environment}. The structure is defined by:
 
 \begin{itemize}
     \item $S$ is a finite set of states,
-    \item $\mathcal{U}$ is a finite alphabet of \emph{uncontrollable} actions,
-    \item $\mathcal{C}$ is a finite alphabet of \emph{controllable} actions,
-    \item $\delta : S \times \mathcal{U} \times \mathcal{C} \to S$ is a transition relation mapping states, uncontrollable actions, and controllable actions to next states,
+    \item $U$ is a finite alphabet of \emph{uncontrollable} actions,
+    \item $C$ is a finite alphabet of \emph{controllable} actions,
+    \item $\delta : S \times U \times C \to S$ is a transition relation mapping states, uncontrollable actions, and controllable actions to next states,
     \item $s_0 \in S$ is an initial state.
 \end{itemize}
 
-Conceptually, the game structure is another finite state automaton where transitions are partially controlled by both players. In each state, the environment chooses an uncontrollable action from $\mathcal{U}$ and the system chooses a controllable action from $\mathcal{C}$. We consider only deterministic games where $\delta(s, u, c, s_1') \land \delta(s, u, c, s_2') \to (s_1' = s_2')$.  We modify the notion of a run to suit games: $(s_0, u_0, c_0), (s_1, u_1, c_1), ... (s_n, u_n, c_n)$ where $\forall i [i \geq 0 \to \delta(s_i, u_i, c_i, s_{i+1})]$. 
+Conceptually, the game structure is another finite state automaton where transitions are partially controlled by both players. In each state, the environment chooses an uncontrollable action from $U$ and the system chooses a controllable action from $C$. We consider only deterministic games where $\delta(s, u, c, s_1') \land \delta(s, u, c, s_2') \to (s_1' = s_2')$.  We modify the notion of a run to suit games: $(s_0, u_0, c_0), (s_1, u_1, c_1), ... (s_n, u_n, c_n)$ where $\forall i [i \geq 0 \to \delta(s_i, u_i, c_i, s_{i+1})]$. 
 
 In addition to the game structure itself we define a game \emph{objective} $\psi$ given by an LTL formula. We say that a run is \emph{winning} for the controller iff the run satisfies the objective. The game is zero-sum, therefore a run is winning for the environment in the dual case where the objective $\psi$ is not true. For a controller to be correct it must ensure that all choices of the environment lead to runs that are winning for the controller. 
 
@@ -302,9 +302,9 @@ In addition to the game structure itself we define a game \emph{objective} $\psi
 
 %%%Formally, a run is controller-winning iff $\forall i [i \geq 0 \to \lnot E(s_i)]$ environment-winning iff $\exists i [i \geq 0 \land E(s_i)]$.
 
-A \emph{controller strategy} $\pi^c : \mathcal{S} \times \mathcal{U} \to \mathcal{C}$ is a mapping of states and uncontrollable inputs to controllable actions. $\pi^c$ is a \emph{winning strategy} iff all runs $(s_0, u_0, \pi^c(s_0, u_0)), (s_1, u_1, \pi^c(s_1, u_1)) \dots$ are winning. \emph{Realisability} is the problem of determining the existence of a winning controller strategy and \emph{synthesis} is the problem of constructing it.
+A \emph{controller strategy} $\pi^c : S \times U \to C$ is a mapping of states and uncontrollable inputs to controllable actions. $\pi^c$ is a \emph{winning strategy} iff all runs $(s_0, u_0, \pi^c(s_0, u_0)), (s_1, u_1, \pi^c(s_1, u_1)) \dots$ are winning. \emph{Realisability} is the problem of determining the existence of a winning controller strategy and \emph{synthesis} is the problem of constructing it.
 
-An \emph{environment strategy} $\pi^e : \mathcal{S} \to \mathcal{U}$ is a mapping of states to uncontrollable actions. An environment strategy is winning
+An \emph{environment strategy} $\pi^e : S \to U$ is a mapping of states to uncontrollable actions. An environment strategy is winning
 iff all runs $(s_0, \pi^e(s_0), c_0)$, $(s_1, \pi^e(s_1), c_1) \dots$ are winning for the environment. The existence of a winning environment strategy implies the nonexistence of a winning controller strategy and vice versa.
 
 \subsection{Solving Games}
@@ -319,9 +319,9 @@ Whilst the LTL fragment that is solvable via a safety game is simple, fixed poin
 
 \subsection{Symbolic Game Solving}
 
-The safety game algorithm is centred on determining sets of states from which the controller can win. The building block of this algorithm is the uncontrollable predecessor ($UPre$), which returns a set of predecessor states from which the environment can force play into a given set. We define this operator for a game structure $G = (S, \mathcal{U}, \mathcal{C}, \delta, s_0)$ as 
+Solving a game symbolically is similar to symbolic model checking. Without loss of generality we may replace the sets of explicit states and actions that define the game with sets of boolean variables. We have $G = (\cS, \cU, \cC, \delta, s_0)$ where $\cS$, $\cU$, and $\cC$ are sets of boolean state and action variables. Then $\delta : 2^\cS \times 2^\cU \times 2^\cC \to 2^\cS$ is a boolean function that defines the transition relation of the game. $s_0 \in 2^\cS$ is the initial state of the game.
 
-$$UPre(X) = \{ s \mid \exists u \forall c \forall x (\delta(s, u, c, s') \implies s' \in X) \}$$
+Symbolic algorithms for solving safety games focus of determining sets of states from which a player can win.  The building block of this algorithm is the uncontrollable predecessor ($UPre$), which returns a set of predecessor states from which the environment can force play into a given set. We define this operator as $$UPre(X) = \{ s \mid \exists u \forall c \forall x (\delta(s, u, c, s') \implies s' \in X) \}$$
 
 For simplicity we describe the algorithm as though playing for the environment. As such we are actually solving the dual to the safety game: a reachability game.  To solve the game we iteratively build a set of states backwards from the error set ($\lnot \phi$) using the uncontrollable predecessor. It is clear that this set will grow monotonically and (since the state space is finite) eventually converge on fixed point. We call this fixed point set the environment's winning set. If this set contains the initial state then the game is unrealisable and the environment's winning strategy is to always play to stay within its winning set. Conversely, if the initial state is outside the environment's winning set then the controller must have a strategy to avoid the error states and the specification is realisable. In terms of $\mu$-calculus, the environment's winning region with respect to an error set $E$ is given by the least fixed point of the uncontrollable predecessor of $E$. The complement of the environment's winning region gives the safe region for the controller:
 

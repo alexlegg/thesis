@@ -215,7 +215,7 @@ We use these properties to learn the states that are losing to the actions in ev
             \State $F_2 \gets \Call{\textoverline{treeFormula}}{k, T_2}$
             \State $\mathcal{I} \gets $ \Call{interpolate}{$F_1, F_2$}
             \If{\text{strategy generation enabled}}
-                \State $Strats \gets \Call{genLocalStrats}{\mathcal{I}, T_2}$\label{cstrats}
+                \State $Strats \gets \Call{genLocalStrats}{\mathcal{I}, T_2}$\label{line:cstrats}
             \EndIf
             \For{$i = 1$ to \Call{height}{$k, n$}}
                 \State $B^m[i] \gets B^m[i] \setminus \mathcal{I}$
