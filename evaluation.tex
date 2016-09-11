@@ -344,7 +344,7 @@ The results show that although \termitesat does not solve as many total instance
 \clearpage
 \subsection{Synthesis Competition Results}
 
-I report the results of the sequential realisability track of the 2016 synthesis competition in Table~\ref{table:syntcomp16s} and the parallel realisability track in Table~\ref{table:syntcomp16p}. The results show that \termitesat does not perform as well in the sequential track, the combination of SAT based unbounded realisability with a traditional BDD solver performs very well in the parallel track. This supports the argument that different approaches are suited to different classes of specifications and that by combining solving techniques a greater coverage of problem instances is possible.
+I report the results of the sequential realisability track of the 2016 synthesis competition in Table~\ref{table:syntcomp16s} and the parallel realisability track in Table~\ref{table:syntcomp16p}. The number of instances solved over time is shown in \Cref{fig:syntcomp16seq,fig:syntcomp16par} for the best configurations of each tool.  The results show that although \termitesat does not perform as well in the sequential track, the combination of SAT based unbounded realisability with a traditional BDD solver performs very well in the parallel track. This supports the argument that different approaches are suited to different classes of specifications and that by combining solving techniques a greater coverage of problem instances is possible.
 
 \begin{table}
     \centering
@@ -414,5 +414,18 @@ I report the results of the sequential realisability track of the 2016 synthesis
     \label{fig:syntcomp16seq}
 \end{figure}
 
-
-\section{Summary}
+\begin{figure}
+    \centering
+    \pgfplotsset{width=\textwidth}
+    \begin{tikzpicture}
+        \begin{axis}[ xmin=0, xmax=60, ymin=0, ymax=200, xlabel={Time (minutes)}, ylabel={Instances solved},
+                legend style={draw=none,cells={anchor=west},anchor=south east,at={(axis description cs:1,0.05)}}]
+            \addplot file {data/comp_parallel_TermiteSATHybrid.dat};
+            \addplot file {data/comp_parallel_DemiurgeP3real.dat};
+            \addplot file {data/comp_parallel_AbsSyntheP1.dat};
+            \legend{TermiteSAT,Demiurge,AbsSynthe}
+        \end{axis}
+    \end{tikzpicture}
+    \caption{SYNTCOMP'16 parallel track: Instances solved over time}
+    \label{fig:syntcomp16par}
+\end{figure}
