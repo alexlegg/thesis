@@ -215,7 +215,9 @@ We use these properties to learn the states that are losing to the actions in ev
             \State $F_2 \gets \Call{\textoverline{treeFormula}}{k, T_2}$
             \State $\mathcal{I} \gets $ \Call{interpolate}{$F_1, F_2$}
             \If{\text{strategy generation enabled}}
-                \State $Strats \gets \Call{genLocalStrats}{\mathcal{I}, T_2}$\label{line:cstrats}
+            \For{$i = 1$ to \Call{height}{$k, n$}}
+            \State $Strats[i] \gets Strats[i] \cup \Call{genLocalStrats}{\mathcal{I}, T_2}, Strats[i]$\label{line:cstrats}
+            \EndFor
             \EndIf
             \For{$i = 1$ to \Call{height}{$k, n$}}
                 \State $B^m[i] \gets B^m[i] \setminus \mathcal{I}$
@@ -476,7 +478,7 @@ Likewise, in the second last recursive call of \textsc{learn} with the empty tre
 \end{proof}
 
 
-\begin{theorem}
+\begin{theorem}\label{theorem:unboundedcorrectness}
     Let $G$ be a game with a safety condition defined by a set of error states $E$.  $\textsc{solveUnbounded}(G, E)$ is guaranteed to terminate and correctly decide realisability for $G$.
 \end{theorem}
 \begin{proof}
@@ -490,15 +492,44 @@ Termination also follows from the invariants. Given that $B^m$ decreases monoton
 
 \subsection{Strategy extraction}
 
-In the previous chapter I showed how to extract a strategy from the certificate tree generated during the bounded realisability algorithm. I will now prove that a similar approach extracts a correct strategy for an unbounded game when strategy generation is done online as it is when the learning optimisation is enabled for bounded realisability. In order to extract strategies online, line~\ref{line:cstrats} becomes active in \textoverline{\textsc{learn}} and a local strategy is generated for each learned interpolant.
+In the previous chapter I showed how to extract a strategy from the certificate tree generated during the bounded realisability algorithm. I will now prove that a similar approach extracts a correct strategy for an unbounded game when strategy generation is done online as it is when the learning optimisation is enabled for bounded realisability. In order to extract strategies online, line~\ref{line:cstrats} becomes active in \textoverline{\textsc{learn}} and a local strategy is generated for each learned interpolant. The local strategies are collected in an array $Strats$, which is indexed by the height of the subtree that enabled interpolation. Algorithm~\ref{alg:unboundedCompile} shows a modified version of \textsc{CompileStrat} that takes this array and the index of $B^m$ such that $B^m[i+1] = B^m[i]$, and returns a winning strategy for the game. As proved below, the local strategies from the sets of states removed from the fixed point of $B^m$ are sufficient to construct a winning strategy for the controller.
+
+\begin{algorithm}[t]
+   \caption{Compiling the  winning strategy}\label{alg:unboundedCompile}
+   \begin{algorithmic}[1]
+        \Function{CompileStrat}{$Strats, i$}
+            \State $\pi \gets \bot,~~W \gets \bot$
+            \For{$(w, c, k) \in Strats[i]$}
+            \State $\pi \gets \pi \lor (w \land \neg W \land c)$
+                \State $W \gets W \lor w$
+            \EndFor
+            \State \Return $\pi$
+        \EndFunction
+    \end{algorithmic}
+\end{algorithm}
 
 \begin{theorem}
-    Let $G$ be a safety game that is realisable with respect to an error set $E$. Let $Strats$ be a set of partial strategies generated during $\textsc{solveUnbounded}(G, E)$, then $\pi = \textsc{compileStrat}(Strats)$ is a winning partial controller strategy for $G$.
+    Let $G$ be a safety game that is realisable with respect to an error set $E$. Let $Strats$ be a set of partial strategies generated during $\textsc{solveUnbounded}(G, E)$, then $\pi = \textsc{CompileStrat}(Strats)$ is a winning partial controller strategy for $G$.
 \end{theorem}
 \begin{proof}
-    Let $(b, k)$ be a pair such that $b$ is a set of states learned to be environment-losing for a game of length $k$ during execution of \textoverline{\textsc{learn}}. Then $(b, k)$ has corresponding tree with a depth of one $T$. We record $[(w_0, c_0, k_0), \ldots, (w_j, c_j, k_j)] = \textsc{genLocalStrats}(T, k, b)$ using \opptf from Algorithm~\ref{alg:unboundedTreeFormula}. Since the tree is of depth one, \textsc{next} is never called.  From the precondition of \textoverline{\textsc{learn}} we know that $b(\cS_T) \land \opptf(k, T)$ is false. Therefore interpolation in \textsc{partition} is well defined. The resulting partitioning defines a controller action $c_i$ such that every $c_i$-successor of the set of states and environment actions in $w_i$ is outside $B^m[k_i-1]$. By construction $b(\cW) = \bigvee_i w_i$, i.e. the partial strategy defines an action for every state in $b$ and every environment action.
+    Let $(b, k)$ be a pair such that $b$ is a set of states learned to be environment-losing for a game of length $k$ during execution of \textoverline{\textsc{learn}}. Then $(b, k)$ has corresponding tree, $T$, that has a depth of one. We construct $[(w_0, c_0, k_0), \ldots, (w_j, c_j, k_j)] = \textsc{genLocalStrats}(T, k, b)$. Since the tree is of depth one, \textsc{next} is never called.  From the precondition of \textoverline{\textsc{learn}} we know that $b(\cS_T) \land \opptf(k, T)$ is false. Therefore interpolation in \textsc{partition} is well defined. 
+    
+    On termination of unbounded realisability we have an index $i$ such that $B^m[i+1] = B^m[i]$.  Every set of states removed from $B^m[i+1]$ has a corresponding local strategy in $Strats[i+1]$ that consists of one or more tuples $(w, c, k)$. By Proposition~\ref{prop:partition} (in Chapter~\ref{ch:strategy}), $b(\cW) = \bigvee_i w_i$, i.e. there is a $(w, c, k)$ tuple for every state and environment action action in $b$.  
+    
+    Recall that each tuple is constructed from an interpolant that guarantees $w \land \opptf(i+1, T) = \bot$ where $T$ is a tree consisting of one edge labelled $c$. We may expand the formula like so:
+    \begin{align*}
+        &{} w \land \opptf(i+1, T) \\
+        = &{} w \land B^m[i+1](\cS_T) \land \bigg( E(\cS_T) \lor \\
+    &{} \bigvee_{\langle e, n \rangle \in \textsc{succ}(T)}(\delta(\cS_T, \cU_n, \cC_e, \cS_n) \land \cC_e = \textsc{action}(e) \land \opptf(i, n))\bigg) \\
+        = &{} w \land B^m[i+1](\cS_T) \land \bigg( E(\cS_T) \lor \\
+          &{} (\delta(\cS_T, \cU_n, \cC_e, \cS_n) \land \cC_e = c \land \opptf(i, n))\bigg) \\
+        = &{} w \land B^m[i+1](\cS_T) \land \bigg( E(\cS_T) \lor (\delta(\cS_T, \cU_n, \cC_e, \cS_n) \land \cC_e = c \land B^m[i](\cS_n))\bigg) \\
+    \end{align*}
+    By choosing $c$ in $w \land B^m[i+1]$ the controller guarantees that the environment cannot reach any state in the current set $B^m[i]$. Each set in $B^m$ decreases over the execution of the algorithm, so this property holds for the final value of $B^m[i]$. Since $B^m[i+1]$ excludes only states for which this property is also true we may simplify the property to state that from any $w$ the controller can guarantee that the controller cannot reach $B^m[i]$. 
+    
+    Since $B^m[i] = B^m[i+1]$, the only states excluded from $B^m[i]$ are the same as those removed from $B^m[i+1]$ in \textoverline{\textsc{learn}}. So the set of successor states of $(w, c)$ are contained within the set of all pairs $(b, i+1)$.  Thus, all states reachable by playing local strategies $Strats[i+1]$ have defined local strategies also in $Strats[i+1]$.
 
-    On termination of unbounded realisability $s_0$ will be removed from $B^m[\kappa]$. By collecting all the partial strategies generated online we have a controller strategy from $s_0$ that ensures that the environment can never reach any set in $B^m$. Since $B^m[i] = B^m[i+1]$ is known to overapproximate the winning region of the environment, the resulting strategy must stay within the safe region.
+    By Proposition~\ref{prop:checkBound}, $s_0 \not\in B^m[i+1]$, so there is a strategy defined for all states and environment actions in the initial state.  As shown in Theorem~\ref{theorem:unboundedcorrectness}, $B^m[i+1]$ overapproximates the winning region of the environment.  Therefore, if the controller plays according to $\pi = \textsc{CompileStrat}(Strats, i+1)$ there is a defined strategy from the initial state that ensures that the game stays outside the environment's winning region.
 \end{proof}
 
 \section{Optimisations}
@@ -511,15 +542,7 @@ hence increase the number of states learned by interpolation. This optimisation
 requires a modification to $\textsc{solveAbstract}$ to handle sets of states,
 which is not shown.
 
-The optimisation is relatively simple and is inspired by a common greedy
-heuristic for minimising $\texttt{unsat}$ cores. Initial state $s_0$ assigns a value to
-each variable in $\mathcal{S}$. If the environment loses $\langle s_0, k
-\rangle$ then we attempt to solve for a generalised version of $s_0$ by removing
-one variable assignment at a time. If the environment loses from the larger set of
-states then we continue generalising. In this way we learn more
-states by increasing the reachable set. In our benchmarks we have observed that
-this optimisation is beneficial on the first few iterations of
-\textsc{checkBound}.
+The optimisation is relatively simple and is inspired by a common greedy heuristic for minimising $\texttt{unsat}$ cores. Initial state $s_0$ assigns a value to each variable in $\mathcal{S}$. If the environment loses $\langle s_0, k \rangle$ then we attempt to solve for a generalised version of $s_0$ by removing one variable assignment at a time. If the environment loses from the larger set of states then we continue generalising. In this way we learn more states by increasing the reachable set. In our benchmarks we have observed that this optimisation is beneficial on the first few iterations of \textsc{checkBound}. Note that it is possible to discover multiple sets in this way by iterating the procedure with different orders on the variables removed from $s_0$. However, in practice the benefit of these additional sets was found to be outweighed by the cost of computing them.
 
 \begin{algorithm}
     \begin{algorithmic}
@@ -543,13 +566,17 @@ this optimisation is beneficial on the first few iterations of
 
 \subsection{Generalising losing states}
 
-The same generalisation operation can be performed during computational learning. When learning with interpolation the size of the learned set can vary from exactly the reachable states to a large overapproximation of reachable states. The interpolant is constructed with the property $F_1 \implies \mathcal{I}$, so by increasing the number of states represented by $F_1$ we also increase the size of $\mathcal{I}$. $F_1$ is given by $s(\mathcal{S}_{T_1}) \land \opptf(T_1, k)$ and represents the set of states reachable from $s$ by playing the actions in $T_1$. For correctness we require that $s$ is losing to the full tree $T$ so we can increase the size of $s$ by generalising in the same way as the previous optimisation. We drop variables from $s$ such that the new cube $s'$ is also losing to the actions in $T$. This increases $F_1$ and we may learn a larger interpolant.
+The same generalisation operation can be performed during computational learning. When learning with interpolation the size of the learned set can vary from exactly the reachable states to a large overapproximation of reachable states. The interpolant is constructed with the property $F_1 \implies \mathcal{I}$, so by increasing the number of states represented by $F_1$ we also potentially increase the size of $\mathcal{I}$. $F_1$ is given by $s(\mathcal{S}_{T_1}) \land \opptf(T_1, k)$ and represents the set of states reachable from $s$ by playing the actions in $T_1$. For correctness we require that $s$ is losing to the full tree $T$ so we can increase the size of $s$ by generalising in the same way as the previous optimisation. We drop variables from $s$ such that the new assignment $s'$ is also losing to the actions in $T$. This increases $F_1$ and we may learn a larger interpolant. As with the previous optimisation it would be possible to learn multiple assignments but this was not found to be beneficial in practice.
 
 \subsection{Improving candidate strategies}
 
-In Chapter~\ref{ch:bounded} I introduced strategy shortening to improve candidate strategies. For unbounded synthesis this optimisations is even more useful because it allows the algorithm to learn losing states more quickly. Strategy shortening attempts to push \emph{good} actions closer to the root of the game tree. For learning environment-losing states this can mean that states can be proven to be losing for larger values of $k$. 
+Using heuristics to strengthen candidates in \textsc{findCandidate} is an important avenue for future optimisations as the quality of candidate strategies affects the rate of convergence of the counterexample guided search. Here I introduce some possible heuristics but leave a thorough investigation to future work. The key insight is that the algorithm remains correct as long as $\textsc{findCandidate}$ returns a strategy whenever one exists. There is significant freedom to choose strategies according to a heuristic without losing soundness or completeness.
 
-As long as $\textsc{findCandidate}$ returns a strategy whenever one exists there is significant freedom for heuristics to choose strategies without affecting correctness. For example, an additional SAT call in $\textsc{findCandidate}$ can first check for the existence of a strategy that loops by adding the requirement that $\exists i \exists j (s_i = s_j)$ in all runs $s_0, ..., s_k$. The motivation behind this optimisation was that a strategy that forces a loop will quickly converge on a fixed point. In practice, such strategies are rarely found and the additional call to the SAT solver was a waste of resources. It remains future work to fully explore the possibilities of heuristically selecting candidates. One avenue for exploration is the use of QBF or 2QBF solvers to check for actions that are winning for all opponent actions, i.e. partially reintroducing universal quantifiers to the search.
+In Chapter~\ref{ch:bounded} I introduced strategy shortening to improve candidate strategies in the bounded realisability algorithm. This is a heuristic that searches for candidates that may reach known winning states earlier in the game.  For unbounded synthesis this optimisation is even more useful because it allows the algorithm to learn losing states more quickly.  Strategy shortening attempts to push \emph{good} actions closer to the root of the game tree. For learning environment-losing states this can mean that states can potentially be proven to be losing for larger values of $k$. 
+
+Another example heuristic is an additional SAT call in $\textsc{findCandidate}$ that first checks for the existence of a strategy that loops by adding the requirement that $\exists i \exists j (s_i = s_j)$ in all runs $s_0, ..., s_k$. The motivation behind this optimisation was that a controller strategy that forces a loop may be able to force the game to stay within a set of states that are reachable inside the loop. If this is possible then the algorithm can quickly converge on a fixed point using this strategy to keep the game outside the overapproximation of then environment's winning region.  In practice, such strategies are rarely found and the additional call to the SAT solver was a waste of resources. 
+
+Another heuristic for future exploration is the use of QBF or 2QBF solvers to check for actions that are winning for all opponent actions, i.e. partially reintroducing universal quantifiers to the search. For instance, the quantifier prefix on the formula constructed from a tree could be modified to $\forall \cU_k \exists \cC_k \exists \cU_{k-1} \exists \cC_{k-1} \ldots \exists \cU_1 \exists \cC_1$ so that there must exist a winning run for all possible actions the environment may take in the first round of the game. This may help ensure that the controller's candidate strategy does not rely on the environment choosing a particular action in that round and reduce the number of refinements to the game abstraction.
 
 \section{Discussion}
 
@@ -585,7 +612,7 @@ focusses on computing the winning region for the controller forwards from the
 initial state in order to take advantage of reachability information and bad
 transition learning without needing to discard learnt clauses.
 
-There are approaches to synthesis of LTL specifications that use bounds to simplify the problem.  The authors of \cite{Finkbeiner13} suggest a methodology directly inspired by bounded model checking and it has been adapted to symbolic synthesis \cite{Ehlers12}. In contrast to the approach here the bound is placed on the implementation instead of the number of game rounds.  Lazy synthesis \cite{Finkbeiner12} similarly constructs implementations of a bounded size but does so in a counterexample guided approach. Their approach is to use an SMT solver to produce a candidate implementation and then check the implementation with a BDD based model checker. These bounded synthesis techniques are similar in idealogy to the approach described here but are used to solve a different problem.
+There are approaches to synthesis of LTL specifications that use bounds to simplify the problem.  The authors of \cite{Finkbeiner13} suggest a methodology directly inspired by bounded model checking and it has been adapted to symbolic synthesis \cite{Ehlers12}. In contrast to the approach here the bound is placed on the implementation instead of the number of game rounds.  Lazy synthesis \cite{Finkbeiner12} similarly constructs implementations of a bounded size but does so in a counterexample guided approach. Their approach is to use an SMT solver to produce a candidate implementation and then check the implementation with a BDD based model checker. These bounded synthesis techniques are similar in ideology to the approach described here but are used to solve a different problem.
 
 %%%The original bounded synthesis algorithm of Narodytska et
 %%%al.~\cite{narodytska14} solves realisability without constructing a strategy.
@@ -644,7 +671,7 @@ In the synthesis competition benchmarks there is a simple counter specification 
 
 This example can produce several different interesting behaviours in the unbounded synthesis algorithm. Let us first consider the game tree in Figure~\ref{fig:limitationAGTa}. The controller strategy shown in this tree is to not reset the counter. This strategy wins the bounded game for any counter with $n \geq 2$ because there are not enough game rounds for the counter to reach the error state. Let's now consider how the unbounded algorithm would learn from this tree when $n = 3$. At the node of height 1, the largest interpolant that could be learned is $((\texttt{err == 0}) \land (\texttt{counter < 6}))$. At the next node up the tree we might learn $((\texttt{err == 0}) \land (\texttt{counter < 5}))$. With a tree of length $k = 2^n - 2 = 6$ we could have $B^m$ with a difference of exactly one state in each successive index. For high values of $n$ it is infeasible to construct a formula in CNF for this many unrollings of the transition relation, even though there is no branching.
 
-In practise, unbounded synthesis can do well on this specification when the SAT solver gives a candidate such as in Figure~\ref{fig:limitationAGTb}. The optimisation that generalises the losing state before interpolation is able to drop all bits of the counter except the high bit. This gives $((\texttt{err = 0}) \land (\texttt{counter < 3}))$, which describes the safe region of the game. The procedure quickly converges on this fixed point in this case.
+In practice, unbounded synthesis can do well on this specification when the SAT solver gives a candidate such as in Figure~\ref{fig:limitationAGTb}. The optimisation that generalises the losing state before interpolation is able to drop all bits of the counter except the high bit. This gives $((\texttt{err = 0}) \land (\texttt{counter < 3}))$, which describes the safe region of the game. The procedure quickly converges on this fixed point in this case.
 
 \begin{figure}
     \begin{subfigure}[t]{0.5\textwidth}

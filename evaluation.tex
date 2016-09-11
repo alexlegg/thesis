@@ -339,22 +339,12 @@ I also present a cactus plot of the number of instances solved over time (Figure
     \label{fig:cactus}
 \end{figure}
 
-%%%Whilst our solver is unable to solve as many instances as other tools, it was
-%%%able to solve more unique instances than any solver in the competition. This
-%%%confirms that our methodology is able to fill gaps in a state of the art
-%%%synthesis toolbox by more efficiently solving instances that are hard for other
-%%%techniques. For this reason our solver would be a worthwhile addition to a
-%%%portfolio solver. In the parallel track of the competition, \textsc{Demiurge}
-%%%uses a suite of 3 separate but communicating solvers. The solvers
-%%%relay unsafe states to one another, which is compatible with the set $B^M$ in
-%%%our solver. This technique can already solve each of the unique instances
-%%%solved by our solver but there may still be value in the addition of this work
-%%%to the portfolio.  It remains future work to explore this possibility.
+The results show that although \termitesat does not solve as many total instances as other solvers, it is able to solve a significant number of problem instances that no other individual solver could. Although \termitesat was the only sequential solver to decide these instances, in the parallel track of the competition \textsc{Demiurge} was able to solve many of them by combining several different approaches.  A combination of unbounded synthesis, the SAT approaches in \textsc{Demiurge}, and a traditional BDD solver may be a significant step forward for synthesis.
 
 \clearpage
 \subsection{Synthesis Competition Results}
 
-I report the results of the sequential realisability track of the 2016 synthesis competition in Table~\ref{table:syntcomp16s}
+I report the results of the sequential realisability track of the 2016 synthesis competition in Table~\ref{table:syntcomp16s} and the parallel realisability track in Table~\ref{table:syntcomp16p}. The results show that \termitesat does not perform as well in the sequential track, the combination of SAT based unbounded realisability with a traditional BDD solver performs very well in the parallel track. This supports the argument that different approaches are suited to different classes of specifications and that by combining solving techniques a greater coverage of problem instances is possible.
 
 \begin{table}
     \centering
@@ -375,6 +365,22 @@ I report the results of the sequential realisability track of the 2016 synthesis
     \end{tabular}
     \caption{SYNTCOMP'16: sequential realisability track}
     \label{table:syntcomp16s}
+\end{table}
+
+\begin{table}
+    \centering
+    \begin{tabular}{l r r}
+        \textbf{Solver} & \textbf{Solved} & \textbf{Unique} \\
+        \hline
+        AbsSynthe P1 & 181 & 1 \\
+        TermiteSAT Hybrid & 180 & 0 \\
+        TermiteSAT Portfolio & 179 & 0 \\
+        Demiurge P3real & 156 & 5 \\
+        AbsSynthe P3 & 148 & 0 \\
+        AbsSynthe P2 & 141 & 0 \\
+    \end{tabular}
+    \caption{SYNTCOMP'16: parallel realisability track}
+    \label{table:syntcomp16p}
 \end{table}
 
 %%%\begin{table}
