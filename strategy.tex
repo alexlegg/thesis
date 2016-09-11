@@ -25,9 +25,11 @@ The problem solved in this chapter is related to the extraction of a Skolem func
 
 \section{Algorithm}
 
-Recall that a safety game is a tuple $(\cS, \cU, \cC, \delta, s_0)$ where $\cS$ is a set of state variables, $\cU$ a set of environment action variables, $\cC$ a set of controller action variables, $\delta$ defines a transition relation, and $s_0$ is an initial state. A set of states $E$ provides the winning condition, the controller must avoid error states and the environment must reach one. A winning strategy for controller is a function $\pi^c : 2^\cS \times 2^\cU \to 2^\cC$ that avoids error states for the duration of the game. A controller strategy is then a mapping from state and environment-action pairs to controller actions. For convenience we use $\cW = \cS \cup \cU$ to denote the set of boolean variables that serve as input to the function defining a strategy.
+Recall that a safety game is a tuple $(\cS, \cU, \cC, \delta, s_0)$ where $\cS$ is a set of state variables, $\cU$ a set of environment action variables, $\cC$ a set of controller action variables, $\delta$ defines a transition relation, and $s_0$ is an initial state. A set of states $E$ provides the winning condition, the controller must avoid error states and the environment must reach one. A winning strategy for controller is a function $\pi^c : 2^\cS \times 2^\cU \to 2^\cC$ that avoids error states for the duration of the game. A controller strategy is then a mapping from states and environment actions to controller actions. For convenience we use $\cW = \cS \cup \cU$ to denote the set of boolean variables that serve as input to the function defining a strategy.
 
 In this chapter we will assume that the safety game is realisable and a winning strategy for the controller exists. However, the technique is also easily applied to unrealisable games to extract a spoiling strategy that is winning for the environment. In computing realisability of a safety game the algorithm constructs a \emph{certificate tree}, which is an abstract game tree $T$ such that for a set of states $s$ and game bound $\kappa$, $s \land \opptf(\kappa, \textsc{extend}(T))$ is false. In other words it is a game abstraction for which the environment has no candidate strategy.
+
+For strategy extraction, we extend the notion of abstract game trees. A controller strategy defines a mapping from states and environment actions to controller actions. We label the root node of trees with a set $\sigma \in 2^\cW$ so that we may say that a tree is a certificate tree for a set of both states and environment actions. The tree computed by bounded realisability is labelled $s_0 \land \top$ and so is a certificate tree for all environment actions in the initial state.
 
 We use the certificate tree computed by the game solver as a starting point for strategy generation.  We know that the controller can win the game in $\kappa$ rounds by picking actions from the tree; however we do not yet know which action to choose in which situation.
 
@@ -81,7 +83,7 @@ Figure~\ref{fig:stratExample} introduces the running example for this chapter. I
 
 Algorithm~\ref{alg:strat} shows the pseudocode of the strategy generation algorithm.  The algorithm proceeds in two phases: the first phase (\textsc{genLocalStrats}) computes local strategies in nodes of $T$; the second phase (\textsc{compileStrat}) compiles all local strategies into a winning strategy function.
 
-The \textsc{genLocalStrats} function recursively traverses the certificate tree $T$, starting from the root, computing local strategies in each node.  The main operation of the algorithm, called \textsc{partition}, splits $(T, s_0)$ into $j$ tuples $(T_i, \sigma_i)$, as shown in Figure~\ref{fig:partition}.  Each tree $T_i$ is a copy of a single branch of $T$ and the series $\sigma_1 \ldots \sigma_i$ forms a disjoint partitioning of $s_0$ and environment actions, i.e. $\sigma_i \subseteq s_0 \subseteq 2^{\mathcal{S}} \times 2^{\mathcal{U}}$.  The partitioning is constructed in such a way that the action $c_i$ that labels the root edge of $T_i$ is a winning controller action for states and environment actions in $\sigma_i$.
+The \textsc{genLocalStrats} function recursively traverses the certificate tree $T$, starting from the root, computing local strategies in each node.  The main operation of the algorithm, called \textsc{partition}, splits $(T, \sigma)$ into $j$ tuples $(T_i, \sigma_i)$, as shown in Figure~\ref{fig:partition}.  Each tree $T_i$ is a copy of a single branch of $T$ and the series $\sigma_1 \ldots \sigma_i$ forms a disjoint partitioning of $\sigma$, i.e. $\sigma_i \subseteq \sigma \subseteq 2^\cW$.  The partitioning is constructed in such a way that the action $c_i$ that labels the root edge of $T_i$ is a winning controller action for states and environment actions in $\sigma_i$.
 
 \begin{figure}[b]
     \centering
@@ -114,7 +116,7 @@ The \textsc{genLocalStrats} function recursively traverses the certificate tree 
                     edge from parent node [above right] {$c_n$}
                 }
                 node [left=4pt] {}
-                node [above=4pt] {$\langle s, \kappa \rangle$};
+                node [above=4pt] {$\langle \sigma, \kappa \rangle$};
 
             \draw (left1.center) -- (left2.center);
             \draw (left0) -- (left1.center);
@@ -176,7 +178,7 @@ The \textsc{genLocalStrats} function recursively traverses the certificate tree 
     \label{fig:partition}
 \end{figure}
 
-Figure~\ref{fig:algex} illustrates how local strategies are generated from the winning abstract game tree returned by the game solver for our running example.  Figure~\ref{fig:algexa} shows $T$, the certificate tree of height 3 for the game. The algorithm starts at the root of the tree and the initial state $s = (\clk = 0 \land \curr = 0 \land \err = 0)$.  The game tree defines only one winning action in the root node, hence this action is winning in all states of $s$ and against all actions and no partitioning is required. We project $s$ onto the combined set of states and actions, i.e. $\sigma = s(\cW)$, such that $\nex = 0$ is winning for $\sigma$. We now compute the successor set reachable by playing action $\nex = 0$ against $\sigma$: i.e. we compute the set $s' \subseteq 2^{\cS'}$ such that $\exists \cS \exists \cU \exists \cC (\delta(\cS, \cU, \cC, \cS') \land \sigma \land (\nex = 0))$, which evaluates to $s' = (\clk = 1 \land \err = 0)$.
+Figure~\ref{fig:algex} illustrates how local strategies are generated from the winning abstract game tree returned by the game solver for our running example.  Figure~\ref{fig:algexa} shows $T$, the certificate tree of height 3 for the game. The algorithm starts at the root of the tree and the initial set of states and actions is given by $\sigma = s_0 \land \top = (\clk = 0 \land \curr = 0 \land \err = 0)$. The game tree defines only one winning action in the root node, hence this action is winning in all states of $\sigma$ and against all actions and no partitioning is required.  We now compute the successor set reachable by playing action $\nex = 0$ against $\sigma$: i.e. we compute the set $\sigma' \subseteq 2^{\cW'}$ such that $\exists \cS \exists \cU \exists \cC (\delta(\cS, \cU, \cC, \cS') \land \sigma \land (\nex = 0))$, which evaluates to $\sigma' = (\clk = 1 \land \err = 0)$.
 
 \tikzset{every node/.style={solid}}
 \begin{figure}[b]
@@ -203,7 +205,7 @@ Figure~\ref{fig:algex} illustrates how local strategies are generated from the w
                     }
                     edge from parent node [left] {\texttt{0}}
                 }
-                node [above=4pt] {$\langle s, 3 \rangle$};
+                node [above=4pt] {$\langle \sigma, 3 \rangle$};
         \end{tikzpicture}
         \end{minipage}
         \caption{$T$}
@@ -227,7 +229,7 @@ Figure~\ref{fig:algex} illustrates how local strategies are generated from the w
                     }
                     edge from parent node [right] {\texttt{1}}
                 }
-                node [above=4pt] {$\langle s', 2 \rangle$};
+                node [above=4pt] {$\langle \sigma', 2 \rangle$};
         \end{tikzpicture}
         \end{minipage}
         \caption{$T'$}
@@ -269,13 +271,13 @@ Figure~\ref{fig:algex} illustrates how local strategies are generated from the w
                 child {node [circle,draw] {}
                     edge from parent node [left] {\texttt{0}}
                 };
-            \node [above=4pt of root1] {$\langle s_1'', 1 \rangle$};
+            \node [above=4pt of root1] {$\langle \sigma_1'', 1 \rangle$};
 
             \node [circle,draw,right=2cm] (root2){}
                 child {node [circle,draw] {}
                     edge from parent node [right] {\texttt{1}}
                 };
-            \node [above=4pt of root2] {$\langle s_2'', 1 \rangle$};
+            \node [above=4pt of root2] {$\langle \sigma_2'', 1 \rangle$};
         \end{tikzpicture}
         \end{minipage}
         \caption{$T_1''$ and $T_2''$}
@@ -285,7 +287,7 @@ Figure~\ref{fig:algex} illustrates how local strategies are generated from the w
     \label{fig:algex}
 \end{figure}
 
-Next, we descend down the tree and consider subtree $T'$ and its initial set $s'$ (Figure~\ref{fig:algexb}).  We partition $\sigma' = s'(\cW)$ into gubsets $\sigma_1' = (\clk = 1 \land \err = 0 \land \inp = 0)$ and $\sigma_2' = (\clk = 1 \land \err = 0 \land \inp = 1)$ that are winning for the left and right subtrees of $T'$ respectively, i.e., from $(\clk = 1 \land \err = 0)$ the controller must play action $\nex = 0$ when the environment plays $\inp = 0$, and $\nex = 1$ for $\inp = 1$.  Consider the resulting subtrees $T'_1$ and $T'_2$ with initial sets $\sigma'_1$ and $\sigma'_2$ (Figure~\ref{fig:algexc}).  We compute successor states as before: $s''_1 = (\clk = 1 \land \curr = 0 \land \err = 0)$ and $s''_2 = (\clk = 1 \land \curr = 1 \land \err = 0)$, with corresponding subtrees $T''_1$ and $T''_2$ (Figure~\ref{fig:algexd}).  Both subtrees have one branch; hence the actions in those branches $\nex = 0$ and $\nex = 1$ are winning for $\sigma''_1 = s''_1(\cW)$ and $\sigma''_2 = s''_2(\cW)$ respectively.
+Next, we descend down the tree and consider subtree $T'$ and its initial set $\sigma'$ (Figure~\ref{fig:algexb}).  We partition $\sigma'$ into subsets $\sigma_1' = (\clk = 1 \land \err = 0 \land \inp = 0)$ and $\sigma_2' = (\clk = 1 \land \err = 0 \land \inp = 1)$ that are winning for the left and right subtrees of $T'$ respectively, i.e., from $(\clk = 1 \land \err = 0)$ the controller must play action $\nex = 0$ when the environment plays $\inp = 0$, and $\nex = 1$ for $\inp = 1$.  Consider the resulting subtrees $T'_1$ and $T'_2$ with initial sets $\sigma'_1$ and $\sigma'_2$ (Figure~\ref{fig:algexc}).  We compute successor states as before: $\sigma''_1 = (\clk = 1 \land \curr = 0 \land \err = 0)$ and $\sigma''_2 = (\clk = 1 \land \curr = 1 \land \err = 0)$, with corresponding subtrees $T''_1$ and $T''_2$ (Figure~\ref{fig:algexd}).  Both subtrees have one branch; hence the actions in those branches $\nex = 0$ and $\nex = 1$ are winning for $\sigma''_1$ and $\sigma''_2$ respectively.
 
 The algorithm returns the set of tuples $(\sigma, c, k)$.  Each tuple represents a fragment of the strategy in some tree node, where $\sigma \subseteq 2^{\cW}$ is the winning set in this node, $c \in 2^\cC$ is the controller action to play in this set, and $k$ is the distance from the node to the bottom of the tree.
 
@@ -310,19 +312,19 @@ Putting together fragments of the winning strategy computed above, we obtain the
 \begin{algorithm}
    \caption{Computing a winning strategy}\label{alg:strat}
    \begin{algorithmic}[1]
-        \Function{GenStrategy}{$T$, $k$, $s$}
-            \State $Strat \gets \Call{GenLocalStrats}{T, k, s}$
+        \Function{GenStrategy}{$T$, $k$, $\sigma$}
+            \State $Strat \gets \Call{GenLocalStrats}{T, k, \sigma}$
             \State \Return{$\Call{CompileStrat}{Strat}$}
         \EndFunction
         \Statex
 
-        \Function{GenLocalStrats}{$T$, $k$, $s$}
+        \Function{GenLocalStrats}{$T$, $k$, $\sigma$}
             \State $[(e_1, n_1),\ldots,(e_j, n_j)] \gets \Call{succ}{T}$
-            \State $[(T_1,\sigma_1),\ldots,(T_j, \sigma_j)] \gets \Call{partition}{T, k, s(\cS_T) \land \neg E(\cS_T)}$
+            \State $[(T_1,\sigma_1),\ldots,(T_j, \sigma_j)] \gets \Call{partition}{T, k, \sigma}$
             \State $Strat \gets \{(\sigma_i, \Call{action}{e_i}, \Call{height}{k, T}) \mid i \in[1,\ldots,j]\}$\label{alg:strat:strati}
             \For{$i = 1$ to $j$}\label{alg:strat:for}
-            \State $(T_i', s_i') \gets \Call{next}{T_i, k, \sigma_i}$\label{alg:strat:next}
-                \State $Strat_i \gets \Call{GenLocalStrats}{T_i', k-1, s_i'}$\label{alg:strat:rec}
+            \State $(T_i', \sigma_i') \gets \Call{next}{T_i, k, \sigma_i}$\label{alg:strat:next}
+                \State $Strat_i \gets \Call{GenLocalStrats}{T_i', k-1, \sigma_i'}$\label{alg:strat:rec}
                 \State $Strat \gets Strat \cup Strat_i$
             \EndFor\label{alg:strat:endfor}
             \State \Return{$Strat$} \label{alg:strat:return}
@@ -333,15 +335,15 @@ Putting together fragments of the winning strategy computed above, we obtain the
 
 \subsection{Partitioning game trees}
 
-The algorithm described so far involves two potentially costly operations: winning set partitioning and successor set computation.  If implemented na\"ively in a SAT based approach these operations can lead to unacceptable performance. Both operations must return sets and enumerating sets of satisfying assignments with SAT is inefficient. The key insight behind our solution is that both operations can be efficiently approximated from the proof of unsatisfiability of the formula $s \land \opptf(k, T)$, with the help of interpolation, as described below.  The resulting approximations are sound, i.e., preserve the correctness of the resulting strategy.
+The algorithm described so far involves two potentially costly operations: winning set partitioning and successor set computation.  If implemented na\"ively in a SAT based approach these operations can lead to unacceptable performance. Both operations must return sets and enumerating sets of satisfying assignments with SAT is inefficient. The key insight behind our solution is that both operations can be efficiently approximated from the proof of unsatisfiability of the formula $\sigma \land \opptf(k, T)$, with the help of interpolation, as described below.  The resulting approximations are sound, i.e., preserve the correctness of the resulting strategy.
 
-The \textsc{partition} function (Algorithm~\ref{alg:strat:partition}) computes a local strategy in the root of an abstract game tree.  It takes a tuple $(T, k, s)$, such that $T$ is a certificate tree of height $k$ for states $s$ and partitions $\sigma = s(\cW)$ into subsets $\sigma_i$ such that the controller can win a game of $k$ rounds in the states and against the environment actions contained in $\sigma_i$ by choosing action $c_i$.
+The \textsc{partition} function (Algorithm~\ref{alg:strat:partition}) computes a local strategy in the root of an abstract game tree.  It takes a tuple $(T, k, \sigma)$, such that $T$ is a certificate tree of height $k$ for $\sigma \in 2^\cW$ and partitions $\sigma$ into subsets $\sigma_i$ such that the controller can win a game of $k$ rounds in the states and against the environment actions contained in $\sigma_i$ by choosing action $c_i$.
 
 \begin{algorithm}[t]
    \caption{Partitioning winning states}\label{alg:strat:partition}
    \begin{algorithmic}[1]
-        \Function{partition}{$T$, $k$, $s$}
-        \State $\hat{\sigma} \gets s(\cW)$
+        \Function{partition}{$T$, $k$, $\sigma$}
+        \State $\hat{\sigma} \gets \sigma$
         \State $\hat{T} \gets T$
         \For{$i = 1$ to $j$}
         \State $(T_i, \tilde{T}) \gets \Call{split}{\hat{T}}$\label{alg:partition:split}
@@ -453,7 +455,7 @@ We prove useful properties of the $\partition$ function. We begin with the propo
     The following invariant is maintained throughout the execution of \textsc{partition}: $\hat{T}$ is a certificate tree of height $k$ for $\hat{\sigma}$.
 \end{proposition}
 \begin{proof}
-    We prove by induction. It is a precondition of the function that $T$ is a certificate tree for $s$, thus the invariant holds for the initial values $\hat{T} = T$ and $\hat{\sigma} = s(\cW)$.  By the induction hypothesis $(\hat{\sigma} \land \opptf(k, \hat{T}))$ is unsatisfiable, so by Proposition~\ref{prop:aandb} $(A \land B)$ must also be unsatisfiable.  Hence the interpolation operation in line~\ref{alg:partition:I} is well defined.  By the properties of interpolants, $(A \implies \mathcal{I})$, hence $(\neg \mathcal{I} \implies \neg A)$ or equivalently $(\neg\mathcal{I} \implies \neg (\hat{\sigma} \land \opptf(k, \tilde{T}))$.
+    We prove by induction. It is a precondition of the function that $T$ is a certificate tree for $\sigma$, thus the invariant holds for the initial values $\hat{T} = T$ and $\hat{\sigma} = \sigma$.  By the induction hypothesis $(\hat{\sigma} \land \opptf(k, \hat{T}))$ is unsatisfiable, so by Proposition~\ref{prop:aandb} $(A \land B)$ must also be unsatisfiable.  Hence the interpolation operation in line~\ref{alg:partition:I} is well defined.  By the properties of interpolants, $(A \implies \mathcal{I})$, hence $(\neg \mathcal{I} \implies \neg A)$ or equivalently $(\neg\mathcal{I} \implies \neg (\hat{\sigma} \land \opptf(k, \tilde{T}))$.
 
     After $\hat{T}$ and $\hat{\sigma}$ are updated in line~\ref{alg:partition:upd}, their new values $\hat{T}'$ and $\hat{\sigma}'$ satisfy the following equalities: \begin{align*}
         \hat{\sigma}' \land \opptf(k, \hat{T}') ={}& \hat{\sigma} \land \opptf(k, \tilde{T}) \land \neg\mathcal{I} \\
@@ -465,17 +467,17 @@ We prove useful properties of the $\partition$ function. We begin with the propo
 \end{proof}
 
 \begin{proposition}\label{prop:partition}
-    Let $T$ be a certificate tree for $s$ and let $s \land \lnot E(\cS_T) = \bot$. Then $[(T_1, \sigma_1),\ldots,(T_j, \sigma_j)] = \textsc{partition}(T, s)$ is a local winning strategy in the root of $T$, i.e., the following properties hold:
+    Let $T$ be a certificate tree for $\sigma$ and let $\sigma \land \lnot E(\cS_T) = \bot$. Then $[(T_1, \sigma_1),\ldots,(T_j, \sigma_j)] = \textsc{partition}(T, k, \sigma)$ is a local winning strategy in the root of $T$, i.e., the following properties hold:
     \begin{enumerate}
         \item $\sigma_1 ,\ldots, \sigma_j$ is a partitioning of
-            $s(\cW)$: $$s(\cW) = \bigvee \sigma_i \text{ and } \forall i, k. (i \neq k) \implies (\sigma_i \land \sigma_k = \bot).$$
+            $\sigma$: $$\sigma = \bigvee \sigma_i \text{ and } \forall i, k. (i \neq k) \implies (\sigma_i \land \sigma_k = \bot).$$
         \item $T_i$ is a certificate tree of height $k$ for $\sigma_i$.
     \end{enumerate}
 \end{proposition}
 \begin{proof}
     At every iteration of the algorithm, we partition $\hat{\sigma}$ into $\sigma_i = \mathcal{I}(\cW_T) \land \hat{\sigma}$ and $\hat{\sigma} \land \neg\mathcal{I}(\cW_T)$. Hence, by construction, no $\sigma_i$ overlaps with any $\sigma_k$.
 
-    At the final iteration of the algorithm, the tree $\tilde{T}$ consists of a single root node without outgoing branches.  Hence, $A = \hat{\sigma} \land \opptf(k, \tilde{T}) = \hat{\sigma} \land \neg E(\cS_{\tilde{T}}) = \hat{\sigma}$.  Since $(A \implies \mathcal{I})$, we get $(\hat{\sigma} \implies \mathcal{I})$ and therefore $\mathcal{I} \land \hat{\sigma} = \hat{\sigma}$, i.e., all states and actions in $\hat{\sigma}$ are included in the final set $\sigma_j$ and hence the partitioning completely covers the set $s(\cW)$: $s=\bigvee \sigma_i$.
+    At the final iteration of the algorithm, the tree $\tilde{T}$ consists of a single root node without outgoing branches.  Hence, $A = \hat{\sigma} \land \opptf(k, \tilde{T}) = \hat{\sigma} \land \neg E(\cS_{\tilde{T}}) = \hat{\sigma}$.  Since $(A \implies \mathcal{I})$, we get $(\hat{\sigma} \implies \mathcal{I})$ and therefore $\mathcal{I} \land \hat{\sigma} = \hat{\sigma}$, i.e., all states and actions in $\hat{\sigma}$ are included in the final set $\sigma_j$ and hence the partitioning completely covers the set $\sigma$: $\sigma=\bigvee \sigma_i$.
 
     We prove the second statement of the proposition.  The set $\sigma_i$ is computed as $\mathcal{I}(\cW_T) \land \hat{\sigma}$ at the $i$th iteration of the algorithm (line~\ref{alg:partition:Ii}).
     Thus, $$\sigma_i \land \opptf(k, T_i) = \mathcal{I}(\cW_T) \land \hat{\sigma} \land \opptf(k, T_i)$$ By the properties of interpolants, $$\mathcal{I} \land B = \mathcal{I}(\cW_T) \land \opptf(k, T_i) = \bot.$$  Hence $\sigma_i \land \opptf(k, T_i) = \bot$, i.e. $T_i$ is a certificate tree for $\sigma_i$.
@@ -483,7 +485,7 @@ We prove useful properties of the $\partition$ function. We begin with the propo
 
 \subsection{Determine an action}
 
-The \textsc{next} function (Algorithm~\ref{alg:next}) takes a set $\sigma$ and its certificate tree $T$ of height $k$, such that there is exactly one outgoing edge, labelled $c$, from the root node of $T$.  $T$ has a sole child subtree $T'$ with root node $n$.  The function computes an overapproximation $s'$ of the $c$-successors of $\sigma$, such that $s'$ is winning for the controller and $T'$ is a certificate tree of height $k-1$ for $s'$.
+The \textsc{next} function (Algorithm~\ref{alg:next}) takes a set $\sigma$ and its certificate tree $T$ of height $k$, such that there is exactly one outgoing edge, labelled $c$, from the root node of $T$.  $T$ has a sole child subtree $T'$ with root node $n$.  The function computes an overapproximation $\sigma'$ of the $c$-successors of $\sigma$, such that $\sigma'$ is winning for the controller and $T'$ is a certificate tree of height $k-1$ for $\sigma'$.
 
 \begin{algorithm}
    \caption{Successor set}\label{alg:next}
@@ -505,12 +507,12 @@ Once again, we decompose the unsatisfiable formula $\sigma \land \opptf(k, T)$ i
     = \textsc{next}(T,\sigma)$.
     Then:
     \begin{enumerate}
-        \item $\mathcal{I}$ is an overapproximation of the $c$-successors of $\sigma$, i.e., $\mathcal{I} \supseteq s'$ where $$s' = \exists \cS \exists \cU \exists \cC (\delta(\cS, \cU, \cC, \cS') \land \sigma \land c)$$
-        \item $T'$ is a certificate tree of length $k-1$ for $s'$
+        \item $\mathcal{I}$ is an overapproximation of the $c$-successors of $\sigma$, i.e., $\mathcal{I} \supseteq \sigma'$ where $$\sigma' = \exists \cS \exists \cU \exists \cC (\delta(\cS, \cU, \cC, \cS') \land \sigma \land c)$$
+        \item $T'$ is a certificate tree of length $k-1$ for $\sigma'$
     \end{enumerate}
 \end{proposition}
 \begin{proof}
-    The $c$-successor set $s'$ of $\sigma$ is defined by $\exists \cS \exists \cU (\delta(\cS, \cU, \cC, \cS') \land \sigma \land c)$. The matrix of this formula is exactly formula $A$.  Hence the successor set is given by $s' = \exists \cS \exists \cU (A)$.  Since $(A \implies \mathcal{I})$, $s' \implies \exists \cS \exists \cU (\mathcal{I})$.  Since $\mathcal{I}$ is defined over state variables in the root of $T'$ only, the quantifiers can be removed: $s' \implies \mathcal{I}$ or, in the relational form, $\mathcal{I} \supseteq s'$.
+    The $c$-successor set $\sigma'$ of $\sigma$ is defined by $\exists \cS \exists \cU (\delta(\cS, \cU, \cC, \cS') \land \sigma \land c)$. The matrix of this formula is exactly formula $A$.  Hence the successor set is given by $\sigma' = \exists \cS \exists \cU (A)$.  Since $(A \implies \mathcal{I})$, $\sigma' \implies \exists \cS \exists \cU (\mathcal{I})$.  Since $\mathcal{I}$ is defined over state variables in the root of $T'$ only, the quantifiers can be removed: $\sigma' \implies \mathcal{I}$ or, in the relational form, $\mathcal{I} \supseteq \sigma'$.
     
     We prove the second property by the construction of the interpolant: $(\mathcal{I} \land \opptf(k, T')) = (\mathcal{I} \land B) = \bot$.
 \end{proof}
@@ -534,7 +536,7 @@ Finally, we describe how local strategies computed by \textsc{genLocalStrats} ar
 \end{algorithm}
 
 \begin{theorem}[Correctness of the algorithm]\label{th:stratCorrectness}
-Let abstract game tree $T$ of height $\kappa$ be a certificate tree for the set $s_0$, let $\pi$ be a partial function returned by the strategy generation algorithm, $\pi=\textsc{genStrategy}(T,s_0)$, and let $\pi'$ be an arbitrary extension of $\pi$ to a complete function.  Then $\pi'$ is a winning controller strategy for the bounded game of length $\kappa$ with initial state $s_0$.
+Let abstract game tree $T$ of height $\kappa$ be a certificate tree for the set $\sigma = s_0 \land \top$, let $\pi$ be a partial function returned by the strategy generation algorithm, $\pi=\textsc{genStrategy}(T,\sigma)$, and let $\pi'$ be an arbitrary extension of $\pi$ to a complete function.  Then $\pi'$ is a winning controller strategy for the bounded game of length $\kappa$ with initial state $s_0$.
 \end{theorem}
 \begin{proof}
     $\textsc{genStrategy}$ generates a strategy $\pi$ from the set of tuples $Strat$ returned by $\textsc{genLocalStrats}$. Each tuple $(w, c, k)$ in $Strat$ is generated by \textsc{partition} and, according to Proposition~\ref{prop:partition}, $c$ is a winning controller move from $w$ for a game of length $k$. By Proposition~\ref{prop:next}, all possible $c$-successors of $w$ are covered by subsequent iterations of \textsc{partition} and therefore has some tuple $(w', c', k-1)$ in $Strat$. By constructing $\pi = \textsc{genStrategy}$ from $Strat$ in the order of highest $k$ to lowest, we ensure that any mapping defined by $\pi$ for $w'$ is from a tuple with height $\geq k-1$ and so has a strategy that is winning for the controller for a game of $k-1$ rounds or more.  
@@ -565,7 +567,7 @@ The modification is simple: partial strategies are extracted online during the r
             \If{$p = \texttt{cont}$}
                 \State $B^c \gets B^c \lor \hat{s}$
             \Else
-                \State $Strats \gets Strats \cup \Call{genLocalStrats}{T, k, \hat{s}}$ \label{line:onlineLocalStrats}
+                \State $Strats \gets Strats \cup \Call{genLocalStrats}{T, k, \hat{s} \land \top}$ \label{line:onlineLocalStrats}
                 \For{$i \in [0,\ldots,k]$}
                     \State $B^e[i] \gets B^e[i] \lor \hat{s}$
                 \EndFor
