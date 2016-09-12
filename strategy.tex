@@ -335,7 +335,7 @@ Putting together fragments of the winning strategy computed above, we obtain the
 
 \subsection{Partitioning game trees}
 
-The algorithm described so far involves two potentially costly operations: winning set partitioning and successor set computation.  If implemented na\"ively in a SAT based approach these operations can lead to unacceptable performance. Both operations must return sets and enumerating sets of satisfying assignments with SAT is inefficient. The key insight behind our solution is that both operations can be efficiently approximated from the proof of unsatisfiability of the formula $\sigma \land \opptf(k, T)$, with the help of interpolation, as described below.  The resulting approximations are sound, i.e., preserve the correctness of the resulting strategy.
+The algorithm described so far involves two potentially costly operations: winning set partitioning and successor set computation.  If implemented na\"ively in a SAT based approach these operations can lead to unacceptable performance.  Partitioning $(\sigma, T)$ into a winning set for every $\langle e, n \rangle \in \textsc{succ}(T)$ requires computing all $\sigma_i \subseteq 2^\cW$ that satisfies $(\sigma \land \cC_e = c \land \lnot \opptf(k, n))$.  Similarly, the $c$-successors of $\sigma$ are computed by determining all $\sigma' \subseteq \cS$ that satisfies $(\delta(\cS, \cU, \cC, \cS') \land \sigma \land \cC = c)$. Both operations require elimination of existential quantifiers from the formulas.  To eliminate quantifiers with SAT requires an inefficient enumeration of satisfying assignments.  The key insight behind our solution is that both operations can be efficiently approximated from the proof of unsatisfiability of the formula $\sigma \land \opptf(k, T)$, with the help of interpolation, as described below.  The resulting approximations are sound, i.e., preserve the correctness of the resulting strategy.
 
 The \textsc{partition} function (Algorithm~\ref{alg:strat:partition}) computes a local strategy in the root of an abstract game tree.  It takes a tuple $(T, k, \sigma)$, such that $T$ is a certificate tree of height $k$ for $\sigma \in 2^\cW$ and partitions $\sigma$ into subsets $\sigma_i$ such that the controller can win a game of $k$ rounds in the states and against the environment actions contained in $\sigma_i$ by choosing action $c_i$.
 
@@ -551,9 +551,9 @@ Let abstract game tree $T$ of height $\kappa$ be a certificate tree for the set 
 
 \subsection{Strategy extraction with learning}
 
-In Section~\ref{sec:boundedLearning} I described an optimisation to bounded realisability in which computational learning is used to exclude known losing states from the search tree. If this optimisation is enabled then the final certificate tree returned by the realisability algorithm will assume that these states are winning. In this case we need to adjust the way that strategy extraction is done so that the generated strategy includes winning actions for excluded states. 
+In Section~\ref{sec:boundedLearning} I described an optimisation to bounded realisability in which computational learning is used to exclude known losing states from the search tree. If this optimisation is enabled then the final certificate tree returned by the realisability algorithm will assume that these states are winning. As a result the tree will not contain the controller actions required to win from these states. In this case we need to adjust the way that strategy extraction is done so that the generated strategy includes these actions.
 
-The modification is simple: partial strategies are extracted online during the realisability check. Recall that a set of states $b$ is learned to be losing for the environment for height $k$ when $b \land \opptf(k, T)$ is unsatisfiable for some subtree $T$. In other words, $T$ is a certificate tree for $b$. Algorithm~\ref{alg:stratLearning} shows \textsc{learn} with an additional call to \textsc{genLocalStrats} in line~\ref{line:onlineLocalStrats}.  We use \textsc{genLocalStrats} to record a set of partial strategies, $Strats$, one for each learned state. On termination of the bounded realisability algorithm the entire set $Strats$ is combined into a winning partial strategy with \textsc{compileStrat}.
+The modification is simple: partial strategies are extracted online during the realisability check. Recall that a set of states $b$ is learned to be losing for the environment for height $k$ when $b \land \opptf(k, T)$ is unsatisfiable for some subtree $T$.  In other words, $T$ is a certificate tree for $b$. Learning occurs in \textsc{findCandidate} (Algorithm~\ref{alg:findcandidate}), which calls \textsc{learn} (Algorithm~\ref{alg:boundedLearning}) whenever an unsatisfiable formula is generated.  All subsequent calls to \textsc{findCandidate} use a modified version of \textoverline{\textsc{treeFormula}} that assumes that the environment cannot win from $(b, k)$.  Algorithm~\ref{alg:stratLearning} reproduces \textsc{learn} with an additional call to \textsc{genLocalStrats} in line~\ref{line:onlineLocalStrats}.  Instead of invoking \textsc{genLocalStrats} once on the final certificate tree we invoke \textsc{genLocalStrats} on the certificate tree for every learned state. We collect each of these partial strategies in a set $Strats$, which is combined into a winning partial strategy with \textsc{compileStrat} after bounded realisability terminates.
 
 \begin{algorithm}
     \caption{Learning with online strategy extraction}
@@ -579,22 +579,22 @@ The modification is simple: partial strategies are extracted online during the r
     \end{algorithmic}
 \end{algorithm}
 
-Algorithm~\ref{alg:stratTreeFml} (reproduced from the previous chapter) shows how an opponent tree formula is constructed with respect to an indexed array of sets of learned states $B^e$. At each index $k$ of the array is a set of states for which the environment is known to lose a game of $k$ rounds. $B^e$ conceptually consists of pairs of state sets and tree heights $(b_i, k_i)$ for which $\textsc{findCandidate}(\textsc{env}, b_i, k_i, T_i)$ returned false for some abstract game tree $T_i$, i.e. $T_i$ is a certificate tree for $(b_i, k_i)$.
+%%%Algorithm~\ref{alg:stratTreeFml} (reproduced from the previous chapter) shows how an opponent tree formula is constructed with respect to an indexed array of sets of learned states $B^e$. At each index $k$ of the array is a set of states for which the environment is known to lose a game of $k$ rounds. $B^e$ conceptually consists of pairs of state sets and tree heights $(b_i, k_i)$ for which $\textsc{findCandidate}(\textsc{env}, b_i, k_i, T_i)$ returned false for some abstract game tree $T_i$, i.e. $T_i$ is a certificate tree for $(b_i, k_i)$.
 
-\begin{algorithm}
-    \caption{Opponent tree formula with state learning}
-    \label{alg:stratTreeFml}
-    \begin{algorithmic}[1]
-        \Function{\textoverline{treeFormula}}{$k, T$}
-        \If{$\Call{height}{k, T} = 0$}
-        \State \Return{\Call{E}{$\cS_{T}$}}
-        \Else
-        \State \Return{\Call{$B^e$[\Call{height}{$k,t$}]}{$\cS_{T}$} $\lor$ \\
-        $$\bigvee_{\langle e, n \rangle \in \Call{succ}{T}}(\Call{$\delta$}{\cS_T, \cU_T, \cC_e, \cS_n} \land \cC_e = \Call{action}{e} \land \Call{\textoverline{treeFormula}}{k, n})$$ }
-        \EndIf
-        \EndFunction
-    \end{algorithmic}
-\end{algorithm}
+%%%\begin{algorithm}
+%%%    \caption{Opponent tree formula with state learning}
+%%%    \label{alg:stratTreeFml}
+%%%    \begin{algorithmic}[1]
+%%%        \Function{\textoverline{treeFormula}}{$k, T$}
+%%%        \If{$\Call{height}{k, T} = 0$}
+%%%        \State \Return{\Call{E}{$\cS_{T}$}}
+%%%        \Else
+%%%        \State \Return{\Call{$B^e$[\Call{height}{$k,t$}]}{$\cS_{T}$} $\lor$ \\
+%%%        $$\bigvee_{\langle e, n \rangle \in \Call{succ}{T}}(\Call{$\delta$}{\cS_T, \cU_T, \cC_e, \cS_n} \land \cC_e = \Call{action}{e} \land \Call{\textoverline{treeFormula}}{k, n})$$ }
+%%%        \EndIf
+%%%        \EndFunction
+%%%    \end{algorithmic}
+%%%\end{algorithm}
 
 \begin{theorem}
     Let $G$ be a bounded safety game that is realisable with respect to an error set $E$ and a bound $k$. Let $Strats$ be a set of partial strategies generated during $\textsc{solveAbstract}$, then $\pi = \textsc{compileStrat}(Strats)$ is a winning partial controller strategy for $G$.
@@ -602,9 +602,9 @@ Algorithm~\ref{alg:stratTreeFml} (reproduced from the previous chapter) shows ho
 \begin{proof}
     We prove correctness inductively. At the first online call to \textsc{genLocalStrats}, $B^e$ is empty and by Theorem~\ref{th:stratCorrectness} $Strat_0$ is a partial strategy for a state-round pair $(b_0, k_0)$. $Strat_0$ is added to $Strats$.
     
-    In subsequent calls all interpolants are constructed such that $B^e$ is excluded from the game. So, $Strat_{j+1}$ is a partial strategy for a game beginning at $b_{j+1}$ and of length $k_{j+1}$ where every state-round pair $(b_0, k_0), \ldots, (b_k, k_j)$ is assumed unreachable. As in Theorem~\ref{th:stratCorrectness}, all tuples $(w, c, k)$ in $Strat_{j+1}$ are such that $c$ is a winning controller action from $w$ for a game of length $k$ if all $(b_0, k_0), \ldots, (b_k, k_j)$ is assumed unreachable. Likewise, every $c$-successor of $w$ is either covered by $Strat_{j+1}$ or is contained in $(b_0, k_0), \ldots, (b_k, k_j)$.
+    In subsequent calls all interpolants are constructed such that for every $(b, k) \in B^e$, $b$ is assumed to be winning for the controller at any height $<k$. So, $Strat_{j+1}$ is a partial strategy for a game beginning at $b_{j+1}$ and of length $k_{j+1}$ where every state-round pair $(b_0, k_0), \ldots, (b_k, k_j)$ is assumed to be winning. As in Theorem~\ref{th:stratCorrectness}, all tuples $(w, c, k)$ in $Strat_{j+1}$ are such that $c$ is a winning controller action from $w$ for a game of length $k$ if all $(b_0, k_0), \ldots, (b_k, k_j)$ is assumed to be winning. Likewise, every $c$-successor of $w$ is either covered by $Strat_{j+1}$ or is contained in $(b_0, k_0), \ldots, (b_k, k_j)$.
 
-    Under the inductive hypothesis, $Strats = Strat_0 \cup \ldots \cup Strat_j$ contains winning partial strategies for every $(b_0, k_0), \ldots, (b_j, k_j)$. Thus every state assumed unreachable at the $j+1$ iteration has a winning partial strategy in $Strat_0 \cup \ldots \cup Strat_j$ and so $Strat_0 \cup \ldots \cup Strat_{j+1}$ contains winning partial strategies for all $(b_0, k_0), \ldots, (b_{j+1}, k_{j+1})$.
+    Under the inductive hypothesis, $Strats = Strat_0 \cup \ldots \cup Strat_j$ contains winning partial strategies for every $(b_0, k_0), \ldots, (b_j, k_j)$. Thus every state assumed to be winning at the $j+1$ iteration has a winning partial strategy in $Strat_0 \cup \ldots \cup Strat_j$ and so $Strat_0 \cup \ldots \cup Strat_{j+1}$ contains winning partial strategies for all $(b_0, k_0), \ldots, (b_{j+1}, k_{j+1})$.
 
     Thus, $Strats$ contains winning partial strategies for every state in $B^e$.  \textsc{solveAbstract} terminates when it discovers a certificate tree for the initial state $s_0$. As with all certificate trees generated during execution the algorithm learns from the tree via a call to \textsc{learn}. Thus, at termination $s_0 \in B^e[k]$ and $Strats$ contains a winning partial strategy from $s_0$. Therefore $\pi = \textsc{compileStrat}(Strats)$ is a winning partial controller strategy for the game.
 \end{proof}
