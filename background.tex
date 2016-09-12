@@ -23,12 +23,12 @@ A reactive system can be thought of as a sequence of \emph{states}. The system
 structure~\cite{Kripke63} formalises this notion and provides us will the
 language to reason about a reactive system.
 
-A Kripe structure $M$ is defined by the tuple $M = (S, S_0, R, L)$ with respect
+A Kripe structure $M$ is defined by the tuple $M = (S, s_0, R, L)$ with respect
 to a set of atomic propositions $AP$.
 
 \begin{itemize}
     \item A finite set of states, $S$,
-    \item a subset of initial stats $S_0 \subseteq S$,
+    \item an initial state $s_0 \in S$,
     \item a transition relation $R \subseteq S \times S$, and
     \item a labelling function $L : S \to 2^{AP}$.
 \end{itemize}
@@ -65,7 +65,7 @@ and eventualities. The syntax is:
 \end{itemize}
 
 These operators are semantically defined with respect to a Kripke structure $M
-= (S, S_0, R, L)$. We use $M, s \models \phi$ to denote $\phi$ holds true at
+= (S, s_0, R, L)$. We use $M, s \models \phi$ to denote $\phi$ holds true at
 state $s \in S$ of structure $M$. We definte $\models$ recursively:
 
 \begin{itemize}
@@ -94,8 +94,7 @@ follows:
     \item $\ctlE\phi$ - there exists a path on which $p$ is true
 \end{itemize}
 
-We again define the semantics of CTL with respect to a Kripke structure $M =
-(S, S_0, R, L)$.
+We again define the semantics of CTL with respect to a Kripke structure $M = (S, s_0, R, L)$.
 
 \begin{itemize}
     \item $M, s \models \phi$ iff $\phi \in L(s)$.
@@ -278,7 +277,7 @@ Given a labelled transition system $(S, F)$ where $S$ is a set of states, and $F
     \item $\llbracket \nu Z . p \rrbracket = \bigcup \{ T \subseteq S | T \subseteq \llbracket p \rrbracket [ Z := T ] \}$ where $\llbracket p \rrbracket [ Z := T ]$ is $\llbracket p \rrbracket$ with $Z$ mapped to $T$.
 \end{itemize}
 
-We can use $\mu$-calculus to characterise CTL formulas as fixed point computations. For example, the formula $\ctlE \ltlG \psi$ can be characterised with a greatest fixed point $\nu Z . \psi \land \ctlE \ltlX Z$. With this characterisation the formula can be checked by iterative executions of $\ctlE \ltlX Z$, which we call the \emph{image} of $Z$. The image of a set of states is the set of all possible successor states. Likewise we say that the \emph{pre-image} of a set of states is the set of all ancestor states. Both operations can be efficiently implemented on symbolic BDD representations of sets of states to check CTL formulas by computing fixed points. The fixed point can be computed forwards from the initial set using image operations or backwards from a target set using pre-image operations.
+We can use $\mu$-calculus to characterise CTL formulas as fixed point computations. For example, the formula $\ctlE \ltlG \psi$ can be characterised with a greatest fixed point $\nu Z . \psi \land \ctlE \ltlX Z$. With this characterisation the formula can be checked by iterative executions of $\ctlE \ltlX Z$, which we call the \emph{image} of $Z$. The image of a set of states is the set of all possible successor states. Likewise we say that the \emph{pre-image} of a set of states is the set of all ancestor states. Both operations can be efficiently implemented on symbolic BDD representations of sets of states to check CTL formulas by computing fixed points. The fixed point can be computed forwards from the initial state using image operations or backwards from a target set using pre-image operations.
 
 \section{Synthesis}
 
@@ -321,7 +320,7 @@ Whilst the LTL fragment that is solvable via a safety game is simple, fixed poin
 
 Solving a game symbolically is similar to symbolic model checking. Without loss of generality we may replace the sets of explicit states and actions that define the game with sets of boolean variables. We have $G = (\cS, \cU, \cC, \delta, s_0)$ where $\cS$, $\cU$, and $\cC$ are sets of boolean state and action variables. Then $\delta : 2^\cS \times 2^\cU \times 2^\cC \to 2^\cS$ is a boolean function that defines the transition relation of the game. $s_0 \in 2^\cS$ is the initial state of the game.
 
-Symbolic algorithms for solving safety games focus of determining sets of states from which a player can win.  The building block of this algorithm is the uncontrollable predecessor ($UPre$), which returns a set of predecessor states from which the environment can force play into a given set. We define this operator as $$UPre(X) = \{ s \mid \exists u \forall c \forall x (\delta(s, u, c, s') \implies s' \in X) \}$$
+Symbolic algorithms for solving safety games focus of determining sets of states from which a player can win.  The building block of this algorithm is the uncontrollable predecessor ($UPre$), which returns a set of predecessor states from which the environment can force play into a given set. We define this operator as $$UPre(X) = \{ s \mid \exists u \forall c \forall s' (\delta(s, u, c, s') \implies s' \in X) \}$$
 
 For simplicity we describe the algorithm as though playing for the environment. As such we are actually solving the dual to the safety game: a reachability game.  To solve the game we iteratively build a set of states backwards from the error set ($\lnot \phi$) using the uncontrollable predecessor. It is clear that this set will grow monotonically and (since the state space is finite) eventually converge on fixed point. We call this fixed point set the environment's winning set. If this set contains the initial state then the game is unrealisable and the environment's winning strategy is to always play to stay within its winning set. Conversely, if the initial state is outside the environment's winning set then the controller must have a strategy to avoid the error states and the specification is realisable. In terms of $\mu$-calculus, the environment's winning region with respect to an error set $E$ is given by the least fixed point of the uncontrollable predecessor of $E$. The complement of the environment's winning region gives the safe region for the controller:
 

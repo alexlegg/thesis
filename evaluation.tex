@@ -5,6 +5,9 @@
 \newcommand{\termitesat}[0]{\textsc{TermiteSAT}\xspace}
 \newcommand{\ignore}[1]{}
 
+\defcitealias{syntcompedacc15}{SYNTCOMP, 2015}
+\defcitealias{syntcompedacc16}{SYNTCOMP, 2016}
+
 \definecolor{RYB1}{RGB}{238, 46, 47}
 \definecolor{RYB2}{RGB}{0, 140, 72}
 \definecolor{RYB3}{RGB}{24, 90, 169}
@@ -278,7 +281,7 @@ Unbounded realisability is evaluated on the benchmarks of the 2015 synthesis com
 
 \subsection{Benchmarking}
 
-The benchmarks were run on a cluster of Intel Quad Core Xeon E5405 2GHz CPUs with 16GB of memory.  The solvers were allowed exclusive access to a node for one hour to solve an instance.  The results of this benchmarking are shown, along with the synthesis competition results~\cite{syntcompedacc}, in Table~\ref{tab:syntcomp}. The competition was run on Intel Quad Core 3.2Ghz CPUs with 32GB of memory, also on isolated nodes for one hour per instance. The competition results differ significantly from our own benchmarks due to this more powerful hardware.  For our benchmarks we report only the results for solvers we were able to run on our cluster. The unique column lists the number of instances that only that tool could solve in the competition (excluding our solver). In brackets is the number of instances that only that tool could solve, including our solver.
+The benchmarks were run on a cluster of Intel Quad Core Xeon E5405 2GHz CPUs with 16GB of memory.  The solvers were allowed exclusive access to a node for one hour to solve an instance.  The results of this benchmarking are shown, along with the synthesis competition results~\citepalias{syntcompedacc15}, in Table~\ref{tab:syntcomp}. The competition was run on Intel Quad Core 3.2Ghz CPUs with 32GB of memory, also on isolated nodes for one hour per instance. The competition results differ significantly from our own benchmarks due to this more powerful hardware.  For our benchmarks we report only the results for solvers we were able to run on our cluster. The unique column lists the number of instances that only that tool could solve in the competition (excluding our solver). In brackets is the number of instances that only that tool could solve, including our solver.
 
 \begin{table}[b]
     \centering
@@ -344,7 +347,7 @@ The results show that although \termitesat does not solve as many total instance
 \clearpage
 \subsection{Synthesis Competition Results}
 
-I report the results of the sequential realisability track of the 2016 synthesis competition in Table~\ref{table:syntcomp16s} and the parallel realisability track in Table~\ref{table:syntcomp16p}. The number of instances solved over time is shown in \Cref{fig:syntcomp16seq,fig:syntcomp16par} for the best configurations of each tool.  The results show that although \termitesat does not perform as well in the sequential track, the combination of SAT based unbounded realisability with a traditional BDD solver performs very well in the parallel track. This supports the argument that different approaches are suited to different classes of specifications and that by combining solving techniques a greater coverage of problem instances is possible.
+I report the results of the sequential realisability track of the 2016 synthesis competition~\citepalias{syntcompedacc16} in Table~\ref{table:syntcomp16s} and the parallel realisability track in Table~\ref{table:syntcomp16p}. The number of instances solved over time is shown in \Cref{fig:syntcomp16seq,fig:syntcomp16par} for the best configurations of each tool.  The results show that although \termitesat does not perform as well in the sequential track, the combination of SAT based unbounded realisability with a traditional BDD solver performs very well in the parallel track. This supports the argument that different approaches are suited to different classes of specifications and that by combining solving techniques a greater coverage of problem instances is possible.
 
 \begin{table}
     \centering

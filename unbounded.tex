@@ -424,8 +424,7 @@ Algorithm~\ref{alg:unbounded} shows the main loop of the unbounded synthesis alg
     \label{alg:unbounded}
 \end{algorithm}
 
-We define two global invariants of the algorithm.  The \emph{may-invariant}
-states that sets $B^m[i]$ decrease monotonically with $i$ and that each $B^m[i+1]$ overapproximates the states from which the environment can force the game into $B^m[i]$, i.e. $B^m[i+1]$ overapproximates the uncontrollable predecessor of $B^m[i]$.  The \emph{must-invariant} guarantees that the must-losing set $B^M$ is an underapproximation of the actual losing set $B$.  Both invariants trivially hold after $B^m$ and $B^M$ have been initialised in the beginning of the algorithm.  Further interaction of the algorithm with the recorded learned states is constrained to \textsc{learn} and \textoverline{\textsc{learn}} so it suffices to prove these invariants for these functions only.
+We define two global invariants of the algorithm.  The \emph{may-invariant} states that sets $B^m[i]$ decrease monotonically with $i$ and that each $B^m[i+1]$ overapproximates the states from which the environment can force the game into $B^m[i]$, i.e. $B^m[i+1]$ overapproximates the uncontrollable predecessor of $B^m[i]$.  The \emph{must-invariant} guarantees that the must-losing set $B^M$ is an underapproximation of the actual losing set $B$.  Both invariants trivially hold after $B^m$ and $B^M$ have been initialised in the beginning of the algorithm.  Further interaction of the algorithm with the recorded learned states is constrained to \textsc{learn} and \textoverline{\textsc{learn}} so it suffices to prove these invariants for these functions only.
 
 \begin{proposition}\label{prop:opplearn}
     Assuming the preconditions are met, \textoverline{\textsc{learn}} satisfies its postconditions. Namely,
@@ -536,11 +535,7 @@ In the previous chapter I showed how to extract a strategy from the certificate 
 
 \subsection{Generalising the initial state}
 
-This optimisation allows us to learn may and must losing states faster.
-Starting with a larger set of initial states we increase the reachable set and
-hence increase the number of states learned by interpolation. This optimisation
-requires a modification to $\textsc{solveAbstract}$ to handle sets of states,
-which is not shown.
+This optimisation allows us to learn may and must losing states faster.  Starting with a larger set of initial states we increase the reachable set and hence increase the number of states learned by interpolation. This optimisation requires a modification to $\textsc{solveAbstract}$ to handle sets of states, which is not shown.
 
 The optimisation is relatively simple and is inspired by a common greedy heuristic for minimising $\texttt{unsat}$ cores. Initial state $s_0$ assigns a value to each variable in $\mathcal{S}$. If the environment loses $\langle s_0, k \rangle$ then we attempt to solve for a generalised version of $s_0$ by removing one variable assignment at a time. If the environment loses from the larger set of states then we continue generalising. In this way we learn more states by increasing the reachable set. In our benchmarks we have observed that this optimisation is beneficial on the first few iterations of \textsc{checkBound}. Note that it is possible to discover multiple sets in this way by iterating the procedure with different orders on the variables removed from $s_0$. However, in practice the benefit of these additional sets was found to be outweighed by the cost of computing them.
 
@@ -580,7 +575,7 @@ Another heuristic for future exploration is the use of QBF or 2QBF solvers to ch
 
 \section{Discussion}
 
-Unbounded realisability is designed to take advantage of the strengths of bounded realisability but provide the completeness offered by a fixed point computation. These conflicting aims are addressed by overapproximation via interpolation, which allows completeness without sacrificing performance to an exploding symbolic representation.
+Unbounded realisability is designed to take advantage of the strengths of bounded realisability but provide the completeness offered by a fixed point computation. These conflicting aims are addressed by approximation via interpolation, which allows completeness without sacrificing performance to an exploding symbolic representation.
 
 \subsection{Related work}
 
