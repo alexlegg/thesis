@@ -242,7 +242,7 @@ Once the set of states losing for the subtree $T_2$ has been recorded we continu
 
 \subsection{Example}
 
-Consider a simple arbiter system in which the environment makes a request for a number of resources (1 or 2), and the controller may grant access to up to two resources.  The total number of requests grows each round by the number of environment requests and shrinks by the number of resources granted by the controller in the previous round.  The controller must ensure that the number of unhandled requests does not accumulate to more than 2.  Figure~\ref{fig:example} shows the variables (\ref{fig:examplevars}), the initial state of the system (\ref{fig:exampleinit}), and the formulas for computing next-state variable assignments (\ref{fig:exampletrans}) for this example. We use primed identifiers to denote next-state variables and curly braces to define the domain of a variable.
+Consider a simple arbiter system in which the environment makes a request for a number of resources (1 or 2), and the controller may grant access to up to two resources.  The total number of requests grows each round by the number of environment requests and shrinks by the number of resources granted by the controller in the previous round.  The controller must ensure that the number of unhandled requests does not accumulate to more than 2.  Figure~\ref{fig:example} shows the variables (\ref{fig:examplevars}), the initial state of the system (\ref{fig:exampleinit}), and the formulas for computing next-state variable assignments (\ref{fig:exampletrans}) for this example. We use primed identifiers to denote next-state variables and curly braces to define the domain of a variable. To simplify the presentation we use integer variables.
 
 
 \begin{figure}
@@ -450,7 +450,7 @@ At the second last recursive call to \textsc{\textoverline{learn}}, tree $T_1$ i
     Assuming the preconditions are met, \textsc{learn} satisfies its postconditions. Namely,
     \begin{enumerate}
         \item \textsc{learn} maintains the \emph{must-invariant}: $$B^M \subseteq B.$$
-        \item \textsc{learn} ensures that $s$ is added to $B^M$: $$s \land B^M \not\equiv$$
+        \item \textsc{learn} ensures that $s$ is added to $B^M$: $$s \land B^M \not\equiv \bot$$
     \end{enumerate}
 \end{proposition}
 
@@ -471,7 +471,7 @@ Likewise, in the second last recursive call of \textsc{learn} with the empty tre
 \begin{proof}
     $B^m$ and $B^M$ are updated inside $\textsc{\textoverline{learn}}$ and $\textsc{learn}$ only. Therefore, by Propositions~\ref{prop:opplearn} and \ref{prop:learn}, \textsc{checkBound} maintains both invariants.
 
-    From the correctness of \textsc{solveAbstract} given in Theorem~\ref{theorem:solveAbstract} we ensure that \textsc{checkBound} terminates and during execution a certificate tree is generated and checked by \textsc{findCandidate}. In the modified version of \textsc{solveAbstract}, one of the learning procedures is called when \textsc{findCandidate} returns \texttt{NULL}. Thus \textsc{checkBound} generates a call to a learning procedure and passes $s$ and a certificate tree $T$.  Therefore, when the game is realisable, Proposition~\ref{prop:opplearn} guarantees that $s$ is removed from $B^m[k]$. Likewise, when the game is unrealisable Proposition~\ref{prop:learn} guarantees that $s$ is removed from $B^M$.
+    From the correctness of \textsc{solveAbstract} given in Chapter~\ref{ch:bounded} (Theorem~\ref{theorem:solveAbstract}) we have that \textsc{checkBound} terminates and during execution a certificate tree is generated and checked by \textsc{findCandidate}. In the modified version of \textsc{solveAbstract}, one of the learning procedures is called when \textsc{findCandidate} returns \texttt{NULL}. Thus \textsc{checkBound} generates a call to a learning procedure and passes $s$ and a certificate tree $T$.  Therefore, when the game is realisable, Proposition~\ref{prop:opplearn} guarantees that $s$ is removed from $B^m[k]$. Likewise, when the game is unrealisable Proposition~\ref{prop:learn} guarantees that $s$ is removed from $B^M$.
 
 %%%Assume that there is a winning strategy for the controller at bound $\kappa$.  This means that at some point the algorithm discovers a counterexample tree of bound $\kappa$ for which the environment cannot force into $E$. The algorithm then invokes the \textsc{\textoverline{learn}} method, which removes $s_0$ from $B^m[\kappa]$.  Alternatively, if there is a winning strategy for the environment at bound $\kappa$ then a counterexample losing for the controller will be found.  Subsequently \textsc{learn} will be called and $s_0$ added to $B^M$.
 \end{proof}
@@ -485,7 +485,7 @@ Assume that $G$ is realisable, we use the may-invariant to show correctness of \
 
 Alternatively, $G$ is unrealisable. The must-invariant guarantees that the environment can force the game into an error state from $B^M$, therefore checking whether the initial state is in $B^M$ (as in line~5) is sufficient to return \texttt{unrealisable}.  
 
-Termination also follows from the invariants. Given that $B^m$ decreases monotonically and there are a finite set of states in the game, the algorithm is guaranteed to reach a fixed point if the game is realisable. If the game is unrealisable there must exist a finite length winning environment strategy, thus by iteratively increasing $k$ we guarantee termination.
+Termination also follows from the invariants. Given that $\forall (0<i<k).~B^m[i] \subseteq B^m[i+1]$, i.e. $B^m$ decreases monotonically by index, and there are a finite set of states in the game; the algorithm is guaranteed to reach a fixed point at a maximum bound of $2^\cS$. If the game is unrealisable there must exist a finite length winning environment strategy, thus by iteratively increasing $k$ we guarantee termination.
 
 \end{proof}
 
@@ -543,7 +543,7 @@ The optimisation is relatively simple and is inspired by a common greedy heurist
     \begin{algorithmic}
         \Function{checkBound}{$k$}
             \State $r \gets $ \Call{solveAbstract}{$\texttt{env}, s_0, k, \emptyset$}
-            \IIf{$r \neq \emptyset$} \Return $r$ \EndIIf
+            \IIf{$r \neq \texttt{NULL}$} \Return $r$ \EndIIf
             \State $s' \gets s_0$
             \For{$x \in \mathcal{S}$}
             \State $r \gets$ \Call{solveAbstract}{$\texttt{env}, s' \setminus \{x\}, k, \emptyset$} 
@@ -664,7 +664,7 @@ The unbounded solver extends the bounded solver with learning. Learning states f
 
 In the synthesis competition benchmarks there is a simple counter specification that helps illustrate the limitations of unbounded synthesis. The specification is given a parameter $n$ that determines the number of bits in the counter. Figure~\ref{fig:counter} shows the specification. The environment has the choice to increment the counter, or not. The controller can reset the counter when it is half way to the maximum value. The controller is safe if the counter never reaches its maximum value. Clearly a safe controller resets whenever it is able to.
 
-This example can produce several different interesting behaviours in the unbounded synthesis algorithm. Let us first consider the game tree in Figure~\ref{fig:limitationAGTa}. The controller strategy shown in this tree is to not reset the counter. This strategy wins the bounded game for any counter with $n \geq 2$ because there are not enough game rounds for the counter to reach the error state. Let's now consider how the unbounded algorithm would learn from this tree when $n = 3$. At the node of height 1, the largest interpolant that could be learned is $((\texttt{err == 0}) \land (\texttt{counter < 6}))$. At the next node up the tree we might learn $((\texttt{err == 0}) \land (\texttt{counter < 5}))$. With a tree of length $k = 2^n - 2 = 6$ we could have $B^m$ with a difference of exactly one state in each successive index. For high values of $n$ it is infeasible to construct a formula in CNF for this many unrollings of the transition relation, even though there is no branching.
+This example can induce two different interesting behaviours in the unbounded synthesis algorithm. Let us first consider the game tree in Figure~\ref{fig:limitationAGTa}. The controller strategy shown in this tree is to not reset the counter. This strategy wins the bounded game for any counter with $n \geq 2$ because there are not enough game rounds for the counter to reach the error state. Let's now consider how the unbounded algorithm would learn from this tree when $n = 3$. At the node of height 1, the largest interpolant that could be learned is $((\texttt{err == 0}) \land (\texttt{counter < 6}))$. At the next node up the tree we might learn $((\texttt{err == 0}) \land (\texttt{counter < 5}))$. With a tree of length $k = 2^n - 2 = 6$ we could have $B^m$ with a difference of exactly one state in each successive index. For high values of $n$ it is infeasible to construct a formula in CNF for this many unrollings of the transition relation, even though there is no branching.
 
 In practice, unbounded synthesis can do well on this specification when the SAT solver gives a candidate such as in Figure~\ref{fig:limitationAGTb}. The optimisation that generalises the losing state before interpolation is able to drop all bits of the counter except the high bit. This gives $((\texttt{err = 0}) \land (\texttt{counter < 3}))$, which describes the safe region of the game. The procedure quickly converges on this fixed point in this case.
 
