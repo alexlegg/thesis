@@ -36,8 +36,11 @@
 In this chapter I present benchmarking results for the implementations of each previous chapter. Bounded realisability is implemented in a tool called \eva as joint work between Nina Narodytska and myself. \eva was built in C++ and is based on the source code of \textsc{RAReQS}~\cite{Janota12}. The tool calls out to Glucose~\cite{Audemard09} for SAT solving. Strategy extraction was later added to \eva using PeRIPLO~\cite{Rollini13} to construct interpolants. The implementation also uses cudd~\cite{Somenzi01} to reduce interpolants into cubes via BDDs. I implemented unbounded realisability in a separate open source tool, \termitesat~\cite{TermiteSAT}, which contains a reimplementation of the bounded realisability algorithm. \termitesat is written in Haskell and also uses Glucose for SAT solving, PeRIPLO for interpolant construction, and cudd to reduce interpolants to cubes. \termitesat was submitted to the 2016 synthesis competition and the results are shown below. As part of that submission I added a hybrid mode to \termitesat that runs the unbounded synthesis algorithm in parallel with Simple BDD Solver~\cite{Walker14b}.
 
 \section{Bounded realisability}
+\label{sec:boundedeval}
 
-The algorithm is evaluated on four families of benchmarks derived from driver synthesis problems. Bounded realisability is only able to prove the absence of counterexample traces up to a certain length for safety games so the tool is instead evaluated on benchmarks formulated as the dual reachability game. \eva solves games in which the controller must \emph{reach} a goal state. The benchmarks are equivalent to unrealisable safety specifications.  Each benchmark models the data path of one of four I/O devices in the abstracted form.  In particular, we model the transmit buffer of an Ethernet adapter, the send queue of a UART serial controller, the command queue of an SPI Flash controller, and the IDE hard disk DMA descriptor list.   Models are parameterised by the size of the corresponding data structure.  Specifications are written in a simple input language based on the NuSMV syntax~\cite{Henzinger03}.   The transition relation of the game is given in the form of variable update functions $s' := f(\mathcal{S}, \mathcal{U}, \mathcal{C})$, one for each state variable $s \in \mathcal{S}$.
+The algorithm is evaluated on four families of benchmarks derived from driver synthesis problems. Bounded realisability is only able to prove the absence of counterexample traces up to a certain length for safety games so the tool is instead evaluated on benchmarks formulated as the dual reachability game. \eva solves games in which the controller must \emph{reach} a goal state. The benchmarks are equivalent to unrealisable safety specifications.  Each benchmark models the data path of one of four I/O devices in the abstracted form.  In particular, we model the transmit buffer of an Ethernet adapter, the send queue of a UART serial controller, the command queue of an SPI Flash controller, and the IDE hard disk DMA descriptor list.   In order to show scalability, the models are parameterised by the size of the corresponding data structure.  Specifications are written in a simple input language based on the NuSMV syntax~\cite{Henzinger03}.   The transition relation of the game is given in the form of variable update functions $s' := f(\mathcal{S}, \mathcal{U}, \mathcal{C})$, one for each state variable $s \in \mathcal{S}$.
+
+These benchmarks were selected in order to demonstrate the strengths and weaknesses of the approach. In Section~\ref{sec:unboundedeval} a more extensive evaluation is presented using a large suite of benchmarks.
 
 We compare our solver against two existing approaches to solving games.  First, we encode input specifications as QBF instances and solve them using two state-of-the-art QBF solvers: \textsc{RAReQS}~\cite{Janota12} and \textsc{depQBF}~\cite{Lonsing10}, having first run them through the bloqqer~\cite{Biere11} preprocessor.  Second, we solve our benchmarks using the Termite~\cite{Walker14} BDD-based solver that uses dynamic variable reordering, variable grouping, transition relation partitioning, and other optimisations. 
 
@@ -117,13 +120,7 @@ compact BDD-based representation of the winning set.  \eva
 outperforms Termite on these benchmarks as it does not try to 
 enumerate all winning states.
 
-{Detailed performance analysis shows that 
-abstract game trees generated in our benchmarks had average 
-branching factors in the range between $1.03$ and $1.2$, with 
-the maximal depth of the trees ranging from $3$ to $58$.  This
-confirms the the key premise behind the design of \eva, namely, 
-solving real-world synthesis problems requires considering only a 
-small number of opponent moves in every state of the game.}  
+Detailed performance analysis shows that abstract game trees generated in our benchmarks had average branching factors in the range between $1.03$ and $1.2$, with the maximal depth of the trees ranging from $3$ to $58$.  This confirms the the key premise behind the design of \eva, namely, solving many real-world synthesis problems requires considering only a small number of opponent moves in every state of the game.
 
 \clearpage
 
@@ -276,6 +273,7 @@ These results show that strategy generation adds a modest overhead to the base s
 \clearpage
 
 \section{Unbounded realisability}
+\label{sec:unboundedeval}
 
 Unbounded realisability is evaluated on the benchmarks of the 2015 synthesis competition (SYNTCOMP'15). I also show the results of the 2016 competition, which \termitesat was submitted to. Each competition benchmark comprises of controllable and uncontrollable inputs to a circuit that assigns values to latches. One latch is configured as the error bit that determines the winner of the safety game. The benchmark suite is a collection of both real-world and toy specifications including generalised buffers, AMBA bus controllers, device drivers, and converted LTL formulas.  Descriptions of many of the benchmark families used can be found in the 2014 competition report~\cite{Jacobs15}. 
 
@@ -283,7 +281,7 @@ Unbounded realisability is evaluated on the benchmarks of the 2015 synthesis com
 
 The benchmarks were run on a cluster of Intel Quad Core Xeon E5405 2GHz CPUs with 16GB of memory.  The solvers were allowed exclusive access to a node for one hour to solve an instance.  The results of this benchmarking are shown, along with the synthesis competition results~\citepalias{syntcompedacc15}, in Table~\ref{tab:syntcomp}. The competition was run on Intel Quad Core 3.2Ghz CPUs with 32GB of memory, also on isolated nodes for one hour per instance. The competition results differ significantly from our own benchmarks due to this more powerful hardware.  For our benchmarks we report only the results for solvers we were able to run on our cluster. The unique column lists the number of instances that only that tool could solve in the competition (excluding our solver). In brackets is the number of instances that only that tool could solve, including our solver.
 
-\begin{table}[b]
+\begin{table}[t]
     \centering
     \setlength{\tabcolsep}{8pt}
     \begin{tabular}{l r r r }
@@ -304,7 +302,7 @@ The benchmarks were run on a cluster of Intel Quad Core Xeon E5405 2GHz CPUs wit
     \label{tab:syntcomp}
 \end{table}
 
-Our implementation was able to solve 103 out of the 250 specification in the alloted time, including 12 instances that were not solved by any other solver in the sequential track of the competition. The unique instances we solved are listed in Table~\ref{tab:unique}.
+Our implementation was able to solve 103 out of the 250 specifications in the alloted time, including 12 instances that were not solved by any other solver in the sequential track of the competition. The unique instances we solved are listed in Table~\ref{tab:unique}.
 
 \begin{table}[h]
     \centering
@@ -321,7 +319,7 @@ Our implementation was able to solve 103 out of the 250 specification in the all
     \label{tab:unique}
 \end{table}
 
-Five of the instances unique to our solver are device driver instances and another five are from the \texttt{stay} family. This supports the hypothesis that different game solving methodologies perform better on certain classes of specifications.
+Five of the instances unique to our solver are device driver instances and another five are from the \texttt{stay} family.  This supports the hypothesis that different game solving methodologies perform better on certain classes of specifications.  Note that the driver benchmark instances in the competition are unrelated to those presented in Section~\ref{sec:boundedeval} and were developed independently. 
 
 I also present a cactus plot of the number of instances solved over time (Figure~\ref{fig:cactus}). We have plotted the best configuration of each solver we benchmarked. The solvers shown are \textsc{Demiurge}~\cite{Bloem14}, the only SAT-based tool in the competition, the winner of the sequential realisability track \textsc{Simple BDD Solver 2}~\cite{Walker14}, and AbsSynthe (seq3) \cite{Brenguier14}.
 
@@ -338,7 +336,7 @@ I also present a cactus plot of the number of instances solved over time (Figure
             \legend{TermiteSAT,Demiurge,Simple BDD Solver,AbsSynthe}
         \end{axis}
     \end{tikzpicture}
-    \caption{Number of instances solved over time.}
+    \caption{Benchmarks: Number of instances solved over time.}
     \label{fig:cactus}
 \end{figure}
 
@@ -347,7 +345,9 @@ The results show that although \termitesat does not solve as many total instance
 \clearpage
 \subsection{Synthesis Competition Results}
 
-I report the results of the sequential realisability track of the 2016 synthesis competition~\citepalias{syntcompedacc16} in Table~\ref{table:syntcomp16s} and the parallel realisability track in Table~\ref{table:syntcomp16p}. The number of instances solved over time is shown in \Cref{fig:syntcomp16seq,fig:syntcomp16par} for the best configurations of each tool.  The results show that although \termitesat does not perform as well in the sequential track, the combination of SAT based unbounded realisability with a traditional BDD solver performs very well in the parallel track. This supports the argument that different approaches are suited to different classes of specifications and that by combining solving techniques a greater coverage of problem instances is possible.
+I report the results of the sequential realisability track of the 2016 synthesis competition~\citepalias{syntcompedacc16} in Table~\ref{table:syntcomp16s} and the parallel realisability track in Table~\ref{table:syntcomp16p}. The number of instances solved over time is shown in \Cref{fig:syntcomp16seq,fig:syntcomp16par} for the best configurations of each tool.  In the parallel realisability track I submitted two configurations of \termitesat. The portfolio configuration runs the unbounded realisability algorithm in parallel with \textsc{Simple BDD Solver}. The hybrid configuration does the same but the SAT based solver shares the states learned to be losing for the controller with the BDD solver. Information is not shared in the opposite direction so that the SAT based solver isn't negatively affected by large winning regions. It may be possible to share more information but this is left to future work.
+
+The results show that although \termitesat does not perform as well in the sequential track, the combination of SAT based unbounded realisability with a traditional BDD solver performs very well in the parallel track. This supports the argument that different approaches are suited to different classes of specifications and that by combining solving techniques a greater coverage of problem instances is possible.
 
 \begin{table}
     \centering
@@ -432,3 +432,13 @@ I report the results of the sequential realisability track of the 2016 synthesis
     \caption{SYNTCOMP'16 parallel track: Instances solved over time}
     \label{fig:syntcomp16par}
 \end{figure}
+
+\clearpage
+\section{Summary}
+
+\begin{itemize}
+    \item Bounded realisability and strategy extraction is implemented in a tool named \eva. Unbounded realisability is implemented in a tool named \termitesat, which is open source and available online.
+    \item Bounded realisability was evaluated on device driver benchmarks that showcase the strengths and weaknesses of the approach. The results show that the approach can outperform a BDD based solver on certain classes of specifications.
+    \item The same benchmarks were used to evaluate the performance of strategy extraction. It was found to have a small effective overhead compared to the cost of determining the realisability of the game.
+    \item Unbounded realisability was evaluated on the benchmarks of the synthesis competition. It was found to be effective on some problem instances that were unsolved in the sequential track of the competition. The tool was submitted to the 2016 competition and a hybrid approach combining unbounded realisability with a BDD solver performed well in the parallel track.
+\end{itemize}

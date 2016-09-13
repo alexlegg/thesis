@@ -77,13 +77,16 @@
 \usepackage[bf,sf]{titlesec}
 \newcommand{\chapformat}[1]{\parbox[c]{0.8\textwidth}{\Huge #1}}
 \titleformat{\chapter}[hang]
-    {\sffamily\bfseries}
+    {\bfseries}
     {\parbox[c]{0.2\textwidth}{\rmfamily\fontsize{72}{72}
      \selectfont\thechapter\hspace{10pt}\rule[-12pt]{2pt}{72pt}}}
     {0pt}
     {\chapformat}
 
 \setsecnumdepth{subsection}
+
+\widowpenalty10000
+\clubpenalty10000
 
 %%%\title{Addressing the Space Explosions of Reactive Synthesis}
 
@@ -129,7 +132,6 @@ Sydney, Australia \\[1.0cm]
 
 \thispagestyle{plain}
 \section*{Originality Statement}
-\addcontentsline{toc}{chapter}{Originality Statement}
 
 `I hereby declare that this submission is my own work and to the best of my
 knowledge it contains no materials previously published or written by another
@@ -147,7 +149,6 @@ Date\hspace{0.5cm}\dotfill\hfill\\
 \vfil\clearpage
 
 \begin{abstract}
-    \addcontentsline{toc}{chapter}{Abstract}
 Software controllers of reactive systems are ubiquitous in situations where incorrectness has a high cost. In order to place trust in the software, strong guarantees of its functional correctness are required. Reactive synthesis can be used to automatically construct software to a specification and ensure correctness. The drawback is that synthesis is computationally hard and it is infeasible to synthesise a controller for many specifications.
 
 Synthesis is formalised as a game between the controller and its environment. In this thesis we consider safety specifications that define the winning condition of the game for the controller as never allowing the game to visit an error state. The usual approach for solving controller synthesis is to compute the set of all winning states in the system and construct a controller that never deviates from this set. The set may be very large so it is standard practice to represent sets of states symbolically as a relation over the variables of the system. Binary decision diagrams (BDDs) are an efficient data structure used to store and manipulate sets of states for synthesis. The drawback of this approach is that a set of states has only one representation as a BDD and in some cases it may be exponentially large in the number of variables. The state explosion of BDDs causes controller synthesis to be infeasible on specifications with no compact representation of the set of winning states.
@@ -155,13 +156,20 @@ Synthesis is formalised as a game between the controller and its environment. In
 In this thesis I propose a synthesis algorithm that constructs an approximation of the set of safe states that is sufficient to show correctness of the controller. The algorithm constructs an abstraction of the game and searches for a candidate strategy for the controller. Counterexamples are used to refine the strategy until it is winning for the game abstraction. Similar to bounded model checking, a SAT solver is used to efficiently implement the search for a counterexample trace. When a strategy is found to be winning in the abstraction of the game an approximation of the states for which the strategy wins is extracted from the strategy via interpolation. The search continues by refining the abstraction until the approximation of winning states converges on a fixed point that is sufficient to prove that the specification is realisable.
 
 \end{abstract}
+\addcontentsline{toc}{chapter}{Abstract}
 
 \newpage
 
 \renewcommand{\abstractname}{Acknowledgements}
 \begin{abstract}
-Acknowledge some people
+    My PhD would not have been possible without the support of several individuals. First and foremost I would like to extend my gratitude to my supervisors \textbf{Leonid Ryzhyk}, \textbf{Nina Narodytska}, and \textbf{Gernot Heiser}. Leonid introduced me to the world of academia and taught me everything I needed to survive in it. I will be forever grateful for his guidance.
+
+    I would also like to thank everyone, past and present, in the Trustworthy Systems group at Data61 for providing an incredibly positive environment for the duration of my PhD. I owe my sanity to the daily coffee outings, the frequent beers, the introduction to climbing, and most importantly the friendships.
+
+    Lastly, for the constant encouragement and support: my parents \textbf{Jon} and \textbf{Kerrie}, my partner \textbf{Edwina}, and my extended family \textbf{Thomas}, \textbf{Kayla}, \textbf{Mary}, \textbf{David}, \textbf{Rachael}, \textbf{Andrew}, \textbf{Kathryn}, and \textbf{Cassandra}.
+
 \end{abstract}
+\addcontentsline{toc}{chapter}{Acknowledgements}
 
 \chapter{Publications}
 \begin{itemize}
@@ -201,7 +209,10 @@ Acknowledge some people
 \backmatter
 \cleardoublepage
 \listoffigures
+\clearpage
 \listoftables
+\listofalgorithms
+\addcontentsline{toc}{chapter}{List of algorithms}
 \cleardoublepage
 \bibliographystyle{thesisnat}
 \bibliography{main}

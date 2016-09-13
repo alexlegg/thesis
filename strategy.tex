@@ -81,7 +81,7 @@ Figure~\ref{fig:stratExample} introduces the running example for this chapter. I
     \label{fig:stratExample}
 \end{figure}
 
-Algorithm~\ref{alg:strat} shows the pseudocode of the strategy generation algorithm.  The algorithm proceeds in two phases: the first phase (\textsc{genLocalStrats}) computes local strategies in nodes of $T$; the second phase (\textsc{compileStrat}) compiles all local strategies into a winning strategy function.
+Algorithm~\ref{alg:strat} shows the pseudocode of the strategy generation algorithm.  The algorithm proceeds in two phases: the first phase (\textsc{genLocalStrats}) computes local strategies in nodes of $T$; the second phase (\textsc{compileStrat, k}) compiles all local strategies into a winning strategy function.
 
 The \textsc{genLocalStrats} function recursively traverses the certificate tree $T$, starting from the root, computing local strategies in each node.  The main operation of the algorithm, called \textsc{partition}, splits $(T, \sigma)$ into $j$ tuples $(T_i, \sigma_i)$, as shown in Figure~\ref{fig:partition}.  Each tree $T_i$ is a copy of a single branch of $T$ and the series $\sigma_1 \ldots \sigma_i$ forms a disjoint partitioning of $\sigma$, i.e. $\sigma_i \subseteq \sigma \subseteq 2^\cW$.  The partitioning is constructed in such a way that the action $c_i$ that labels the root edge of $T_i$ is a winning controller action for states and environment actions in $\sigma_i$.
 
@@ -312,19 +312,19 @@ Putting together fragments of the winning strategy computed above, we obtain the
 \begin{algorithm}
    \caption{Computing a winning strategy}\label{alg:strat}
    \begin{algorithmic}[1]
-        \Function{GenStrategy}{$T$, $k$, $\sigma$}
-            \State $Strat \gets \Call{GenLocalStrats}{T, k, \sigma}$
-            \State \Return{$\Call{CompileStrat}{Strat}$}
+        \Function{genStrategy}{$T$, $k$, $\sigma$}
+            \State $Strat \gets \Call{genLocalStrats}{T, k, \sigma}$
+            \State \Return{$\Call{compileStrat}{Strat, k}$}
         \EndFunction
         \Statex
 
-        \Function{GenLocalStrats}{$T$, $k$, $\sigma$}
+        \Function{genLocalStrats}{$T$, $k$, $\sigma$}
             \State $[(e_1, n_1),\ldots,(e_j, n_j)] \gets \Call{succ}{T}$
             \State $[(T_1,\sigma_1),\ldots,(T_j, \sigma_j)] \gets \Call{partition}{T, k, \sigma}$
             \State $Strat \gets \{(\sigma_i, \Call{action}{e_i}, \Call{height}{k, T}) \mid i \in[1,\ldots,j]\}$\label{alg:strat:strati}
             \For{$i = 1$ to $j$}\label{alg:strat:for}
             \State $(T_i', \sigma_i') \gets \Call{next}{T_i, k, \sigma_i}$\label{alg:strat:next}
-                \State $Strat_i \gets \Call{GenLocalStrats}{T_i', k-1, \sigma_i'}$\label{alg:strat:rec}
+                \State $Strat_i \gets \Call{genLocalStrats}{T_i', k-1, \sigma_i'}$\label{alg:strat:rec}
                 \State $Strat \gets Strat \cup Strat_i$
             \EndFor\label{alg:strat:endfor}
             \State \Return{$Strat$} \label{alg:strat:return}
@@ -335,7 +335,7 @@ Putting together fragments of the winning strategy computed above, we obtain the
 
 \subsection{Partitioning game trees}
 
-The algorithm described so far involves two potentially costly operations: winning set partitioning and successor set computation.  If implemented na\"ively in a SAT based approach these operations can lead to unacceptable performance.  Partitioning $(\sigma, T)$ into a winning set for every $\langle e, n \rangle \in \textsc{succ}(T)$ requires computing all $\sigma_i \subseteq 2^\cW$ that satisfies $(\sigma \land \cC_e = c \land \lnot \opptf(k, n))$.  Similarly, the $c$-successors of $\sigma$ are computed by determining all $\sigma' \subseteq \cS$ that satisfies $(\delta(\cS, \cU, \cC, \cS') \land \sigma \land \cC = c)$. Both operations require elimination of existential quantifiers from the formulas.  To eliminate quantifiers with SAT requires an inefficient enumeration of satisfying assignments.  The key insight behind our solution is that both operations can be efficiently approximated from the proof of unsatisfiability of the formula $\sigma \land \opptf(k, T)$, with the help of interpolation, as described below.  The resulting approximations are sound, i.e., preserve the correctness of the resulting strategy.
+The algorithm described so far involves two potentially costly operations: winning set partitioning and successor set computation.  If implemented na\"ively in a SAT based approach these operations can lead to unacceptable performance.  Partitioning $(\sigma, T)$ into a winning set for every $\langle e, n \rangle \in \textsc{succ}(T)$ requires computing all $\sigma_i \subseteq 2^{\cW_T}$ such that the existential formula $(\sigma \land \cC_e = c \land \delta(\cS_T, \cU_T, \cC_e, \cS_n) \land \opptf(k, n))$ is unsatisfiable.  Similarly, the $c$-successors of $\sigma$ are computed by determining all $\sigma' \subseteq 2^\cS$ that satisfies $(\delta(\cS, \cU, \cC, \cS') \land \sigma \land \cC = c)$. Both operations require elimination of existential quantifiers from the formulas.  To eliminate quantifiers with SAT requires an inefficient enumeration of satisfying assignments.  The key insight behind our solution is that both operations can be efficiently approximated from the proof of unsatisfiability of the formula $\sigma \land \opptf(k, T)$, with the help of interpolation, as described below.  The resulting approximations are sound, i.e., preserve the correctness of the resulting strategy.
 
 The \textsc{partition} function (Algorithm~\ref{alg:strat:partition}) computes a local strategy in the root of an abstract game tree.  It takes a tuple $(T, k, \sigma)$, such that $T$ is a certificate tree of height $k$ for $\sigma \in 2^\cW$ and partitions $\sigma$ into subsets $\sigma_i$ such that the controller can win a game of $k$ rounds in the states and against the environment actions contained in $\sigma_i$ by choosing action $c_i$.
 
@@ -350,7 +350,7 @@ The \textsc{partition} function (Algorithm~\ref{alg:strat:partition}) computes a
             \State $A \gets \sigma \land \Call{\opptf}{k, \tilde{T}} $ \label{alg:strat:partition:Bi}
             \State $B \gets \Call{\opptf}{k, T_i} $ \label{alg:strat:partition:Ai}
             \State $\mathcal{I} \gets \Call{interpolate}{A, B}$\label{alg:partition:I}
-            \State $\sigma_i \gets \mathcal{I}(\cW_T) \land \sigma$\label{alg:partition:Ii}
+            \State $\sigma_i \gets \mathcal{I}(\cW_T) \land \hat{\sigma}$\label{alg:partition:Ii}
             \State $\hat{\sigma} \gets \hat{\sigma} \land \neg \sigma_i$
             \State $\hat{T} \gets \tilde{T}$\label{alg:partition:upd}
         \EndFor
@@ -421,7 +421,7 @@ At every iteration, the algorithm splits the tree into the leftmost branch $T_i$
         \node [above=6mm of left0] {$(T_i, \sigma_i)$};
         \node [above=6mm of leftc0] {$(\tilde{T}, \hat{\sigma} \setminus \sigma_i)$};
     \end{tikzpicture}
-    \caption{Splitting of $T$ in the \textsc{Partition} function.\label{fig:split}}
+    \caption{Splitting of $T$ in the \textsc{partition} function.\label{fig:split}}
 \end{figure}
 
 The algorithm maintains the invariant that $\hat{T}$ is a certificate tree of height $k$ for $\hat{\sigma}$, and hence $\hat{\sigma} \land \opptf(k, \hat{T})$ is unsatisfiable.  We decompose this formula into two conjuncts $A \land B$ such that $A$ and $B$ only share state and action variables $\cW_T$ in the root node of $T$ and that the interpolant $\mathcal{I}$ of $A$ and $B$ consists of states and environment actions for which the controller can win by following the $T_i$ subtree.  Hence $\mathcal{I}(\cW_T)$ gives us the desired set $\sigma_i$.  
@@ -523,15 +523,17 @@ The computed set is an overapproximation of the desired set of successor states 
 
 Finally, we describe how local strategies computed by \textsc{genLocalStrats} are combined into a winning strategy for the game.  This requires some care, as individual partial strategies can be defined over overlapping sets of states.  We want the resulting strategy function to be deterministic; therefore for each partial strategy we only add new states not yet covered by the computed combined strategy.  Function \textsc{compileStrats} (Algorithm~\ref{alg:compile}) achieves this by keeping track of all states $W$ already added to the strategy.  For every new tuple $(w, a, k)$, it restricts the set $w$ to $\neg W$, which guarantees that no state action pair can be added to the strategy twice.  
 
-\begin{algorithm}[t]
+\begin{algorithm}
    \caption{Compiling the  winning strategy}\label{alg:compile}
    \begin{algorithmic}[1]
-        \Function{CompileStrat}{$Strat$}
+        \Function{compileStrat}{$Strat, k$}
             \State $\pi \gets \bot,~~W \gets \bot$
-            \State $Strat' \gets \Call{sort}{Strat}$ \Comment{Sort by descending $k$}
-            \For{$(w, c, k) \in Strat'$} 
-            \State $\pi \gets \pi \lor (w \land \neg W \land c)$
-                \State $W \gets W \lor w$
+            \LineComment{Combine strategies in descending height order}
+            \For{$i = k$ to $1$} 
+                \For{$(w, c, k = i) \in Strat$} 
+                \State $\pi \gets \pi \lor (w \land \neg W \land c)$
+                    \State $W \gets W \lor w$
+                \EndFor
             \EndFor
             \State \Return $\pi$
         \EndFunction
@@ -597,7 +599,7 @@ The modification is simple: partial strategies are extracted online during the r
 %%%\end{algorithm}
 
 \begin{theorem}
-    Let $G$ be a bounded safety game that is realisable with respect to an error set $E$ and a bound $k$. Let $Strats$ be a set of partial strategies generated during $\textsc{solveAbstract}$, then $\pi = \textsc{compileStrat}(Strats)$ is a winning partial controller strategy for $G$.
+    Let $G$ be a bounded safety game that is realisable with respect to an error set $E$ and a bound $k$. Let $Strats$ be a set of partial strategies generated during $\textsc{solveAbstract}$, then $\pi = \textsc{compileStrat}(Strats, k)$ is a winning partial controller strategy for $G$.
 \end{theorem}
 \begin{proof}
     We prove correctness inductively. At the first online call to \textsc{genLocalStrats}, $B^e$ is empty and by Theorem~\ref{th:stratCorrectness} $Strat_0$ is a partial strategy for a state-round pair $(b_0, k_0)$. $Strat_0$ is added to $Strats$.
@@ -606,7 +608,7 @@ The modification is simple: partial strategies are extracted online during the r
 
     Under the inductive hypothesis, $Strats = Strat_0 \cup \ldots \cup Strat_j$ contains winning partial strategies for every $(b_0, k_0), \ldots, (b_j, k_j)$. Thus every state assumed to be winning at the $j+1$ iteration has a winning partial strategy in $Strat_0 \cup \ldots \cup Strat_j$ and so $Strat_0 \cup \ldots \cup Strat_{j+1}$ contains winning partial strategies for all $(b_0, k_0), \ldots, (b_{j+1}, k_{j+1})$.
 
-    Thus, $Strats$ contains winning partial strategies for every state in $B^e$.  \textsc{solveAbstract} terminates when it discovers a certificate tree for the initial state $s_0$. As with all certificate trees generated during execution the algorithm learns from the tree via a call to \textsc{learn}. Thus, at termination $s_0 \in B^e[k]$ and $Strats$ contains a winning partial strategy from $s_0$. Therefore $\pi = \textsc{compileStrat}(Strats)$ is a winning partial controller strategy for the game.
+    Thus, $Strats$ contains winning partial strategies for every state in $B^e$.  \textsc{solveAbstract} terminates when it discovers a certificate tree for the initial state $s_0$. As with all certificate trees generated during execution the algorithm learns from the tree via a call to \textsc{learn}. Thus, at termination $s_0 \in B^e[k]$ and $Strats$ contains a winning partial strategy from $s_0$. Therefore $\pi = \textsc{compileStrat}(Strats, k)$ is a winning partial controller strategy for the game.
 \end{proof}
 
 \subsection{Ensuring compact interpolants}

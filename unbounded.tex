@@ -491,12 +491,12 @@ Termination also follows from the invariants. Given that $B^m$ decreases monoton
 
 \subsection{Strategy extraction}
 
-In the previous chapter I showed how to extract a strategy from the certificate tree generated during the bounded realisability algorithm. I will now prove that a similar approach extracts a correct strategy for an unbounded game when strategy generation is done online as it is when the learning optimisation is enabled for bounded realisability. In order to extract strategies online, line~\ref{line:cstrats} becomes active in \textoverline{\textsc{learn}} and a local strategy is generated for each learned interpolant. The local strategies are collected in an array $Strats$, which is indexed by the height of the subtree that enabled interpolation. Algorithm~\ref{alg:unboundedCompile} shows a modified version of \textsc{CompileStrat} that takes this array and the index of $B^m$ such that $B^m[i+1] = B^m[i]$, and returns a winning strategy for the game. As proved below, the local strategies from the sets of states removed from the fixed point of $B^m$ are sufficient to construct a winning strategy for the controller.
+In the previous chapter I showed how to extract a strategy from the certificate tree generated during the bounded realisability algorithm. I will now prove that a similar approach extracts a correct strategy for an unbounded game when strategy generation is done online as it is when the learning optimisation is enabled for bounded realisability. In order to extract strategies online, line~\ref{line:cstrats} becomes active in \textoverline{\textsc{learn}} and a local strategy is generated for each learned interpolant. The local strategies are collected in an array $Strats$, which is indexed by the height of the subtree that enabled interpolation. Algorithm~\ref{alg:unboundedCompile} shows a modified version of \textsc{compileStrat} that takes this array and the index of $B^m$ such that $B^m[i+1] = B^m[i]$, and returns a winning strategy for the game. As proved below, the local strategies from the sets of states removed from the fixed point of $B^m$ are sufficient to construct a winning strategy for the controller.
 
 \begin{algorithm}[t]
    \caption{Compiling the  winning strategy}\label{alg:unboundedCompile}
    \begin{algorithmic}[1]
-        \Function{CompileStrat}{$Strats, i$}
+        \Function{compileStrat}{$Strats, i$}
             \State $\pi \gets \bot,~~W \gets \bot$
             \For{$(w, c, k) \in Strats[i]$}
             \State $\pi \gets \pi \lor (w \land \neg W \land c)$
@@ -508,7 +508,7 @@ In the previous chapter I showed how to extract a strategy from the certificate 
 \end{algorithm}
 
 \begin{theorem}
-    Let $G$ be a safety game that is realisable with respect to an error set $E$. Let $Strats$ be a set of partial strategies generated during $\textsc{solveUnbounded}(G, E)$, then $\pi = \textsc{CompileStrat}(Strats)$ is a winning partial controller strategy for $G$.
+    Let $G$ be a safety game that is realisable with respect to an error set $E$. Let $Strats$ be a set of partial strategies generated during $\textsc{solveUnbounded}(G, E)$, then $\pi = \textsc{compileStrat}(Strats)$ is a winning partial controller strategy for $G$.
 \end{theorem}
 \begin{proof}
     Let $(b, k)$ be a pair such that $b$ is a set of states learned to be environment-losing for a game of length $k$ during execution of \textoverline{\textsc{learn}}. Then $(b, k)$ has corresponding tree, $T$, that has a depth of one. We construct $[(w_0, c_0, k_0), \ldots, (w_j, c_j, k_j)] = \textsc{genLocalStrats}(T, k, b)$. Since the tree is of depth one, \textsc{next} is never called.  From the precondition of \textoverline{\textsc{learn}} we know that $b(\cS_T) \land \opptf(k, T)$ is false. Therefore interpolation in \textsc{partition} is well defined. 
@@ -528,7 +528,7 @@ In the previous chapter I showed how to extract a strategy from the certificate 
     
     Since $B^m[i] = B^m[i+1]$, the only states excluded from $B^m[i]$ are the same as those removed from $B^m[i+1]$ in \textoverline{\textsc{learn}}. So the set of successor states of $(w, c)$ are contained within the set of all pairs $(b, i+1)$.  Thus, all states reachable by playing local strategies $Strats[i+1]$ have defined local strategies also in $Strats[i+1]$.
 
-    By Proposition~\ref{prop:checkBound}, $s_0 \not\in B^m[i+1]$, so there is a strategy defined for all states and environment actions in the initial state.  As shown in Theorem~\ref{theorem:unboundedcorrectness}, $B^m[i+1]$ overapproximates the winning region of the environment.  Therefore, if the controller plays according to $\pi = \textsc{CompileStrat}(Strats, i+1)$ there is a defined strategy from the initial state that ensures that the game stays outside the environment's winning region.
+    By Proposition~\ref{prop:checkBound}, $s_0 \not\in B^m[i+1]$, so there is a strategy defined for all states and environment actions in the initial state.  As shown in Theorem~\ref{theorem:unboundedcorrectness}, $B^m[i+1]$ overapproximates the winning region of the environment.  Therefore, if the controller plays according to $\pi = \textsc{compileStrat}(Strats, i+1)$ there is a defined strategy from the initial state that ensures that the game stays outside the environment's winning region.
 \end{proof}
 
 \section{Optimisations}
